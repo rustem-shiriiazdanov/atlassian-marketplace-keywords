@@ -300,6 +300,15 @@
         return (s)=> ctx.measureText(String(s||'')).width;
       })();
 
+      const trimToWidth = (s, maxPx)=>{
+        s = String(s||'');
+        if(measureTextWidth(s) <= maxPx) return s;
+        while(s.length && measureTextWidth(s + '…') > maxPx){
+          s = s.slice(0, -1);
+        }
+        return s + '…';
+      };
+
       function chartBg(chart){
         let el = chart.getDom();
         while(el && el !== document.body){
@@ -464,9 +473,13 @@
       }
       
       function buildHeatmapOption(months, yCats, matrix){
-        const trimmed = yCats.map(k=>labelTrim(k, 22));
-        const maxWidth = trimmed.length ? Math.max(...trimmed.map(measureTextWidth)) : 0;
-        const left = Math.max(120, Math.ceil(maxWidth) + 20);
+        const LABEL_PX = 100;
+        const info = yCats.map(k=>{
+          const width = measureTextWidth(k);
+          return { full: k, short: width > LABEL_PX ? trimToWidth(k, LABEL_PX) : k, width };
+        });
+        console.debug('heatmap label widths', { maxLabelWidth: LABEL_PX, labels: info });
+        const trimmed = info.map(i=>i.short);
         const data = [];
         const yIndex = new Map(yCats.map((k,i)=>[k,i]));
         const xIndex = new Map(months.map((m,i)=>[m,i]));
@@ -478,8 +491,11 @@
         }
         return {
           backgroundColor:'transparent',
-          grid:{ left, right:70, top:30, bottom:28 },
-          tooltip:{ position:'top' },
+          grid:{ left:120, right:70, top:30, bottom:28 },
+          tooltip:{ position:'top', formatter:(p)=>{
+            const kw = yCats[p.value[1]]; const m = months[p.value[0]];
+            return `<div><b>${kw}</b><br/>${m}: ${p.value[2]}</div>`;
+          } },
           xAxis:{ type:'category', data: months, splitArea:{ show:false }, axisLabel:{ color:'#BFC7E5' } },
           yAxis:{ type:'category', data: trimmed, splitArea:{ show:false }, axisLabel:{ color:'#E6E9F2' } },
           visualMap:{ min:0, max:vmax||1, calculable:true, orient:'vertical', right:10, top:'middle', text:['more','less'] },
