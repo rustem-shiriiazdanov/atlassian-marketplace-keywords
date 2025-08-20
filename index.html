@@ -4,6 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Atlassian Marketplace Keywords</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script>
+    document.documentElement.classList.toggle('mobile', /Mobi|Android/i.test(navigator.userAgent));
+  </script>
   <style>
     :root{ --bg:#0B1021; --card:#121835; --ink:#E6E9F2; --muted:#A9B0C6; --accent:#4C9AFF; --danger:#FF5630; --chip:#1B2348; --radius:16px; --shadow:0 20px 40px rgba(0,0,0,.35);}  
     html,body{height:100%}
@@ -27,7 +31,6 @@
     .file-input-display{cursor:pointer;padding:4px 8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:var(--ink);font-size:11px;display:inline-block;min-width:150px}
     .btn{cursor:pointer;border:0;border-radius:10px;padding:8px 12px;font-weight:600;color:#0B1021;background:var(--accent)}
     .btn.ghost{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,.12)}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
     .card{padding:12px}
     .card h3{margin:4px 6px 10px;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.2px}
     .card h3.has-toolbar{display:flex;align-items:center}
@@ -50,11 +53,16 @@
     .mini{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px}
     .help{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:4px;border-radius:50%;background:var(--muted);color:#0B1021;font-size:11px;font-weight:700;cursor:pointer}
     .tooltip{position:absolute;z-index:1000;max-width:220px;background:var(--card);color:var(--ink);border:1px solid rgba(255,255,255,.12);padding:6px 8px;font-size:11px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.35);display:none;white-space:pre-wrap}
-    @media (max-width:980px){.grid{grid-template-columns:1fr}.chart{height:460px}.short{height:380px}.tall{height:520px}.two-col{grid-template-columns:1fr}}
+    html.mobile{font-size:14px}
+    html.mobile h1{font-size:24px}
+    html.mobile .chart{height:400px}
+    html.mobile .short{height:340px}
+    html.mobile .tall{height:480px}
+    @media (max-width:980px){.chart{height:460px}.short{height:380px}.tall{height:520px}.two-col{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <div class="container wrap">
     <header>
       <div>
         <h1>Atlassian Marketplace Keywords Charts (excel-sourced)</h1>
@@ -74,9 +82,9 @@
       </div>
     </header>
 
-    <section class="grid">
+    <section class="row g-3">
       <!-- PANEL 1: Data inputs & diagnostics -->
-      <div class="panel card" style="grid-column:1 / -1;">
+      <div class="panel card col-12">
         <h3>Data Inputs & Diagnostics <span class="help" data-help="Upload monthly keyword spreadsheets to drive the charts and check for missing data." data-testid="help-inputs">?</span></h3>
         <div class="controls">
           <div class="chip">
@@ -100,7 +108,7 @@
       </div>
 
       <!-- PANEL 2: United Race + Zeros with local controls -->
-      <div class="panel card" style="grid-column:1 / -1;">
+      <div class="panel card col-12">
         <h3>Search Dynamics — Bar Chart Race & Zero‑Result Overview <span class="help" data-help="Track how popular search terms and zero-result totals change to guide product and marketing focus." data-testid="help-dynamics">?</span></h3>
         <div class="mini-grid">
           <!-- mini: shared controls -->
@@ -133,7 +141,7 @@
       </div>
 
       <!-- PANEL 3: Trails with local control -->
-      <div class="panel card" style="grid-row: span 2;">
+      <div class="panel card col-12 col-lg-6">
         <h3>Keyword Trails — Popular Keywords Over Time <span class="help" data-help="Follow individual keyword popularity to monitor long‑term trends." data-testid="help-trails">?</span></h3>
         <div class="controls soft">
           <div class="chip">
@@ -153,7 +161,7 @@
       </div>
 
       <!-- PANEL 4: Heatmap with local controls -->
-      <div class="panel card" style="grid-row: span 2;">
+      <div class="panel card col-12 col-lg-6">
         <h3>Zero‑Result Heatmap — Where Users Find Nothing <span class="help" data-help="Locate content gaps by spotting keywords that consistently return no apps." data-testid="help-heatmap">?</span></h3>
         <div class="controls soft">
           <div class="chip">
