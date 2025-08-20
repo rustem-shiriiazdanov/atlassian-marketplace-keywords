@@ -292,6 +292,14 @@
         return l1 + '\n' + rest;
       }
 
+      // Measure text width to size axis gutters dynamically
+      const measureTextWidth = (() => {
+        const c = document.createElement('canvas');
+        const ctx = c.getContext('2d');
+        ctx.font = '12px Inter';
+        return (s)=> ctx.measureText(String(s||'')).width;
+      })();
+
       function chartBg(chart){
         let el = chart.getDom();
         while(el && el !== document.body){
@@ -456,6 +464,9 @@
       }
       
       function buildHeatmapOption(months, yCats, matrix){
+        const trimmed = yCats.map(k=>labelTrim(k, 22));
+        const maxWidth = trimmed.length ? Math.max(...trimmed.map(measureTextWidth)) : 0;
+        const left = Math.max(120, Math.ceil(maxWidth) + 20);
         const data = [];
         const yIndex = new Map(yCats.map((k,i)=>[k,i]));
         const xIndex = new Map(months.map((m,i)=>[m,i]));
@@ -465,13 +476,12 @@
           if(yi==null || xi==null) continue;
           data.push([xi, yi, row.value]); vmax = Math.max(vmax, row.value);
         }
-        // Revert to the stable layout that used to work well: fixed left gutter + trimmed labels
         return {
           backgroundColor:'transparent',
-          grid:{ left:120, right:70, top:30, bottom:28 },
+          grid:{ left, right:70, top:30, bottom:28 },
           tooltip:{ position:'top' },
           xAxis:{ type:'category', data: months, splitArea:{ show:false }, axisLabel:{ color:'#BFC7E5' } },
-          yAxis:{ type:'category', data: yCats.map(k=>labelTrim(k, 22)), splitArea:{ show:false }, axisLabel:{ color:'#E6E9F2' } },
+          yAxis:{ type:'category', data: trimmed, splitArea:{ show:false }, axisLabel:{ color:'#E6E9F2' } },
           visualMap:{ min:0, max:vmax||1, calculable:true, orient:'vertical', right:10, top:'middle', text:['more','less'] },
           series:[{ name:'Zero results', type:'heatmap', data, emphasis:{ itemStyle:{ shadowBlur:10, shadowColor:'rgba(0,0,0,0.4)' } } }]
         };
