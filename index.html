@@ -114,6 +114,11 @@
               <div id="zero-display" class="file-input-display">No file chosen</div>
             </div>
           </div>
+          <div class="chip">
+            <label>Keyword Filter</label>
+            <input id="keywordFilterInput" type="text" list="keywordOptions" placeholder="All keywords" />
+            <button id="keywordFilterReset" class="btn ghost" style="padding:4px 6px" aria-label="Reset keyword filter">✕</button>
+          </div>
           <button id="btn-load-defaults" class="btn ghost">Load default files</button>
           <button id="btn-demo" class="btn ghost">Load demo</button>
           <button id="btn-test" class="btn ghost">Run smoke tests</button>
@@ -131,8 +136,6 @@
                 <label>Top&nbsp;N</label><span class="help" data-help="Number of top keywords per month shown in the race." data-testid="help-topn">?</span>
                 <input id="topN" type="range" min="5" max="20" value="10" />
                 <span id="topNVal">10</span>
-                <button id="topNFlip" class="btn ghost" style="padding:4px 6px" aria-label="Keyword filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
-                <input class="keyword-input" type="text" list="keywordOptions" placeholder="keyword1, keyword2" style="display:none" />
               </div>
               <div class="chip">
                 <label>Speed</label><span class="help" data-help="Animation speed of the race in milliseconds." data-testid="help-speed">?</span>
@@ -161,15 +164,13 @@
         <div class="controls soft">
           <div class="chip">
             <label>Trails</label><span class="help" data-help="Number of keyword lines to plot." data-testid="help-trailsN">?</span>
-            <input id="trailsN" type="range" min="3" max="12" value="6" />
-            <span id="trailsNVal">6</span>
-            <button id="trailsNFlip" class="btn ghost" style="padding:4px 6px" aria-label="Keyword filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
-            <input class="keyword-input" type="text" list="keywordOptions" placeholder="keyword1, keyword2" style="display:none" />
-          </div>
-          <div class="chip">
-            <span class="help" data-help="Cycle through legend pages (two rows per page)." data-testid="help-trailsLegend">?</span>
-            <button id="trailsPrev" class="btn ghost" style="padding:6px 8px">◀</button>
-            <span id="trailsPageInfo">1/1</span>
+              <input id="trailsN" type="range" min="3" max="12" value="6" />
+              <span id="trailsNVal">6</span>
+            </div>
+            <div class="chip">
+              <span class="help" data-help="Cycle through legend pages (two rows per page)." data-testid="help-trailsLegend">?</span>
+              <button id="trailsPrev" class="btn ghost" style="padding:6px 8px">◀</button>
+              <span id="trailsPageInfo">1/1</span>
             <button id="trailsNext" class="btn ghost" style="padding:6px 8px">▶</button>
           </div>
         </div>
@@ -183,15 +184,13 @@
         <div class="controls soft">
           <div class="chip">
             <label>Heatmap&nbsp;TopK</label><span class="help" data-help="Number of zero-result keywords to show." data-testid="help-heatTopK">?</span>
-            <input id="heatTopK" type="range" min="8" max="30" value="15" />
-            <span id="heatTopKVal">15</span>
-            <button id="heatTopKFlip" class="btn ghost" style="padding:4px 6px" aria-label="Keyword filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
-            <input class="keyword-input" type="text" list="keywordOptions" placeholder="keyword1, keyword2" style="display:none" />
-          </div>
-          <div class="chip" id="heatTimeRangeChip">
-            <label>Time&nbsp;Range</label><span class="help" data-help="Select month range to rank zero-result keywords." data-testid="help-heatRange">?</span>
-            <input id="heatTimeStart" type="range" min="1" max="1" value="1" />
-            <span id="heatTimeStartVal">1</span>
+              <input id="heatTopK" type="range" min="8" max="30" value="15" />
+              <span id="heatTopKVal">15</span>
+            </div>
+            <div class="chip" id="heatTimeRangeChip">
+              <label>Time&nbsp;Range</label><span class="help" data-help="Select month range to rank zero-result keywords." data-testid="help-heatRange">?</span>
+              <input id="heatTimeStart" type="range" min="1" max="1" value="1" />
+              <span id="heatTimeStartVal">1</span>
             <input id="heatTimeEnd" type="range" min="1" max="1" value="1" />
             <span id="heatTimeEndVal">1</span>
           </div>
@@ -741,29 +740,14 @@
       document.getElementById('btn-share-page').addEventListener('click', sharePage);
 
       const parseFilter = (v)=> v.split(',').map(s=>s.trim()).filter(Boolean);
-      const syncKeywordInputs = (val)=>{ document.querySelectorAll('.keyword-input').forEach(i=>{ i.value = val; }); };
-      syncKeywordInputs(state.keywordFilter.join(', '));
-      document.querySelectorAll('.keyword-input').forEach(inp=>{
-        inp.addEventListener('change', e=>{ state.keywordFilter = parseFilter(e.target.value); syncKeywordInputs(e.target.value); renderAll(); });
-      });
-      function setupFlip(id){
-        const btn = document.getElementById(id+'Flip');
-        if(!btn) return;
-        const range = document.getElementById(id);
-        const val = document.getElementById(id+'Val');
-        const input = btn.parentElement.querySelector('.keyword-input');
-        btn.addEventListener('click', ()=>{
-          const show = input.style.display === 'none';
-          if(show){
-            range.style.display = 'none'; if(val) val.style.display = 'none'; input.style.display = ''; input.focus();
-          } else {
-            input.style.display = 'none'; range.style.display = ''; if(val) val.style.display = ''; state.keywordFilter = parseFilter(input.value); syncKeywordInputs(input.value); renderAll();
-          }
-        });
+      const keywordInput = document.getElementById('keywordFilterInput');
+      const keywordReset = document.getElementById('keywordFilterReset');
+      if(keywordInput){
+        keywordInput.addEventListener('change', e=>{ state.keywordFilter = parseFilter(e.target.value); renderAll(); });
       }
-      setupFlip('topN');
-      setupFlip('trailsN');
-      setupFlip('heatTopK');
+      if(keywordReset){
+        keywordReset.addEventListener('click', ()=>{ state.keywordFilter = []; if(keywordInput) keywordInput.value=''; renderAll(); });
+      }
 
       // Legend pager (Trails)
       document.getElementById('trailsPrev').addEventListener('click', ()=>{ if(state.trailsLegendPage>0){ state.trailsLegendPage--; renderAll(); } });
