@@ -17,7 +17,9 @@
     .controls.soft{padding:10px;margin-top:8px}
     label{font-size:12px;color:var(--muted)}
     .chip{background:var(--chip);border:1px solid rgba(255,255,255,.06);border-radius:999px;padding:8px 12px;display:flex;gap:8px;align-items:center}
-    .file-status{font-size:10px;color:var(--muted);margin-left:4px}
+    .file-input-wrapper{position:relative;display:inline-block}
+    .file-input-wrapper input[type="file"]{position:absolute;opacity:0;width:0;height:0}
+    .file-input-display{cursor:pointer;padding:4px 8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:var(--ink);font-size:11px;display:inline-block;min-width:150px}
     .btn{cursor:pointer;border:0;border-radius:10px;padding:8px 12px;font-weight:600;color:#0B1021;background:var(--accent)}
     .btn.ghost{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,.12)}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
@@ -53,13 +55,17 @@
         <div class="controls">
           <div class="chip">
             <label>Popular Search Keywords</label>
-            <input id="file-source" type="file" accept=".xlsx,.xls" />
-            <small id="source-status" class="file-status">No file chosen</small>
+            <div class="file-input-wrapper">
+              <input id="file-source" type="file" accept=".xlsx,.xls" />
+              <div id="source-display" class="file-input-display">No file chosen</div>
+            </div>
           </div>
           <div class="chip">
             <label>Zero‑Result Keywords</label>
-            <input id="file-zero" type="file" accept=".xlsx,.xls" />
-            <small id="zero-status" class="file-status">No file chosen</small>
+            <div class="file-input-wrapper">
+              <input id="file-zero" type="file" accept=".xlsx,.xls" />
+              <div id="zero-display" class="file-input-display">No file chosen</div>
+            </div>
           </div>
           <button id="btn-demo" class="btn ghost">Load demo</button>
           <button id="btn-test" class="btn ghost">Run smoke tests</button>
@@ -414,25 +420,25 @@
       // File inputs
       $('#file-source').addEventListener('change', async (e)=>{ 
         const f = e.target.files[0]; 
-        if(!f) { updateFileStatus('source-status', 'No file chosen'); return; }
+        if(!f) { updateFileStatus('source-display', 'No file chosen'); return; }
         state.manualSource = true; setStatus('reading Popular Search Keywords…'); 
-        updateFileStatus('source-status', `Loading ${f.name}...`);
+        updateFileStatus('source-display', `Loading ${f.name}...`);
         try{ 
           const buf = await f.arrayBuffer(); 
           const wb = XLSX.read(buf,{type:'array'}); 
           const rows = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null }); 
           state.sourceRaw = rows.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), percentage: asNumber(r.percentage) })); 
           setStatus(`loaded Popular: ${state.sourceRaw.length} rows`); 
-          updateFileStatus('source-status', `${f.name} (${state.sourceRaw.length} rows)`);
+          updateFileStatus('source-display', `${f.name} (${state.sourceRaw.length} rows)`);
           renderAll(); 
-        }catch(err){ console.error(err); setStatus('error reading Popular file'); updateFileStatus('source-status', 'Error loading file'); } 
+        }catch(err){ console.error(err); setStatus('error reading Popular file'); updateFileStatus('source-display', 'Error loading file'); } 
       });
 
       $('#file-zero').addEventListener('change', async (e)=>{ 
         const f = e.target.files[0]; 
-        if(!f) { updateFileStatus('zero-status', 'No file chosen'); return; }
+        if(!f) { updateFileStatus('zero-display', 'No file chosen'); return; }
         state.manualZero = true; setStatus('reading Zero‑Result Keywords…'); 
-        updateFileStatus('zero-status', `Loading ${f.name}...`);
+        updateFileStatus('zero-display', `Loading ${f.name}...`);
         try{ 
           const buf = await f.arrayBuffer(); 
           const wb = XLSX.read(buf,{type:'array'}); 
@@ -443,9 +449,9 @@
           const raw = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null }); 
           state.zeroRaw = raw.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), count: asNumber(r.count||0) })); 
           setStatus(`loaded Zero: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`); 
-          updateFileStatus('zero-status', `${f.name} (${state.zeroRaw.length} rows)`);
+          updateFileStatus('zero-display', `${f.name} (${state.zeroRaw.length} rows)`);
           renderAll(); 
-        }catch(err){ console.error(err); setStatus('error reading Zero file'); updateFileStatus('zero-status', 'Error loading file'); } 
+        }catch(err){ console.error(err); setStatus('error reading Zero file'); updateFileStatus('zero-display', 'Error loading file'); } 
       });
 
       // --- Default file autoload (for GitHub Pages) ---
@@ -466,7 +472,7 @@
         const rows = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
         state.sourceRaw = rows.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), percentage: asNumber(r.percentage) }));
         setStatus(`default Popular loaded: ${state.sourceRaw.length} rows`);
-        updateFileStatus('source-status', 'Default data file loaded (see README)');
+        updateFileStatus('source-display', 'Default data file loaded (see README)');
         renderAll();
       }
 
@@ -481,7 +487,7 @@
         const raw = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
         state.zeroRaw = raw.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), count: asNumber(r.count||0) }));
         setStatus(`default Zero loaded: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
-        updateFileStatus('zero-status', 'Default data file loaded (see README)');
+        updateFileStatus('zero-display', 'Default data file loaded (see README)');
         renderAll();
       }
 
@@ -492,14 +498,14 @@
           try{ await tryLoadDefaultSource(); any = true; } 
           catch(e){ 
             console.info('No default Popular found'); 
-            updateFileStatus('source-status', 'No file chosen');
+            updateFileStatus('source-display', 'No file chosen');
           } 
         }
         if(!state.zeroRaw.length && !state.manualZero){ 
           try{ await tryLoadDefaultZero(); any = true; } 
           catch(e){ 
             console.info('No default Zero found'); 
-            updateFileStatus('zero-status', 'No file chosen');
+            updateFileStatus('zero-display', 'No file chosen');
           } 
         }
         if(!any) setStatus('ready — upload files or Load demo');
@@ -570,6 +576,10 @@
         setStatus('Smoke tests results:\n' + out.join('\n'));
       }
       document.getElementById('btn-test').addEventListener('click', runSmokeTests);
+
+      // Make file displays clickable
+      document.getElementById('source-display').addEventListener('click', ()=>{ document.getElementById('file-source').click(); });
+      document.getElementById('zero-display').addEventListener('click', ()=>{ document.getElementById('file-zero').click(); });
 
       // Try to autoload defaults on boot (works on GitHub Pages when files are in repo)
       autoLoadDefaults();
