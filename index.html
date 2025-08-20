@@ -161,12 +161,12 @@
             <input id="heatTopK" type="range" min="8" max="30" value="15" />
             <span id="heatTopKVal">15</span>
           </div>
-          <div class="chip" id="heatRangeChip">
-            <label>Heat&nbsp;Range</label><span class="help" data-help="Filter the month range displayed." data-testid="help-heatRange">?</span>
-            <input id="heatStart" type="range" min="0" max="0" value="0" />
-            <span id="heatStartVal">–</span>
-            <input id="heatEnd" type="range" min="0" max="0" value="0" />
-            <span id="heatEndVal">–</span>
+          <div class="chip" id="heatWordRangeChip">
+            <label>Word&nbsp;Range</label><span class="help" data-help="Select rank range of zero-result keywords." data-testid="help-heatRange">?</span>
+            <input id="heatWordStart" type="range" min="1" max="1" value="1" />
+            <span id="heatWordStartVal">1</span>
+            <input id="heatWordEnd" type="range" min="1" max="1" value="1" />
+            <span id="heatWordEndVal">1</span>
           </div>
         </div>
         <div id="heatmap" class="chart" data-testid="heatmap"><div class="placeholder">Awaiting data…</div></div>
@@ -261,7 +261,7 @@
         zeroMode: 'totals',
         topN: 10, playInterval: 1200, timelinePlaying: false,
         trailsN: 6, heatTopK: 15,
-        heatStartIdx: 0, heatEndIdx: 0, heatRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
+        heatWordStartIdx: 0, heatWordEndIdx: 14, heatWordRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
         // default data autoload flags
         manualSource: false, manualZero: false, defaultsTried: false
       };
@@ -515,13 +515,14 @@
         }
         return {
           backgroundColor:'transparent',
-          grid:{ left:120, right:70, top:30, bottom:28 },
+          grid:{ left:120, right:70, top:30, bottom:64 },
           tooltip:{ position:'top', formatter:(p)=>{
             const kw = yCats[p.value[1]]; const m = months[p.value[0]];
             return `<div><b>${kw}</b><br/>${m}: ${p.value[2]}</div>`;
           } },
           xAxis:{ type:'category', data: months, splitArea:{ show:false }, axisLabel:{ color:'#BFC7E5' } },
           yAxis:{ type:'category', data: trimmed, splitArea:{ show:false }, axisLabel:{ color:'#E6E9F2' } },
+          dataZoom:[ { type:'slider', xAxisIndex:0, height:14, bottom:8 }, { type:'inside', xAxisIndex:0 } ],
           visualMap:{ min:0, max:vmax||1, calculable:true, orient:'vertical', right:10, top:'middle', text:['more','less'] },
           series:[{ name:'Zero results', type:'heatmap', data, emphasis:{ itemStyle:{ shadowBlur:10, shadowColor:'rgba(0,0,0,0.4)' } } }]
         };
@@ -539,10 +540,11 @@
         const series = top.map(k=>({ name:k, type:'line', smooth:true, symbol:'circle', symbolSize:5, data: months.map(m=> byMonthKey.get(m)?.get(k) ?? null) }));
         return series;
       }
-      function computeHeatmapMatrix(zeroRaw, months, topK){
+      function computeHeatmapMatrix(zeroRaw, months, topK, startIdx, endIdx){
         // Top K zero-result keywords by total count
         const totals = new Map(); for(const r of zeroRaw){ const k = String(r.keyword||'').trim(); const v = asNumber(r.count); if(!Number.isFinite(v)) continue; totals.set(k, (totals.get(k)||0)+v); }
-        const yCats = Array.from(totals.entries()).sort((a,b)=>b[1]-a[1]).slice(0, topK).map(([k])=>k);
+        const sorted = Array.from(totals.entries()).sort((a,b)=>b[1]-a[1]).slice(0, topK);
+        const yCats = sorted.slice(startIdx, endIdx+1).map(([k])=>k);
         // Matrix rows
         const byMonthKey = new Map(); for(const r of zeroRaw){ const m = toMonthKey(r.month); const k = String(r.keyword||'').trim(); const v = asNumber(r.count); if(!byMonthKey.has(m)) byMonthKey.set(m, new Map()); byMonthKey.get(m).set(k, (byMonthKey.get(m).get(k)||0)+(Number.isFinite(v)?v:0)); }
         const matrix = [];
@@ -567,28 +569,32 @@
       }
 
       // --- Render pipeline ---
-      function updateHeatRangeControls(){
-        const months = state.months;
-        
-        // Initialize end date to maximum on first load
-        if(!state.heatRangeInitialized && months.length > 0) {
-          state.heatEndIdx = months.length - 1;
-          state.heatRangeInitialized = true;
+      function updateHeatWordRangeControls(){
+        const totalKw = new Set(state.zeroRaw.map(r=>String(r.keyword||'').trim())).size;
+        const max = Math.min(state.heatTopK, totalKw);
+
+        // Initialize end index to maximum on first load
+        if(!state.heatWordRangeInitialized && max > 0) {
+          state.heatWordEndIdx = max - 1;
+          state.heatWordRangeInitialized = true;
         }
-        
-        const start = Math.max(0, Math.min(state.heatStartIdx, months.length-1));
-        const end = Math.max(start, Math.min(state.heatEndIdx, months.length-1));
-        state.heatStartIdx = start; state.heatEndIdx = end;
-        const s = document.getElementById('heatStart');
-        const e = document.getElementById('heatEnd');
-        const sv = document.getElementById('heatStartVal');
-        const ev = document.getElementById('heatEndVal');
-        if(months.length){
-          s.min = 0; s.max = months.length-1; e.min = 0; e.max = months.length-1;
-          s.value = String(start); e.value = String(end);
-          sv.textContent = months[start]; ev.textContent = months[end];
+
+        const start = Math.max(0, Math.min(state.heatWordStartIdx, max-1));
+        const end = Math.max(start, Math.min(state.heatWordEndIdx, max-1));
+        state.heatWordStartIdx = start; state.heatWordEndIdx = end;
+
+        const s = document.getElementById('heatWordStart');
+        const e = document.getElementById('heatWordEnd');
+        const sv = document.getElementById('heatWordStartVal');
+        const ev = document.getElementById('heatWordEndVal');
+
+        if(max){
+          s.min = 1; s.max = max; e.min = 1; e.max = max;
+          s.value = String(start + 1); e.value = String(end + 1);
+          sv.textContent = String(start + 1); ev.textContent = String(end + 1);
         } else {
-          s.min = e.min = 0; s.max = e.max = 0; s.value = e.value = 0; sv.textContent = ev.textContent = '–';
+          s.min = e.min = 1; s.max = e.max = 1; s.value = e.value = 1;
+          sv.textContent = ev.textContent = '–';
         }
       }
 
@@ -598,7 +604,7 @@
         
         // Reset range initialization if months changed
         if(JSON.stringify(state.months) !== JSON.stringify(months)) {
-          state.heatRangeInitialized = false;
+          state.heatWordRangeInitialized = false;
         }
         
         state.months = months; if(!months.length){ setStatus('no months detected in source'); return; }
@@ -618,12 +624,11 @@
         const trailSeries = computeTrailsSeries(state.sourceRaw, months, state.trailsN);
         if(trailSeries.length){ safeSetOption('trails', buildTrailsOption(months, trailSeries)); }
         syncTrailsPager(trailSeries.length);
-        // 3) Heatmap (zero results) with range
-        updateHeatRangeControls();
+        // 3) Heatmap (zero results) with word and month range
+        updateHeatWordRangeControls();
         if(state.zeroRaw.length){
-          const slice = months.slice(state.heatStartIdx, state.heatEndIdx+1);
-          const { yCats, matrix } = computeHeatmapMatrix(state.zeroRaw, slice, state.heatTopK);
-          if(yCats.length){ safeSetOption('heatmap', buildHeatmapOption(slice, yCats, matrix)); }
+          const { yCats, matrix } = computeHeatmapMatrix(state.zeroRaw, months, state.heatTopK, state.heatWordStartIdx, state.heatWordEndIdx);
+          if(yCats.length){ safeSetOption('heatmap', buildHeatmapOption(months, yCats, matrix)); }
         }
         setStatus(`rendered: months=${months.length}, rows=${state.sourceRaw.length}`);
       }
@@ -632,9 +637,9 @@
       $('#topN').addEventListener('input', e=>{ state.topN = +e.target.value; $('#topNVal').textContent = e.target.value; renderAll(); });
       $('#speed').addEventListener('input', e=>{ state.playInterval = +e.target.value; $('#speedVal').textContent = (state.playInterval/1000).toFixed(1)+"s"; renderAll(); });
       $('#trailsN').addEventListener('input', e=>{ state.trailsN = +e.target.value; $('#trailsNVal').textContent = e.target.value; renderAll(); });
-      $('#heatTopK').addEventListener('input', e=>{ state.heatTopK = +e.target.value; $('#heatTopKVal').textContent = e.target.value; renderAll(); });
-      $('#heatStart').addEventListener('input', e=>{ state.heatStartIdx = +e.target.value; if(state.heatStartIdx>state.heatEndIdx) state.heatEndIdx = state.heatStartIdx; renderAll(); });
-      $('#heatEnd').addEventListener('input', e=>{ state.heatEndIdx = +e.target.value; if(state.heatEndIdx<state.heatStartIdx) state.heatStartIdx = state.heatEndIdx; renderAll(); });
+      $('#heatTopK').addEventListener('input', e=>{ state.heatTopK = +e.target.value; $('#heatTopKVal').textContent = e.target.value; state.heatWordRangeInitialized = false; renderAll(); });
+      $('#heatWordStart').addEventListener('input', e=>{ state.heatWordStartIdx = +e.target.value - 1; if(state.heatWordStartIdx>state.heatWordEndIdx) state.heatWordEndIdx = state.heatWordStartIdx; renderAll(); });
+      $('#heatWordEnd').addEventListener('input', e=>{ state.heatWordEndIdx = +e.target.value - 1; if(state.heatWordEndIdx<state.heatWordStartIdx) state.heatWordStartIdx = state.heatWordEndIdx; renderAll(); });
       $('#btn-play').addEventListener('click', ()=>{ state.timelinePlaying = !state.timelinePlaying; $('#btn-play').textContent = state.timelinePlaying ? '⏸ Pause' : '▶ Play'; renderAll(); });
       document.getElementById('btn-share-page').addEventListener('click', sharePage);
 
@@ -832,10 +837,10 @@
         // With demo
         state.sourceRaw = demo.sourceRaw.slice(); state.zeroRaw = demo.zeroRaw.slice(); state.zeroTotals = demo.zeroTotals.slice();
         try{ renderAll(); const race = ensureChart('race'); const zeros = ensureChart('zeros'); const trails = ensureChart('trails'); const heat = ensureChart('heatmap'); ok('race chart instance created', !!race); ok('zeros chart instance created', !!zeros); ok('trails chart instance created', !!trails); ok('heatmap chart instance created', !!heat); }catch(e){ ok('render with demo data succeeds', false); }
-        // Range controls reflect months length
-        const s = document.getElementById('heatStart'); const e = document.getElementById('heatEnd');
-        ok('heatStart max set', +s.max === state.months.length-1);
-        ok('heatEnd max set', +e.max === state.months.length-1);
+        // Word range controls reflect TopK
+        const s = document.getElementById('heatWordStart'); const e = document.getElementById('heatWordEnd');
+        ok('heatWordStart max set', +s.max === state.heatTopK);
+        ok('heatWordEnd max set', +e.max === state.heatTopK);
         setStatus('Smoke tests results:\n' + out.join('\n'));
       }
       document.getElementById('btn-test').addEventListener('click', runSmokeTests);
