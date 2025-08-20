@@ -125,6 +125,8 @@
                 <label>Top&nbsp;N</label><span class="help" data-help="Number of top keywords per month shown in the race." data-testid="help-topn">?</span>
                 <input id="topN" type="range" min="5" max="20" value="10" />
                 <span id="topNVal">10</span>
+                <button id="topNFlip" class="btn ghost" style="padding:4px 6px" aria-label="Keyword filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
+                <input class="keyword-input" type="text" list="keywordOptions" placeholder="keyword1, keyword2" style="display:none" />
               </div>
               <div class="chip">
                 <label>Speed</label><span class="help" data-help="Animation speed of the race in milliseconds." data-testid="help-speed">?</span>
@@ -155,6 +157,8 @@
             <label>Trails</label><span class="help" data-help="Number of keyword lines to plot." data-testid="help-trailsN">?</span>
             <input id="trailsN" type="range" min="3" max="12" value="6" />
             <span id="trailsNVal">6</span>
+            <button id="trailsNFlip" class="btn ghost" style="padding:4px 6px" aria-label="Keyword filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
+            <input class="keyword-input" type="text" list="keywordOptions" placeholder="keyword1, keyword2" style="display:none" />
           </div>
           <div class="chip">
             <span class="help" data-help="Cycle through legend pages (two rows per page)." data-testid="help-trailsLegend">?</span>
@@ -175,6 +179,8 @@
             <label>Heatmap&nbsp;TopK</label><span class="help" data-help="Number of zero-result keywords to show." data-testid="help-heatTopK">?</span>
             <input id="heatTopK" type="range" min="8" max="30" value="15" />
             <span id="heatTopKVal">15</span>
+            <button id="heatTopKFlip" class="btn ghost" style="padding:4px 6px" aria-label="Keyword filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
+            <input class="keyword-input" type="text" list="keywordOptions" placeholder="keyword1, keyword2" style="display:none" />
           </div>
           <div class="chip" id="heatTimeRangeChip">
             <label>Time&nbsp;Range</label><span class="help" data-help="Select month range to rank zero-result keywords." data-testid="help-heatRange">?</span>
@@ -189,6 +195,8 @@
       </div>
     </section>
   </div>
+
+  <datalist id="keywordOptions"></datalist>
 
   <script>
   // --- Robust sequential loader with fallbacks ---
@@ -276,6 +284,7 @@
         zeroMode: 'totals',
         topN: 10, playInterval: 1200, timelinePlaying: false,
         trailsN: 6, heatTopK: 15,
+        keywordFilter: [],
         heatTimeStartIdx: 0, heatTimeEndIdx: 0, heatTimeRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
         // default data autoload flags
         manualSource: false, manualZero: false, defaultsTried: false
@@ -286,6 +295,13 @@
       const ICON_FLIP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
 
       // --- Utils ---
+      function populateKeywordOptions(){
+        const set = new Set();
+        for(const r of state.sourceRaw){ const k = String(r.keyword||'').trim(); if(k) set.add(k); }
+        for(const r of state.zeroRaw){ const k = String(r.keyword||'').trim(); if(k) set.add(k); }
+        const list = document.getElementById('keywordOptions');
+        if(list) list.innerHTML = Array.from(set).sort().map(k=>`<option value="${k}"></option>`).join('');
+      }
       const toMonthKey = (v)=>{
         try{
           if(typeof v === 'number' && window.XLSX && XLSX.SSF){ const d = XLSX.SSF.parse_date_code(v); const date = new Date(Date.UTC(d.y, d.m-1, d.d)); return date.toISOString().slice(0,7); }
@@ -454,13 +470,25 @@
       }
 
       // Grouping helpers
-      function groupByMonthTop(list, valueField, topN){
+      function groupByMonthTop(list, valueField, topN, filter){
+        const filt = filter && filter.length ? new Set(filter) : null;
         const by = new Map(); for(const r of list){ const m = toMonthKey(r.month); if(!by.has(m)) by.set(m, []); by.get(m).push(r); }
         const months = Array.from(by.keys()).sort(); const top = {};
-        for(const m of months){ top[m] = by.get(m).filter(x=>Number.isFinite(asNumber(x[valueField]))).sort((a,b)=> asNumber(b[valueField]) - asNumber(a[valueField])).slice(0, topN).map(x=>({ name:String(x.keyword||'').trim(), value:asNumber(x[valueField]) })); }
+        for(const m of months){
+          let arr = by.get(m).filter(x=>Number.isFinite(asNumber(x[valueField])));
+          if(filt) arr = arr.filter(x=>filt.has(String(x.keyword||'').trim()));
+          arr = arr.sort((a,b)=> asNumber(b[valueField]) - asNumber(a[valueField]));
+          const sliceCount = filt ? arr.length : topN;
+          top[m] = arr.slice(0, sliceCount).map(x=>({ name:String(x.keyword||'').trim(), value:asNumber(x[valueField]) }));
+        }
         return { months, topByMonth: top };
       }
-      function totalsByMonth(list, valueField){ const acc = new Map(); for(const r of list){ const m = toMonthKey(r.month); acc.set(m,(acc.get(m)||0)+(asNumber(r[valueField])||0)); } return Array.from(acc.entries()).sort((a,b)=>a[0].localeCompare(b[0])).map(([m,v])=>({month:m,value:v})); }
+      function totalsByMonth(list, valueField, filter){
+        const acc = new Map();
+        const filt = filter && filter.length ? new Set(filter) : null;
+        for(const r of list){ const k = String(r.keyword||'').trim(); if(filt && !filt.has(k)) continue; const m = toMonthKey(r.month); acc.set(m,(acc.get(m)||0)+(asNumber(r[valueField])||0)); }
+        return Array.from(acc.entries()).sort((a,b)=>a[0].localeCompare(b[0])).map(([m,v])=>({month:m,value:v}));
+      }
 
       // --- Chart options ---
       function buildRaceOption(months, topByMonth){
@@ -544,36 +572,43 @@
       }
 
       // --- Data transforms for new gadgets ---
-      function computeTrailsSeries(sourceRaw, months, topN){
+      function computeTrailsSeries(sourceRaw, months, topN, filter){
         // Score keywords by total percentage across all months
         const sum = new Map();
-        for(const r of sourceRaw){ const k = String(r.keyword||'').trim(); const v = asNumber(r.percentage); if(!Number.isFinite(v)) continue; sum.set(k, (sum.get(k)||0)+v); }
-        const top = Array.from(sum.entries()).sort((a,b)=>b[1]-a[1]).slice(0, topN).map(([k])=>k);
+        const filt = filter && filter.length ? new Set(filter) : null;
+        for(const r of sourceRaw){ const k = String(r.keyword||'').trim(); if(filt && !filt.has(k)) continue; const v = asNumber(r.percentage); if(!Number.isFinite(v)) continue; sum.set(k, (sum.get(k)||0)+v); }
+        let top = [];
+        if(filt){ top = Array.from(filt).filter(k=>sum.has(k)); }
+        else { top = Array.from(sum.entries()).sort((a,b)=>b[1]-a[1]).slice(0, topN).map(([k])=>k); }
         // Build series per keyword across months
         const byMonthKey = new Map();
         for(const r of sourceRaw){ const m = toMonthKey(r.month); const k = String(r.keyword||'').trim(); const v = asNumber(r.percentage); if(!byMonthKey.has(m)) byMonthKey.set(m, new Map()); byMonthKey.get(m).set(k, v); }
         const series = top.map(k=>({ name:k, type:'line', smooth:true, symbol:'circle', symbolSize:5, data: months.map(m=> byMonthKey.get(m)?.get(k) ?? null) }));
         return series;
       }
-      function computeHeatmapMatrix(zeroRaw, months, topK, startIdx, endIdx){
+      function computeHeatmapMatrix(zeroRaw, months, topK, startIdx, endIdx, filter){
         const rangeMonths = months.slice(startIdx, endIdx + 1);
         const rangeSet = new Set(rangeMonths);
+        const filt = filter && filter.length ? new Set(filter) : null;
         // Top K zero-result keywords within selected months
         const totals = new Map();
         for (const r of zeroRaw) {
           const m = toMonthKey(r.month);
           if (!rangeSet.has(m)) continue;
           const k = String(r.keyword || '').trim();
+          if(filt && !filt.has(k)) continue;
           const v = asNumber(r.count);
           if (!Number.isFinite(v)) continue;
           totals.set(k, (totals.get(k) || 0) + v);
         }
-        const yCats = Array.from(totals.entries()).sort((a, b) => b[1] - a[1]).slice(0, topK).map(([k]) => k);
+        const sorted = Array.from(totals.entries()).sort((a, b) => b[1] - a[1]);
+        const yCats = filt ? sorted.map(([k])=>k) : sorted.slice(0, topK).map(([k])=>k);
         // Matrix rows
         const byMonthKey = new Map();
         for (const r of zeroRaw) {
           const m = toMonthKey(r.month);
           const k = String(r.keyword || '').trim();
+          if(filt && !filt.has(k)) continue;
           const v = asNumber(r.count);
           if (!byMonthKey.has(m)) byMonthKey.set(m, new Map());
           byMonthKey.get(m).set(k, (byMonthKey.get(m).get(k) || 0) + (Number.isFinite(v) ? v : 0));
@@ -635,8 +670,9 @@
       }
 
       function renderAll(){
+        populateKeywordOptions();
         if(!state.sourceRaw.length){ setStatus('waiting for Popular Search Keywords (or demo)'); return; }
-        const { months, topByMonth } = groupByMonthTop(state.sourceRaw, 'percentage', state.topN); 
+        const { months, topByMonth } = groupByMonthTop(state.sourceRaw, 'percentage', state.topN, state.keywordFilter);
         
         // Reset range initialization if months changed
         if(JSON.stringify(state.months) !== JSON.stringify(months)) {
@@ -648,22 +684,27 @@
         safeSetOption('race', buildRaceOption(months, topByMonth));
         const race = ensureChart('race');
         if(state.zeroMode === 'totals'){
-          let totals = state.zeroTotals.length ? state.zeroTotals : (state.zeroRaw.length ? totalsByMonth(state.zeroRaw,'count') : []);
+          let totals;
+          if(state.keywordFilter.length){
+            totals = totalsByMonth(state.zeroRaw,'count', state.keywordFilter);
+          } else {
+            totals = state.zeroTotals.length ? state.zeroTotals : (state.zeroRaw.length ? totalsByMonth(state.zeroRaw,'count') : []);
+          }
           safeSetOption('zeros', buildZerosOption(months, totals, months[0]));
           if(race){ race.off('timelinechanged'); race.on('timelinechanged', (e)=>{ const month = state.months[e.currentIndex]; safeSetOption('zeros', buildZerosOption(state.months, totals, month)); }); }
         } else {
-          const { months: zMonths, topByMonth: zTop } = groupByMonthTop(state.zeroRaw, 'count', state.topN);
+          const { months: zMonths, topByMonth: zTop } = groupByMonthTop(state.zeroRaw, 'count', state.topN, state.keywordFilter);
           if(zMonths.length){ safeSetOption('zeros', buildZeroRaceOption(zMonths, zTop)); }
           if(race){ race.off('timelinechanged'); }
         }
         // 2) Keyword trails
-        const trailSeries = computeTrailsSeries(state.sourceRaw, months, state.trailsN);
+        const trailSeries = computeTrailsSeries(state.sourceRaw, months, state.trailsN, state.keywordFilter);
         if(trailSeries.length){ safeSetOption('trails', buildTrailsOption(months, trailSeries)); }
         syncTrailsPager(trailSeries.length);
         // 3) Heatmap (zero results) with word and month range
         updateHeatTimeRangeControls();
         if(state.zeroRaw.length){
-          const { yCats, matrix } = computeHeatmapMatrix(state.zeroRaw, months, state.heatTopK, state.heatTimeStartIdx, state.heatTimeEndIdx);
+          const { yCats, matrix } = computeHeatmapMatrix(state.zeroRaw, months, state.heatTopK, state.heatTimeStartIdx, state.heatTimeEndIdx, state.keywordFilter);
           if(yCats.length){ safeSetOption('heatmap', buildHeatmapOption(months, yCats, matrix)); }
         }
         const start = months[0];
@@ -680,6 +721,31 @@
       $('#heatTimeEnd').addEventListener('input', e=>{ state.heatTimeEndIdx = +e.target.value - 1; if(state.heatTimeEndIdx<state.heatTimeStartIdx) state.heatTimeStartIdx = state.heatTimeEndIdx; renderAll(); });
       $('#btn-play').addEventListener('click', ()=>{ state.timelinePlaying = !state.timelinePlaying; $('#btn-play').textContent = state.timelinePlaying ? '⏸ Pause' : '▶ Play'; renderAll(); });
       document.getElementById('btn-share-page').addEventListener('click', sharePage);
+
+      const parseFilter = (v)=> v.split(',').map(s=>s.trim()).filter(Boolean);
+      const syncKeywordInputs = (val)=>{ document.querySelectorAll('.keyword-input').forEach(i=>{ i.value = val; }); };
+      syncKeywordInputs(state.keywordFilter.join(', '));
+      document.querySelectorAll('.keyword-input').forEach(inp=>{
+        inp.addEventListener('change', e=>{ state.keywordFilter = parseFilter(e.target.value); syncKeywordInputs(e.target.value); renderAll(); });
+      });
+      function setupFlip(id){
+        const btn = document.getElementById(id+'Flip');
+        if(!btn) return;
+        const range = document.getElementById(id);
+        const val = document.getElementById(id+'Val');
+        const input = btn.parentElement.querySelector('.keyword-input');
+        btn.addEventListener('click', ()=>{
+          const show = input.style.display === 'none';
+          if(show){
+            range.style.display = 'none'; if(val) val.style.display = 'none'; input.style.display = ''; input.focus();
+          } else {
+            input.style.display = 'none'; range.style.display = ''; if(val) val.style.display = ''; state.keywordFilter = parseFilter(input.value); syncKeywordInputs(input.value); renderAll();
+          }
+        });
+      }
+      setupFlip('topN');
+      setupFlip('trailsN');
+      setupFlip('heatTopK');
 
       // Legend pager (Trails)
       document.getElementById('trailsPrev').addEventListener('click', ()=>{ if(state.trailsLegendPage>0){ state.trailsLegendPage--; renderAll(); } });
