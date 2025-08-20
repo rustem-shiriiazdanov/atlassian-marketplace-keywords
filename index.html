@@ -104,6 +104,8 @@
             <div id="zeros" class="chart" data-testid="zeros"><div class="placeholder">Loading ECharts…</div></div>
             <div class="status">Uses <code>sum_count</code> from <code>Monthly_Summary</code> (or rolls up <code>count</code> from <code>Raw</code>).</div>
           </div>
+          <!-- mini: narrative -->
+          <div id="narrative" class="mini" data-testid="narrative"></div>
         </div>
       </div>
 
@@ -337,16 +339,45 @@
         const series = top.map(k=>({ name:k, type:'line', smooth:true, symbol:'circle', symbolSize:5, data: months.map(m=> byMonthKey.get(m)?.get(k) ?? null) }));
         return series;
       }
-      function computeHeatmapMatrix(zeroRaw, months, topK){
-        // Top K zero-result keywords by total count
-        const totals = new Map(); for(const r of zeroRaw){ const k = String(r.keyword||'').trim(); const v = asNumber(r.count); if(!Number.isFinite(v)) continue; totals.set(k, (totals.get(k)||0)+v); }
-        const yCats = Array.from(totals.entries()).sort((a,b)=>b[1]-a[1]).slice(0, topK).map(([k])=>k);
-        // Matrix rows
-        const byMonthKey = new Map(); for(const r of zeroRaw){ const m = toMonthKey(r.month); const k = String(r.keyword||'').trim(); const v = asNumber(r.count); if(!byMonthKey.has(m)) byMonthKey.set(m, new Map()); byMonthKey.get(m).set(k, (byMonthKey.get(m).get(k)||0)+(Number.isFinite(v)?v:0)); }
-        const matrix = [];
-        for(const m of months){ const row = byMonthKey.get(m)||new Map(); for(const k of yCats){ matrix.push({ month:m, keyword:k, value: row.get(k)||0 }); } }
-        return { yCats, matrix };
-      }
+        function computeHeatmapMatrix(zeroRaw, months, topK){
+          // Top K zero-result keywords by total count
+          const totals = new Map(); for(const r of zeroRaw){ const k = String(r.keyword||'').trim(); const v = asNumber(r.count); if(!Number.isFinite(v)) continue; totals.set(k, (totals.get(k)||0)+v); }
+          const yCats = Array.from(totals.entries()).sort((a,b)=>b[1]-a[1]).slice(0, topK).map(([k])=>k);
+          // Matrix rows
+          const byMonthKey = new Map(); for(const r of zeroRaw){ const m = toMonthKey(r.month); const k = String(r.keyword||'').trim(); const v = asNumber(r.count); if(!byMonthKey.has(m)) byMonthKey.set(m, new Map()); byMonthKey.get(m).set(k, (byMonthKey.get(m).get(k)||0)+(Number.isFinite(v)?v:0)); }
+          const matrix = [];
+          for(const m of months){ const row = byMonthKey.get(m)||new Map(); for(const k of yCats){ matrix.push({ month:m, keyword:k, value: row.get(k)||0 }); } }
+          return { yCats, matrix };
+        }
+
+        function computeNarrative(sourceRaw, zeroRaw){
+          const points = [];
+          try{
+            const byKeyword = new Map();
+            const monthsSet = new Set();
+            for(const r of sourceRaw){ const m = toMonthKey(r.month); monthsSet.add(m); const k = String(r.keyword||'').trim(); const v = asNumber(r.percentage); if(!Number.isFinite(v)) continue; if(!byKeyword.has(k)) byKeyword.set(k, new Map()); byKeyword.get(k).set(m, v); }
+            const months = Array.from(monthsSet).sort();
+            if(months.length >= 2){
+              const last = months[months.length-1];
+              const prev = months[months.length-2];
+              let topKw = null; let topDiff = 0;
+              for(const [k, mMap] of byKeyword.entries()){ const a = mMap.get(prev); const b = mMap.get(last); if(Number.isFinite(a) && Number.isFinite(b)){ const diff = b - a; if(diff > topDiff){ topDiff = diff; topKw = k; } } }
+              if(topKw){ points.push(`Top rising keyword: ${topKw} (+${topDiff.toFixed(2)} pts)`); }
+            }
+          }catch(e){ console.error('computeNarrative rising', e); }
+          try{
+            const byMonth = new Map(); for(const r of zeroRaw){ const m = toMonthKey(r.month); if(!byMonth.has(m)) byMonth.set(m, []); byMonth.get(m).push(r); }
+            if(byMonth.size){
+              const months = Array.from(byMonth.keys()).sort();
+              const last = months[months.length-1];
+              const zeros = byMonth.get(last).slice().sort((a,b)=>asNumber(b.count)-asNumber(a.count));
+              const sourceSet = new Set(sourceRaw.filter(r=>toMonthKey(r.month)===last).map(r=>String(r.keyword||'').trim()));
+              const pure = zeros.map(z=>String(z.keyword||'').trim()).filter(k=>!sourceSet.has(k));
+              if(pure.length){ points.push(`Keywords with 100% zero results last month: ${pure.slice(0,5).join(', ')}`); }
+            }
+          }catch(e){ console.error('computeNarrative zeros', e); }
+          return points;
+        }
 
       // File status updater
       function updateFileStatus(elementId, message){
@@ -412,13 +443,16 @@
         syncTrailsPager(trailSeries.length);
         // 3) Heatmap (zero results) with range
         updateHeatRangeControls();
-        if(state.zeroRaw.length){
-          const slice = months.slice(state.heatStartIdx, state.heatEndIdx+1);
-          const { yCats, matrix } = computeHeatmapMatrix(state.zeroRaw, slice, state.heatTopK);
-          if(yCats.length){ safeSetOption('heatmap', buildHeatmapOption(slice, yCats, matrix)); }
+          if(state.zeroRaw.length){
+            const slice = months.slice(state.heatStartIdx, state.heatEndIdx+1);
+            const { yCats, matrix } = computeHeatmapMatrix(state.zeroRaw, slice, state.heatTopK);
+            if(yCats.length){ safeSetOption('heatmap', buildHeatmapOption(slice, yCats, matrix)); }
+          }
+          const bullets = computeNarrative(state.sourceRaw, state.zeroRaw);
+          const narr = document.getElementById('narrative');
+          if(narr){ narr.innerHTML = bullets.length ? `<ul>${bullets.map(x=>`<li>${x}</li>`).join('')}</ul>` : ''; }
+          setStatus(`rendered: months=${months.length}, rows=${state.sourceRaw.length}`);
         }
-        setStatus(`rendered: months=${months.length}, rows=${state.sourceRaw.length}`);
-      }
 
       // Inputs wiring
       $('#topN').addEventListener('input', e=>{ state.topN = +e.target.value; $('#topNVal').textContent = e.target.value; renderAll(); });
@@ -612,13 +646,14 @@
         ok('zeros container exists', !!document.getElementById('zeros'));
         ok('trails container exists', !!document.getElementById('trails'));
         ok('heatmap container exists', !!document.getElementById('heatmap'));
+        ok('narrative container exists', !!document.getElementById('narrative'));
         try{ /* empty render */ renderAll(); ok('renderAll without data does not throw', true); }catch(e){ ok('renderAll without data does not throw', false); }
         // Verify wrapLabel inserts a newline for long strings
         const wl = wrapLabel('this is a very very long keyword title that should wrap into two lines', 18);
         ok('wrapLabel inserts newline', wl.includes('\n'));
         // With demo
         state.sourceRaw = demo.sourceRaw.slice(); state.zeroRaw = demo.zeroRaw.slice(); state.zeroTotals = demo.zeroTotals.slice();
-        try{ renderAll(); const race = ensureChart('race'); const zeros = ensureChart('zeros'); const trails = ensureChart('trails'); const heat = ensureChart('heatmap'); ok('race chart instance created', !!race); ok('zeros chart instance created', !!zeros); ok('trails chart instance created', !!trails); ok('heatmap chart instance created', !!heat); }catch(e){ ok('render with demo data succeeds', false); }
+        try{ renderAll(); const race = ensureChart('race'); const zeros = ensureChart('zeros'); const trails = ensureChart('trails'); const heat = ensureChart('heatmap'); ok('race chart instance created', !!race); ok('zeros chart instance created', !!zeros); ok('trails chart instance created', !!trails); ok('heatmap chart instance created', !!heat); ok('narrative populated', !!document.querySelector('#narrative li')); }catch(e){ ok('render with demo data succeeds', false); }
         // Range controls reflect months length
         const s = document.getElementById('heatStart'); const e = document.getElementById('heatEnd');
         ok('heatStart max set', +s.max === state.months.length-1);

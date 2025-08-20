@@ -65,6 +65,9 @@ The application will automatically load these files on startup.
 - **Heatmap TopK**: Number of top zero-result keywords (8-30)
 - **Heat Range**: Filter by month range using dual sliders
 
+### Narrative Insights
+- Summarizes top rising keywords and zero-result trends from the latest month
+
 ## Technical Features
 
 - **Responsive Design**: Works on desktop and mobile devices
