@@ -307,6 +307,13 @@
         const list = document.getElementById('keywordOptions');
         if(list) list.innerHTML = Array.from(set).sort().map(k=>`<option value="${k}"></option>`).join('');
       }
+      function toggleRangeSelectors(){
+        const disabled = state.keywordFilter.length > 0;
+        ['topN','trailsN','heatTopK'].forEach(id=>{
+          const el = document.getElementById(id);
+          if(el) el.disabled = disabled;
+        });
+      }
       const toMonthKey = (v)=>{
         try{
           if(typeof v === 'number' && window.XLSX && XLSX.SSF){ const d = XLSX.SSF.parse_date_code(v); const date = new Date(Date.UTC(d.y, d.m-1, d.d)); return date.toISOString().slice(0,7); }
@@ -688,6 +695,7 @@
 
       function renderAll(){
         populateKeywordOptions();
+        toggleRangeSelectors();
         if(!state.sourceRaw.length){ setStatus('waiting for Popular Search Keywords (or demo)'); return; }
         const { months, topByMonth } = groupByMonthTop(state.sourceRaw, 'percentage', state.topN, state.keywordFilter);
         
