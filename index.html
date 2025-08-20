@@ -30,6 +30,8 @@
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
     .card{padding:12px}
     .card h3{margin:4px 6px 10px;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.2px}
+    .card h3.has-toolbar{display:flex;align-items:center}
+    .card h3.has-toolbar .chart-toolbar{position:static;margin-left:auto}
     .chart{height:520px;width:100%;display:flex;align-items:center;justify-content:center;position:relative}
     .chart-toolbar{position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:10}
     .chart-toolbar .btn{padding:4px 6px;font-size:11px}
@@ -65,7 +67,7 @@
           <img src="img/actonic.svg" alt="Actonic logo">
           Powered by Actonic
         </a>
-        <button id="btn-share-page" class="btn ghost">Share</button>
+        <button id="btn-share-page" class="btn ghost" aria-label="Share page">⤴</button>
       </div>
     </header>
 
@@ -286,8 +288,19 @@
         return l1 + '\n' + rest;
       }
 
+      function chartBg(chart){
+        let el = chart.getDom();
+        while(el && el !== document.body){
+          const bg = getComputedStyle(el).backgroundColor;
+          if(bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') return bg;
+          el = el.parentElement;
+        }
+        return getComputedStyle(document.body).backgroundColor || '#ffffff';
+      }
+
       function downloadChartPng(chart, filename='chart.png'){
-        const dataURL = chart.getDataURL({type:'png', pixelRatio: window.devicePixelRatio||2, backgroundColor:'#ffffff'});
+        const bg = chartBg(chart);
+        const dataURL = chart.getDataURL({type:'png', pixelRatio: window.devicePixelRatio||2, backgroundColor: bg});
         const a = document.createElement('a');
         a.href = dataURL;
         a.download = filename;
@@ -297,7 +310,8 @@
       }
 
       async function shareChart(chart, {title, text, permalink, filename='chart.png'}){
-        const dataURL = chart.getDataURL({type:'png', pixelRatio:2, backgroundColor:'#ffffff'});
+        const bg = chartBg(chart);
+        const dataURL = chart.getDataURL({type:'png', pixelRatio:2, backgroundColor: bg});
         if(navigator.share){
           try{
             const res = await fetch(dataURL);
@@ -344,23 +358,37 @@
         }
       }
 
-      function attachChartToolbar(containerEl, chart, name){
-        let toolbar = containerEl.querySelector('.chart-toolbar');
-        if(toolbar) return;
-        toolbar = document.createElement('div');
-        toolbar.className = 'chart-toolbar';
-        toolbar.innerHTML = '<button class="btn ghost" data-action="download">PNG</button><button class="btn ghost" data-action="share">Share</button>';
-        containerEl.appendChild(toolbar);
-        toolbar.addEventListener('click', (e)=>{
-          const btn = e.target.closest('button'); if(!btn) return;
-          const action = btn.dataset.action;
-          const permalink = location.href.split('#')[0] + '#' + name;
-          if(action === 'download'){
-            downloadChartPng(chart, name + '.png');
-          } else if(action === 'share'){
-            shareChart(chart, {title: `${document.title} — ${name}`, text: `View the ${name} chart`, permalink, filename: name + '.png'});
+      function attachChartToolbar(chartEl, chart, name){
+        const makeToolbar = () => {
+          const tb = document.createElement('div');
+          tb.className = 'chart-toolbar';
+          tb.innerHTML = '<button class="btn ghost" data-action="download" aria-label="Download chart">⬇</button>'+
+                         '<button class="btn ghost" data-action="share" aria-label="Share chart">⤴</button>';
+          tb.addEventListener('click', (e)=>{
+            const btn = e.target.closest('button'); if(!btn) return;
+            const action = btn.dataset.action;
+            const permalink = location.href.split('#')[0] + '#' + name;
+            if(action === 'download'){
+              downloadChartPng(chart, name + '.png');
+            } else if(action === 'share'){
+              shareChart(chart, {title: `${document.title} — ${name}`, text: `View the ${name} chart`, permalink, filename: name + '.png'});
+            }
+          });
+          return tb;
+        };
+
+        if(name === 'trails' || name === 'heatmap'){
+          const panel = chartEl.closest('.panel');
+          const title = panel?.querySelector('h3');
+          if(title){
+            if(title.querySelector('.chart-toolbar')) return;
+            title.classList.add('has-toolbar');
+            title.appendChild(makeToolbar());
+            return;
           }
-        });
+        }
+        if(chartEl.querySelector('.chart-toolbar')) return;
+        chartEl.appendChild(makeToolbar());
       }
 
       function ensureChart(id){
@@ -390,7 +418,7 @@
       }
       function buildZerosOption(months, totals, currentMonth){
         const data = months.map(m => (totals.find(t=>t.month===m)?.value)||0); const idx = months.indexOf(currentMonth);
-        return { backgroundColor:'transparent', grid:{ left:56,right:26,top:40,bottom:80, containLabel:true }, xAxis:{ type:'category', data: months, axisLabel:{ color:'#BFC7E5' }, axisTick:{ show:false }, axisLine:{ lineStyle:{ color:'rgba(255,255,255,.25)'} } }, yAxis:{ type:'value', axisLabel:{ color:'#BFC7E5' }, splitLine:{ lineStyle:{ color:'rgba(255,255,255,.08)'} } }, tooltip:{ trigger:'axis', borderColor:'rgba(255,255,255,.15)', backgroundColor:'rgba(9,13,31,.96)', textStyle:{ color:'#E6E9F2' } }, series:[{ name:'Zero results', type:'line', smooth:true, symbol:'circle', symbolSize:6, lineStyle:{ width:3 }, areaStyle:{ opacity:.08 }, itemStyle:{ color:'#FF5630' }, data, markPoint: idx>=0 ? { data:[{ xAxis: idx, yAxis: data[idx], value: data[idx]}] } : undefined }], graphic:[{ type:'text', right:10, top:6, style:{ text:'Zero-result totals', fill:'#C8D1EA', font:'600 12px Inter' } }] };
+        return { backgroundColor:'transparent', grid:{ left:56,right:26,top:40,bottom:80, containLabel:true }, xAxis:{ type:'category', data: months, axisLabel:{ color:'#BFC7E5' }, axisTick:{ show:false }, axisLine:{ lineStyle:{ color:'rgba(255,255,255,.25)'} } }, yAxis:{ type:'value', axisLabel:{ color:'#BFC7E5' }, splitLine:{ lineStyle:{ color:'rgba(255,255,255,.08)'} } }, tooltip:{ trigger:'axis', borderColor:'rgba(255,255,255,.15)', backgroundColor:'rgba(9,13,31,.96)', textStyle:{ color:'#E6E9F2' } }, series:[{ name:'Zero results', type:'line', smooth:true, symbol:'circle', symbolSize:6, lineStyle:{ width:3 }, areaStyle:{ opacity:.08 }, itemStyle:{ color:'#FF5630' }, data, markPoint: idx>=0 ? { data:[{ xAxis: idx, yAxis: data[idx], value: data[idx]}] } : undefined }], graphic:[{ type:'text', left:10, top:6, style:{ text:'Zero-result totals', fill:'#C8D1EA', font:'600 12px Inter' } }] };
       }
       function buildTrailsOption(months, series){
         const tuned = (series||[]).map(s=>({
