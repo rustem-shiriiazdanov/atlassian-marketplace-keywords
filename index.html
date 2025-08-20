@@ -716,13 +716,13 @@
         }
         // 2) Keyword trails
         const trailSeries = computeTrailsSeries(state.sourceRaw, months, state.trailsN, state.keywordFilter);
-        if(trailSeries.length){ safeSetOption('trails', buildTrailsOption(months, trailSeries)); }
+        safeSetOption('trails', buildTrailsOption(months, trailSeries));
         syncTrailsPager(trailSeries.length);
         // 3) Heatmap (zero results) with word and month range
         updateHeatTimeRangeControls();
         if(state.zeroRaw.length){
           const { yCats, matrix } = computeHeatmapMatrix(state.zeroRaw, months, state.heatTopK, state.heatTimeStartIdx, state.heatTimeEndIdx, state.keywordFilter);
-          if(yCats.length){ safeSetOption('heatmap', buildHeatmapOption(months, yCats, matrix)); }
+          safeSetOption('heatmap', buildHeatmapOption(months, yCats, matrix));
         }
         const start = months[0];
         const end = months[months.length - 1];
