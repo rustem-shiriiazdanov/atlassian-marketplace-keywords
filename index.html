@@ -733,7 +733,7 @@
         const rows = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
         state.sourceRaw = rows.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), percentage: asNumber(r.percentage) }));
         setStatus(`default Popular loaded: ${state.sourceRaw.length} rows`);
-        updateFileStatus('source-display', 'Default data file loaded (see README)');
+        updateFileStatus('source-display', 'Default data file loaded (see GitHub README)');
         renderAll();
       }
 
@@ -748,7 +748,7 @@
         const raw = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
         state.zeroRaw = raw.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), count: asNumber(r.count||0) }));
         setStatus(`default Zero loaded: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
-        updateFileStatus('zero-display', 'Default data file loaded (see README)');
+        updateFileStatus('zero-display', 'Default data file loaded (see GitHub README)');
         renderAll();
       }
 
