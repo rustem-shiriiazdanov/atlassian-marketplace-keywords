@@ -69,7 +69,11 @@
     <header>
       <div>
         <h1>Atlassian Marketplace Keywords Charts (excel-sourced)</h1>
-        <div class="sub">Visualises some the data from search keywords and zero searches APIs</div>
+        <div class="sub">What’s inside:<br>
+        • <strong>Bar Chart Race</strong>: monthly race of top search keywords.<br>
+        • <strong>Zero-Result Overview</strong>: trend of searches that returned no results.<br>
+        • <strong>Keyword Trails</strong>: top keywords’ percentage trajectories by month.<br>
+        • <strong>Zero-Result Heatmap</strong>: where empty (zero-result) searches cluster across months.</div>
         <div id="status" class="status">Status: bootstrapping…</div>
       </div>
       <div class="links">
@@ -662,7 +666,9 @@
           const { yCats, matrix } = computeHeatmapMatrix(state.zeroRaw, months, state.heatTopK, state.heatTimeStartIdx, state.heatTimeEndIdx);
           if(yCats.length){ safeSetOption('heatmap', buildHeatmapOption(months, yCats, matrix)); }
         }
-        setStatus(`rendered: months=${months.length}, rows=${state.sourceRaw.length}`);
+        const start = months[0];
+        const end = months[months.length - 1];
+        setStatus(`rendered: months=${months.length}, rows=${state.sourceRaw.length}, start date=${start}, end date=${end}`);
       }
 
       // Inputs wiring
