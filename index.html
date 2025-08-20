@@ -67,6 +67,7 @@
               <div id="zero-display" class="file-input-display">No file chosen</div>
             </div>
           </div>
+          <button id="btn-load-defaults" class="btn ghost">Load default files</button>
           <button id="btn-demo" class="btn ghost">Load demo</button>
           <button id="btn-test" class="btn ghost">Run smoke tests</button>
         </div>
@@ -491,24 +492,45 @@
         renderAll();
       }
 
-      async function autoLoadDefaults(){
-        if(state.defaultsTried) return; state.defaultsTried = true;
+      async function loadDefaults(forceLoad = false){
         let any = false;
-        if(!state.sourceRaw.length && !state.manualSource){ 
-          try{ await tryLoadDefaultSource(); any = true; } 
+        const shouldLoadSource = forceLoad || (!state.sourceRaw.length && !state.manualSource);
+        const shouldLoadZero = forceLoad || (!state.zeroRaw.length && !state.manualZero);
+        
+        if(shouldLoadSource){ 
+          try{ 
+            await tryLoadDefaultSource(); 
+            any = true; 
+          } 
           catch(e){ 
             console.info('No default Popular found'); 
-            updateFileStatus('source-display', 'No file chosen');
+            updateFileStatus('source-display', forceLoad ? 'Default files not found' : 'No file chosen');
           } 
         }
-        if(!state.zeroRaw.length && !state.manualZero){ 
-          try{ await tryLoadDefaultZero(); any = true; } 
+        if(shouldLoadZero){ 
+          try{ 
+            await tryLoadDefaultZero(); 
+            any = true; 
+          } 
           catch(e){ 
             console.info('No default Zero found'); 
-            updateFileStatus('zero-display', 'No file chosen');
+            updateFileStatus('zero-display', forceLoad ? 'Default files not found' : 'No file chosen');
           } 
         }
-        if(!any) setStatus('ready — upload files or Load demo');
+        
+        if(forceLoad && !any) {
+          setStatus('No default files found in /data/ directory');
+        } else if(!forceLoad && !any) {
+          setStatus('ready — upload files or Load demo');
+        }
+        
+        return any;
+      }
+
+      async function autoLoadDefaults(){
+        if(state.defaultsTried) return; 
+        state.defaultsTried = true;
+        await loadDefaults(false);
       }
 
       // Demo data & tests
@@ -549,10 +571,23 @@
         {month:'2023-08', value:1719}, {month:'2023-09', value:1481}, {month:'2023-10', value:554}, {month:'2023-11', value:2}, {month:'2023-12', value:730}
       ] };
 
+      document.getElementById('btn-load-defaults').addEventListener('click', async ()=>{
+        setStatus('Loading default files from /data/ directory...');
+        // Reset manual flags to allow loading over existing data
+        state.manualSource = false; 
+        state.manualZero = false;
+        const loaded = await loadDefaults(true);
+        if(loaded) {
+          setStatus('Default files loaded successfully');
+        }
+      });
+
       document.getElementById('btn-demo').addEventListener('click', ()=>{
         state.sourceRaw = demo.sourceRaw.slice();
         state.zeroRaw = demo.zeroRaw.slice();
         state.zeroTotals = demo.zeroTotals.slice();
+        updateFileStatus('source-display', 'Demo data loaded');
+        updateFileStatus('zero-display', 'Demo data loaded');
         state.timelinePlaying = true; document.getElementById('btn-play').textContent = '⏸ Pause'; renderAll();
       });
 
