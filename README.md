@@ -1,6 +1,7 @@
 # Atlassian Marketplace Keywords Visualization
 
 Interactive dashboard for analyzing Atlassian Marketplace search keyword trends and zero-result patterns.
+Site is live at https://rustem-shiriiazdanov.github.io/atlassian-marketplace-keywords/
 
 ## Overview
 
