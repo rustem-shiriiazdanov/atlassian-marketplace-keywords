@@ -66,7 +66,10 @@ The application will automatically load these files on startup.
 - **Heat Range**: Filter by month range using dual sliders
 
 ### Narrative Insights
-- Summarizes top rising keywords and zero-result trends from the latest month
+ - Dedicated left-hand panel that surfaces:
+   - Top rising keywords overall and for the latest month
+   - Top zero-result keywords over the period and last month
+   - Biggest drop-offs, months with the most zero results, and persistent zero-result keywords
 
 ## Technical Features
 

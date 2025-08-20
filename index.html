@@ -36,6 +36,9 @@
     .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .mini{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px}
+    #narrative{font-size:13px;line-height:1.4}
+    #narrative ul{margin:0;padding-left:18px}
+    #narrative li{margin-bottom:4px}
     @media (max-width:980px){.grid{grid-template-columns:1fr}.chart{height:460px}.short{height:380px}.tall{height:520px}.two-col{grid-template-columns:1fr}}
   </style>
 </head>
@@ -74,8 +77,14 @@
         </div>
       </div>
 
-      <!-- PANEL 2: United Race + Zeros with local controls -->
-      <div class="panel card" style="grid-column:1 / -1;">
+      <!-- PANEL 2: Narrative -->
+      <div class="panel card" id="narrative-panel">
+        <h3>Narrative Insights</h3>
+        <div id="narrative" data-testid="narrative"></div>
+      </div>
+
+      <!-- PANEL 3: United Race + Zeros with local controls -->
+      <div class="panel card">
         <h3>Search Dynamics — Bar Chart Race & Zero‑Result Overview</h3>
         <div class="mini-grid">
           <!-- mini: shared controls -->
@@ -104,12 +113,10 @@
             <div id="zeros" class="chart" data-testid="zeros"><div class="placeholder">Loading ECharts…</div></div>
             <div class="status">Uses <code>sum_count</code> from <code>Monthly_Summary</code> (or rolls up <code>count</code> from <code>Raw</code>).</div>
           </div>
-          <!-- mini: narrative -->
-          <div id="narrative" class="mini" data-testid="narrative"></div>
         </div>
       </div>
 
-      <!-- PANEL 3: Trails with local control -->
+      <!-- PANEL 4: Trails with local control -->
       <div class="panel card" style="grid-row: span 2;">
         <h3>Keyword Trails — Popular Keywords Over Time</h3>
         <div class="controls soft">
@@ -128,7 +135,7 @@
         <div class="status">Top N keywords (overall) with their <code>percentage</code> trajectory by month.</div>
       </div>
 
-      <!-- PANEL 4: Heatmap with local controls -->
+      <!-- PANEL 5: Heatmap with local controls -->
       <div class="panel card" style="grid-row: span 2;">
         <h3>Zero‑Result Heatmap — Where Users Find Nothing</h3>
         <div class="controls soft">
@@ -355,25 +362,70 @@
           try{
             const byKeyword = new Map();
             const monthsSet = new Set();
-            for(const r of sourceRaw){ const m = toMonthKey(r.month); monthsSet.add(m); const k = String(r.keyword||'').trim(); const v = asNumber(r.percentage); if(!Number.isFinite(v)) continue; if(!byKeyword.has(k)) byKeyword.set(k, new Map()); byKeyword.get(k).set(m, v); }
+            for(const r of sourceRaw){
+              const m = toMonthKey(r.month); monthsSet.add(m);
+              const k = String(r.keyword||'').trim();
+              const v = asNumber(r.percentage);
+              if(!Number.isFinite(v)) continue;
+              if(!byKeyword.has(k)) byKeyword.set(k, new Map());
+              byKeyword.get(k).set(m, v);
+            }
             const months = Array.from(monthsSet).sort();
             if(months.length >= 2){
+              const first = months[0];
               const last = months[months.length-1];
               const prev = months[months.length-2];
-              let topKw = null; let topDiff = 0;
-              for(const [k, mMap] of byKeyword.entries()){ const a = mMap.get(prev); const b = mMap.get(last); if(Number.isFinite(a) && Number.isFinite(b)){ const diff = b - a; if(diff > topDiff){ topDiff = diff; topKw = k; } } }
-              if(topKw){ points.push(`Top rising keyword: ${topKw} (+${topDiff.toFixed(2)} pts)`); }
+              let overallKw=null, overallDiff=-Infinity;
+              let lastKw=null, lastDiff=-Infinity;
+              let dropKw=null, dropDiff=Infinity;
+              for(const [k,mMap] of byKeyword.entries()){
+                const f=mMap.get(first), l=mMap.get(last), p=mMap.get(prev);
+                if(Number.isFinite(f) && Number.isFinite(l)){
+                  const d=l-f; if(d>overallDiff){ overallDiff=d; overallKw=k; }
+                }
+                if(Number.isFinite(p) && Number.isFinite(l)){
+                  const d=l-p; if(d>lastDiff){ lastDiff=d; lastKw=k; }
+                  if(d<dropDiff){ dropDiff=d; dropKw=k; }
+                }
+              }
+              if(overallKw){ points.push(`Top rising keyword overall: ${overallKw} (+${overallDiff.toFixed(2)} pts)`); }
+              if(lastKw){ points.push(`Top rising keyword last month: ${lastKw} (+${lastDiff.toFixed(2)} pts)`); }
+              if(dropKw && dropDiff < 0){ points.push(`Largest drop last month: ${dropKw} (${dropDiff.toFixed(2)} pts)`); }
             }
           }catch(e){ console.error('computeNarrative rising', e); }
           try{
-            const byMonth = new Map(); for(const r of zeroRaw){ const m = toMonthKey(r.month); if(!byMonth.has(m)) byMonth.set(m, []); byMonth.get(m).push(r); }
-            if(byMonth.size){
-              const months = Array.from(byMonth.keys()).sort();
-              const last = months[months.length-1];
-              const zeros = byMonth.get(last).slice().sort((a,b)=>asNumber(b.count)-asNumber(a.count));
-              const sourceSet = new Set(sourceRaw.filter(r=>toMonthKey(r.month)===last).map(r=>String(r.keyword||'').trim()));
-              const pure = zeros.map(z=>String(z.keyword||'').trim()).filter(k=>!sourceSet.has(k));
-              if(pure.length){ points.push(`Keywords with 100% zero results last month: ${pure.slice(0,5).join(', ')}`); }
+            const totalsByKeyword = new Map();
+            const monthsSet = new Set();
+            const totalsByMonth = new Map();
+            const monthsPerKeyword = new Map();
+            for(const r of zeroRaw){
+              const m=toMonthKey(r.month);
+              const k=String(r.keyword||'').trim();
+              const v=asNumber(r.count);
+              if(!Number.isFinite(v)) continue;
+              monthsSet.add(m);
+              totalsByKeyword.set(k,(totalsByKeyword.get(k)||0)+v);
+              totalsByMonth.set(m,(totalsByMonth.get(m)||0)+v);
+              if(!monthsPerKeyword.has(k)) monthsPerKeyword.set(k,new Set());
+              monthsPerKeyword.get(k).add(m);
+            }
+            const months=Array.from(monthsSet).sort();
+            if(months.length){
+              const last=months[months.length-1];
+              const topOverall=[...totalsByKeyword.entries()].sort((a,b)=>b[1]-a[1])[0];
+              if(topOverall){ points.push(`Top zero‑result keyword overall: ${topOverall[0]} (${topOverall[1]})`); }
+              const lastMonthZeros=zeroRaw.filter(r=>toMonthKey(r.month)===last);
+              if(lastMonthZeros.length){
+                const topLast=lastMonthZeros.sort((a,b)=>asNumber(b.count)-asNumber(a.count))[0];
+                if(topLast) points.push(`Top zero‑result keyword last month: ${String(topLast.keyword||'').trim()} (${asNumber(topLast.count)})`);
+                const sourceSet = new Set(sourceRaw.filter(r=>toMonthKey(r.month)===last).map(r=>String(r.keyword||'').trim()));
+                const pure = lastMonthZeros.map(z=>String(z.keyword||'').trim()).filter(k=>!sourceSet.has(k));
+                if(pure.length){ points.push(`Keywords with 100% zero results last month: ${pure.slice(0,5).join(', ')}`); }
+              }
+              const topMonth=[...totalsByMonth.entries()].sort((a,b)=>b[1]-a[1])[0];
+              if(topMonth){ points.push(`Month with most zero results: ${topMonth[0]} (${topMonth[1]})`); }
+              const consistent=[...monthsPerKeyword.entries()].sort((a,b)=>b[1].size-a[1].size)[0];
+              if(consistent){ points.push(`Most persistent zero‑result keyword: ${consistent[0]} (${consistent[1].size} months)`); }
             }
           }catch(e){ console.error('computeNarrative zeros', e); }
           return points;
