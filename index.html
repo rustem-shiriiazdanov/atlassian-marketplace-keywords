@@ -488,8 +488,20 @@
       async function autoLoadDefaults(){
         if(state.defaultsTried) return; state.defaultsTried = true;
         let any = false;
-        if(!state.sourceRaw.length && !state.manualSource){ try{ await tryLoadDefaultSource(); any = true; } catch(e){ console.info('No default Popular found'); } }
-        if(!state.zeroRaw.length && !state.manualZero){ try{ await tryLoadDefaultZero(); any = true; } catch(e){ console.info('No default Zero found'); } }
+        if(!state.sourceRaw.length && !state.manualSource){ 
+          try{ await tryLoadDefaultSource(); any = true; } 
+          catch(e){ 
+            console.info('No default Popular found'); 
+            updateFileStatus('source-status', 'No file chosen');
+          } 
+        }
+        if(!state.zeroRaw.length && !state.manualZero){ 
+          try{ await tryLoadDefaultZero(); any = true; } 
+          catch(e){ 
+            console.info('No default Zero found'); 
+            updateFileStatus('zero-status', 'No file chosen');
+          } 
+        }
         if(!any) setStatus('ready — upload files or Load demo');
       }
 
