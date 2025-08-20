@@ -63,6 +63,12 @@
         document.documentElement.classList.add('mobile');
       }
     </script>
+    <script>
+      // Disable native alert-style dialogs that can interrupt workflow
+      window.alert = () => {};
+      window.confirm = () => true;
+      window.prompt = () => null;
+    </script>
   </head>
 <body>
   <div class="wrap">
