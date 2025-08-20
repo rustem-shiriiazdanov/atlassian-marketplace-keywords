@@ -36,6 +36,8 @@
     .chart-toolbar{position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:10}
     .chart-toolbar .btn{padding:4px 6px;font-size:11px}
     .chart-toolbar .btn svg{width:16px;height:16px}
+    .chart.flip{animation:flipY .6s}
+    @keyframes flipY{0%{transform:rotateY(0)}50%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
     .short{height:420px}
     .tall{height:580px}
     .chart .placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#8EA2E3;font-size:12px;letter-spacing:.2px}
@@ -256,6 +258,7 @@
         charts: { race: null, zeros: null, trails: null, heatmap: null },
         sourceRaw: [], zeroRaw: [], zeroTotals: [],
         months: [],
+        zeroMode: 'totals',
         topN: 10, playInterval: 1200, timelinePlaying: false,
         trailsN: 6, heatTopK: 15,
         heatStartIdx: 0, heatEndIdx: 0, heatRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
@@ -265,6 +268,7 @@
 
       const ICON_DOWNLOAD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
       const ICON_SHARE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
+      const ICON_FLIP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
 
       // --- Utils ---
       const toMonthKey = (v)=>{
@@ -383,8 +387,11 @@
         const makeToolbar = () => {
           const tb = document.createElement('div');
           tb.className = 'chart-toolbar';
-          tb.innerHTML = `<button class="btn ghost" data-action="download" aria-label="Download chart">${ICON_DOWNLOAD}</button>`+
-                         `<button class="btn ghost" data-action="share" aria-label="Share chart">${ICON_SHARE}</button>`;
+          const btns = [];
+          if(name === 'zeros') btns.push(`<button class="btn ghost" data-action="flip" aria-label="Flip chart">${ICON_FLIP}</button>`);
+          btns.push(`<button class="btn ghost" data-action="download" aria-label="Download chart">${ICON_DOWNLOAD}</button>`);
+          btns.push(`<button class="btn ghost" data-action="share" aria-label="Share chart">${ICON_SHARE}</button>`);
+          tb.innerHTML = btns.join('');
           tb.addEventListener('click', (e)=>{
             const btn = e.target.closest('button'); if(!btn) return;
             const action = btn.dataset.action;
@@ -393,6 +400,8 @@
               downloadChartPng(chart, name + '.png');
             } else if(action === 'share'){
               shareChart(chart, {title: `${document.title} — ${name}`, text: `View the ${name} chart`, permalink, filename: name + '.png'});
+            } else if(action === 'flip'){
+              flipZeros();
             }
           });
           return tb;
@@ -421,6 +430,14 @@
       }
       function safeSetOption(id, option){ const c = ensureChart(id); if(!c){ setStatus(`error: chart #${id} not ready`); return; } c.setOption(option, true); }
 
+      function flipZeros(){
+        const el = document.getElementById('zeros');
+        if(!el) return;
+        el.classList.add('flip');
+        setTimeout(()=>{ state.zeroMode = state.zeroMode === 'totals' ? 'keywords' : 'totals'; renderAll(); },300);
+        setTimeout(()=>{ el.classList.remove('flip'); },600);
+      }
+
       // Grouping helpers
       function groupByMonthTop(list, valueField, topN){
         const by = new Map(); for(const r of list){ const m = toMonthKey(r.month); if(!by.has(m)) by.set(m, []); by.get(m).push(r); }
@@ -435,6 +452,13 @@
         return { backgroundColor:'transparent', animationDurationUpdate: state.playInterval*0.9, animationEasing:'quarticOut',
           timeline:{ axisType:'category', autoPlay: state.timelinePlaying, playInterval: state.playInterval, data: months, label:{ color:'#C8D1EA' }, lineStyle:{ color:'rgba(255,255,255,.35)' }, controlStyle:{ color:'#fff', borderColor:'rgba(255,255,255,.2)' }, bottom: 0 },
           baseOption:{ grid:{ left:8, right:36, top:40, bottom:90, containLabel:true }, xAxis:{ type:'value', splitLine:{ lineStyle:{ color:'rgba(255,255,255,.08)'} }, axisLabel:{ color:'#BFC7E5', formatter:'{value}%'} }, yAxis:{ type:'category', inverse:true, axisLabel:{ color:'#E6E9F2', margin:6, formatter:(val)=>labelTrim(val, 18) }, axisTick:{ show:false }, axisLine:{ show:false } }, tooltip:{ trigger:'item', borderColor:'rgba(255,255,255,.15)', backgroundColor:'rgba(9,13,31,.96)', textStyle:{ color:'#E6E9F2' }, formatter:p=>`<div><b>${p.name}</b><br/>${p.value} %</div>` }, series:[{ type:'bar', realtimeSort:true, barCategoryGap:'20%', label:{ show:true, position:'right', color:'#E6E9F2', formatter:p=>`${p.value.toFixed(2)}%` }, itemStyle:{ borderRadius:[4,12,12,4], color:(p)=> ['#4C9AFF','#36B37E','#6554C0','#FFAB00','#FF5630','#5E5CE6','#00C7E6','#36B37E','#C0B6F2','#79F2C0'][p.dataIndex%10] } }], graphic:[{ type:'text', left:10, top:6, style:{ text:'Popular Keywords', fill:'#C8D1EA', font:'600 12px Inter'} }] },
+          options: months.map(m=>({ title:{ text:m, left:'center', top:6, textStyle:{ color:'#E6E9F2', fontSize:14, fontWeight:700 } }, yAxis:{ data:(topByMonth[m]||[]).map(d=>d.name) }, series:[{ data:(topByMonth[m]||[]).map(d=>d.value) }] })) };
+      }
+
+      function buildZeroRaceOption(months, topByMonth){
+        return { backgroundColor:'transparent', animationDurationUpdate: state.playInterval*0.9, animationEasing:'quarticOut',
+          timeline:{ axisType:'category', autoPlay: state.timelinePlaying, playInterval: state.playInterval, data: months, label:{ color:'#C8D1EA' }, lineStyle:{ color:'rgba(255,255,255,.35)' }, controlStyle:{ color:'#fff', borderColor:'rgba(255,255,255,.2)' }, bottom: 0 },
+          baseOption:{ grid:{ left:8, right:36, top:40, bottom:90, containLabel:true }, xAxis:{ type:'value', splitLine:{ lineStyle:{ color:'rgba(255,255,255,.08)'} }, axisLabel:{ color:'#BFC7E5' } }, yAxis:{ type:'category', inverse:true, axisLabel:{ color:'#E6E9F2', margin:6, formatter:(val)=>labelTrim(val, 18) }, axisTick:{ show:false }, axisLine:{ show:false } }, tooltip:{ trigger:'item', borderColor:'rgba(255,255,255,.15)', backgroundColor:'rgba(9,13,31,.96)', textStyle:{ color:'#E6E9F2' }, formatter:p=>`<div><b>${p.name}</b><br/>${p.value}</div>` }, series:[{ type:'bar', realtimeSort:true, barCategoryGap:'20%', label:{ show:true, position:'right', color:'#E6E9F2', formatter:p=>p.value }, itemStyle:{ borderRadius:[4,12,12,4], color:(p)=> ['#4C9AFF','#36B37E','#6554C0','#FFAB00','#FF5630','#5E5CE6','#00C7E6','#36B37E','#C0B6F2','#79F2C0'][p.dataIndex%10] } }], graphic:[{ type:'text', left:10, top:6, style:{ text:'Zero-result Keywords', fill:'#C8D1EA', font:'600 12px Inter'} }] },
           options: months.map(m=>({ title:{ text:m, left:'center', top:6, textStyle:{ color:'#E6E9F2', fontSize:14, fontWeight:700 } }, yAxis:{ data:(topByMonth[m]||[]).map(d=>d.name) }, series:[{ data:(topByMonth[m]||[]).map(d=>d.value) }] })) };
       }
       function buildZerosOption(months, totals, currentMonth){
@@ -580,10 +604,16 @@
         state.months = months; if(!months.length){ setStatus('no months detected in source'); return; }
         // 1) Race + zeros overview
         safeSetOption('race', buildRaceOption(months, topByMonth));
-        let totals = state.zeroTotals.length ? state.zeroTotals : (state.zeroRaw.length ? totalsByMonth(state.zeroRaw,'count') : []);
-        safeSetOption('zeros', buildZerosOption(months, totals, months[0]));
         const race = ensureChart('race');
-        if(race){ race.off('timelinechanged'); race.on('timelinechanged', (e)=>{ const month = state.months[e.currentIndex]; safeSetOption('zeros', buildZerosOption(state.months, totals, month)); }); }
+        if(state.zeroMode === 'totals'){
+          let totals = state.zeroTotals.length ? state.zeroTotals : (state.zeroRaw.length ? totalsByMonth(state.zeroRaw,'count') : []);
+          safeSetOption('zeros', buildZerosOption(months, totals, months[0]));
+          if(race){ race.off('timelinechanged'); race.on('timelinechanged', (e)=>{ const month = state.months[e.currentIndex]; safeSetOption('zeros', buildZerosOption(state.months, totals, month)); }); }
+        } else {
+          const { months: zMonths, topByMonth: zTop } = groupByMonthTop(state.zeroRaw, 'count', state.topN);
+          if(zMonths.length){ safeSetOption('zeros', buildZeroRaceOption(zMonths, zTop)); }
+          if(race){ race.off('timelinechanged'); }
+        }
         // 2) Keyword trails
         const trailSeries = computeTrailsSeries(state.sourceRaw, months, state.trailsN);
         if(trailSeries.length){ safeSetOption('trails', buildTrailsOption(months, trailSeries)); }
