@@ -16,6 +16,7 @@
     .links a{display:flex;align-items:center;gap:6px;color:var(--ink);text-decoration:none;white-space:nowrap}
     .links a:hover{color:var(--accent)}
     .links img,.links svg{height:16px}
+    .links button{font-size:13px;white-space:nowrap}
     .panel{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.00));border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow)}
     .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px;background:var(--card);border-radius:var(--radius)}
     .controls.soft{padding:10px;margin-top:8px}
@@ -30,6 +31,8 @@
     .card{padding:12px}
     .card h3{margin:4px 6px 10px;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.2px}
     .chart{height:520px;width:100%;display:flex;align-items:center;justify-content:center;position:relative}
+    .chart-toolbar{position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:10}
+    .chart-toolbar .btn{padding:4px 6px;font-size:11px}
     .short{height:420px}
     .tall{height:580px}
     .chart .placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#8EA2E3;font-size:12px;letter-spacing:.2px}
@@ -62,6 +65,7 @@
           <img src="img/actonic.svg" alt="Actonic logo">
           Powered by Actonic
         </a>
+        <button id="btn-share-page" class="btn ghost">Share</button>
       </div>
     </header>
 
@@ -245,7 +249,7 @@
         });
       }
 
-      const state = {
+    const state = {
         charts: { race: null, zeros: null, trails: null, heatmap: null },
         sourceRaw: [], zeroRaw: [], zeroTotals: [],
         months: [],
@@ -282,12 +286,89 @@
         return l1 + '\n' + rest;
       }
 
+      function downloadChartPng(chart, filename='chart.png'){
+        const dataURL = chart.getDataURL({type:'png', pixelRatio: window.devicePixelRatio||2, backgroundColor:'#ffffff'});
+        const a = document.createElement('a');
+        a.href = dataURL;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+
+      async function shareChart(chart, {title, text, permalink, filename='chart.png'}){
+        const dataURL = chart.getDataURL({type:'png', pixelRatio:2, backgroundColor:'#ffffff'});
+        if(navigator.share){
+          try{
+            const res = await fetch(dataURL);
+            const blob = await res.blob();
+            const file = new File([blob], filename, {type:'image/png'});
+            if(navigator.canShare && navigator.canShare({files:[file]})){
+              await navigator.share({title, text, url:permalink, files:[file]});
+              return;
+            }
+            await navigator.share({title, text, url:permalink});
+            return;
+          }catch(e){ /* continue to fallback */ }
+        }
+        openShareChooser({url:permalink, text});
+      }
+
+      function openShareChooser({url, text}){
+        const u = encodeURIComponent(url);
+        const t = encodeURIComponent(text||'');
+        const options = [
+          {label:'X (Twitter)', href:`https://twitter.com/intent/tweet?url=${u}&text=${t}`},
+          {label:'LinkedIn', href:`https://www.linkedin.com/sharing/share-offsite/?url=${u}`},
+          {label:'Facebook', href:`https://www.facebook.com/sharer/sharer.php?u=${u}`},
+          {label:'Reddit', href:`https://www.reddit.com/submit?url=${u}&title=${t}`},
+          {label:'Telegram', href:`https://t.me/share/url?url=${u}&text=${t}`},
+          {label:'WhatsApp', href:`https://api.whatsapp.com/send?text=${t}%20${u}`},
+          {label:'Email', href:`mailto:?subject=${t}&body=${t}%0A%0A${u}`}
+        ];
+        navigator.clipboard?.writeText(url).catch(()=>{});
+        const w = window.open('', '_blank', 'width=520,height=600');
+        w.document.write('<h3>Share</h3><ul style="line-height:1.9">');
+        options.forEach(o=>w.document.write(`<li><a href="${o.href}" target="_blank" rel="noopener">${o.label}</a></li>`));
+        w.document.write('</ul><p>Link copied to clipboard.</p>');
+      }
+
+      function sharePage(){
+        const permalink = location.href;
+        const title = document.title;
+        const text = 'Atlassian Marketplace Keywords — interactive charts';
+        if(navigator.share){
+          navigator.share({title, text, url:permalink}).catch(()=>{});
+        }else{
+          openShareChooser({url:permalink, text});
+        }
+      }
+
+      function attachChartToolbar(containerEl, chart, name){
+        let toolbar = containerEl.querySelector('.chart-toolbar');
+        if(toolbar) return;
+        toolbar = document.createElement('div');
+        toolbar.className = 'chart-toolbar';
+        toolbar.innerHTML = '<button class="btn ghost" data-action="download">PNG</button><button class="btn ghost" data-action="share">Share</button>';
+        containerEl.appendChild(toolbar);
+        toolbar.addEventListener('click', (e)=>{
+          const btn = e.target.closest('button'); if(!btn) return;
+          const action = btn.dataset.action;
+          const permalink = location.href.split('#')[0] + '#' + name;
+          if(action === 'download'){
+            downloadChartPng(chart, name + '.png');
+          } else if(action === 'share'){
+            shareChart(chart, {title: `${document.title} — ${name}`, text: `View the ${name} chart`, permalink, filename: name + '.png'});
+          }
+        });
+      }
+
       function ensureChart(id){
         const el = document.getElementById(id);
         if(!el){ console.error(`#${id} not found`); return null; }
         const ph = el.querySelector('.placeholder'); if(ph) ph.remove();
         if(state.charts[id] && !state.charts[id].isDisposed?.()) return state.charts[id];
-        try{ state.charts[id] = echarts.init(el); return state.charts[id]; }catch(err){ console.error('echarts.init failed', id, err); return null; }
+        try{ const c = echarts.init(el); state.charts[id] = c; attachChartToolbar(el, c, id); return c; }catch(err){ console.error('echarts.init failed', id, err); return null; }
       }
       function safeSetOption(id, option){ const c = ensureChart(id); if(!c){ setStatus(`error: chart #${id} not ready`); return; } c.setOption(option, true); }
 
@@ -467,6 +548,7 @@
       $('#heatStart').addEventListener('input', e=>{ state.heatStartIdx = +e.target.value; if(state.heatStartIdx>state.heatEndIdx) state.heatEndIdx = state.heatStartIdx; renderAll(); });
       $('#heatEnd').addEventListener('input', e=>{ state.heatEndIdx = +e.target.value; if(state.heatEndIdx<state.heatStartIdx) state.heatStartIdx = state.heatEndIdx; renderAll(); });
       $('#btn-play').addEventListener('click', ()=>{ state.timelinePlaying = !state.timelinePlaying; $('#btn-play').textContent = state.timelinePlaying ? '⏸ Pause' : '▶ Play'; renderAll(); });
+      document.getElementById('btn-share-page').addEventListener('click', sharePage);
 
       // Legend pager (Trails)
       document.getElementById('trailsPrev').addEventListener('click', ()=>{ if(state.trailsLegendPage>0){ state.trailsLegendPage--; renderAll(); } });
