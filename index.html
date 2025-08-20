@@ -36,6 +36,8 @@
     .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .mini{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px}
+    .help{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:4px;border-radius:50%;background:var(--muted);color:#0B1021;font-size:11px;font-weight:700;cursor:pointer}
+    .tooltip{position:absolute;z-index:1000;max-width:220px;background:var(--card);color:var(--ink);border:1px solid rgba(255,255,255,.12);padding:6px 8px;font-size:11px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.35);display:none;white-space:pre-wrap}
     @media (max-width:980px){.grid{grid-template-columns:1fr}.chart{height:460px}.short{height:380px}.tall{height:520px}.two-col{grid-template-columns:1fr}}
   </style>
 </head>
@@ -52,17 +54,17 @@
     <section class="grid">
       <!-- PANEL 1: Data inputs & diagnostics -->
       <div class="panel card" style="grid-column:1 / -1;">
-        <h3>Data Inputs & Diagnostics</h3>
+        <h3>Data Inputs & Diagnostics <span class="help" data-help="Upload monthly keyword spreadsheets to drive the charts and check for missing data." data-testid="help-inputs">?</span></h3>
         <div class="controls">
           <div class="chip">
-            <label>Popular Search Keywords</label>
+            <label>Popular Search Keywords</label><span class="help" data-help="Spreadsheet exported from the Popular Search Keywords API." data-testid="help-source">?</span>
             <div class="file-input-wrapper">
               <input id="file-source" type="file" accept=".xlsx,.xls" />
               <div id="source-display" class="file-input-display">No file chosen</div>
             </div>
           </div>
           <div class="chip">
-            <label>Zero‑Result Keywords</label>
+            <label>Zero‑Result Keywords</label><span class="help" data-help="Spreadsheet of searches that returned no apps." data-testid="help-zero">?</span>
             <div class="file-input-wrapper">
               <input id="file-zero" type="file" accept=".xlsx,.xls" />
               <div id="zero-display" class="file-input-display">No file chosen</div>
@@ -76,18 +78,18 @@
 
       <!-- PANEL 2: United Race + Zeros with local controls -->
       <div class="panel card" style="grid-column:1 / -1;">
-        <h3>Search Dynamics — Bar Chart Race & Zero‑Result Overview</h3>
+        <h3>Search Dynamics — Bar Chart Race & Zero‑Result Overview <span class="help" data-help="Track how popular search terms and zero-result totals change to guide product and marketing focus." data-testid="help-dynamics">?</span></h3>
         <div class="mini-grid">
           <!-- mini: shared controls -->
           <div class="mini" style="grid-column:1 / -1;">
             <div class="controls soft">
-              <div class="chip" title="Top N per month (race)">
-                <label>Top&nbsp;N</label>
+              <div class="chip">
+                <label>Top&nbsp;N</label><span class="help" data-help="Number of top keywords per month shown in the race." data-testid="help-topn">?</span>
                 <input id="topN" type="range" min="5" max="20" value="10" />
                 <span id="topNVal">10</span>
               </div>
-              <div class="chip" title="Race speed (ms)">
-                <label>Speed</label>
+              <div class="chip">
+                <label>Speed</label><span class="help" data-help="Animation speed of the race in milliseconds." data-testid="help-speed">?</span>
                 <input id="speed" type="range" min="300" max="3000" value="1200" step="100" />
                 <span id="speedVal">1.2s</span>
               </div>
@@ -97,46 +99,47 @@
           <!-- mini: bar race -->
           <div class="mini">
             <div id="race" class="chart" data-testid="race"><div class="placeholder">Loading ECharts…</div></div>
-            <div class="status">Uses <code>month</code>, <code>keyword</code>, <code>percentage</code> from <code>Raw</code>. Long labels are auto‑trimmed; hover to see full label.</div>
+            <div class="status">Uses <code>month</code>, <code>keyword</code>, <code>percentage</code> from <code>Raw</code>. Long labels are auto‑trimmed; hover to see full label. Helps track rising search interests for prioritising app positioning.</div>
           </div>
           <!-- mini: zero totals -->
           <div class="mini">
             <div id="zeros" class="chart" data-testid="zeros"><div class="placeholder">Loading ECharts…</div></div>
-            <div class="status">Uses <code>sum_count</code> from <code>Monthly_Summary</code> (or rolls up <code>count</code> from <code>Raw</code>).</div>
+            <div class="status">Uses <code>sum_count</code> from <code>Monthly_Summary</code> (or rolls up <code>count</code> from <code>Raw</code>). Highlights spikes in failed searches to steer new content or listings.</div>
           </div>
         </div>
       </div>
 
       <!-- PANEL 3: Trails with local control -->
       <div class="panel card" style="grid-row: span 2;">
-        <h3>Keyword Trails — Popular Keywords Over Time</h3>
+        <h3>Keyword Trails — Popular Keywords Over Time <span class="help" data-help="Follow individual keyword popularity to monitor long‑term trends." data-testid="help-trails">?</span></h3>
         <div class="controls soft">
-          <div class="chip" title="Trails: number of keywords">
-            <label>Trails</label>
+          <div class="chip">
+            <label>Trails</label><span class="help" data-help="Number of keyword lines to plot." data-testid="help-trailsN">?</span>
             <input id="trailsN" type="range" min="3" max="12" value="6" />
             <span id="trailsNVal">6</span>
           </div>
-          <div class="chip" title="Legend pages (2 rows per page)">
+          <div class="chip">
+            <span class="help" data-help="Cycle through legend pages (two rows per page)." data-testid="help-trailsLegend">?</span>
             <button id="trailsPrev" class="btn ghost" style="padding:6px 8px">◀</button>
             <span id="trailsPageInfo">1/1</span>
             <button id="trailsNext" class="btn ghost" style="padding:6px 8px">▶</button>
           </div>
         </div>
         <div id="trails" class="chart tall" data-testid="trails"><div class="placeholder">Awaiting data…</div></div>
-        <div class="status">Top N keywords (overall) with their <code>percentage</code> trajectory by month.</div>
+        <div class="status">Top N keywords (overall) with their <code>percentage</code> trajectory by month. Useful for monitoring engagement with leading marketplace topics.</div>
       </div>
 
       <!-- PANEL 4: Heatmap with local controls -->
       <div class="panel card" style="grid-row: span 2;">
-        <h3>Zero‑Result Heatmap — Where Users Find Nothing</h3>
+        <h3>Zero‑Result Heatmap — Where Users Find Nothing <span class="help" data-help="Locate content gaps by spotting keywords that consistently return no apps." data-testid="help-heatmap">?</span></h3>
         <div class="controls soft">
-          <div class="chip" title="Heatmap: top K zero‑result keywords by total count">
-            <label>Heatmap&nbsp;TopK</label>
+          <div class="chip">
+            <label>Heatmap&nbsp;TopK</label><span class="help" data-help="Number of zero-result keywords to show." data-testid="help-heatTopK">?</span>
             <input id="heatTopK" type="range" min="8" max="30" value="15" />
             <span id="heatTopKVal">15</span>
           </div>
-          <div class="chip" id="heatRangeChip" title="Heatmap: filter month range">
-            <label>Heat&nbsp;Range</label>
+          <div class="chip" id="heatRangeChip">
+            <label>Heat&nbsp;Range</label><span class="help" data-help="Filter the month range displayed." data-testid="help-heatRange">?</span>
             <input id="heatStart" type="range" min="0" max="0" value="0" />
             <span id="heatStartVal">–</span>
             <input id="heatEnd" type="range" min="0" max="0" value="0" />
@@ -144,7 +147,7 @@
           </div>
         </div>
         <div id="heatmap" class="chart" data-testid="heatmap"><div class="placeholder">Awaiting data…</div></div>
-        <div class="status">Top K zero‑result keywords by total count across months; darker = more empty searches. Use the range sliders to change the period.</div>
+        <div class="status">Top K zero‑result keywords by total count across months; darker = more empty searches. Use the range sliders to change the period. Highlights content gaps where users find no matching apps.</div>
       </div>
     </section>
   </div>
@@ -205,6 +208,28 @@
     function startApp(){
       const $ = (sel)=>document.querySelector(sel);
       const setStatus = (t)=> $('#status').textContent = `Status: ${t}`;
+
+      function initHelp(){
+        const tip = document.createElement('div');
+        tip.className = 'tooltip';
+        document.body.appendChild(tip);
+        const show = (e)=>{
+          const msg = e.currentTarget.getAttribute('data-help') || e.currentTarget.getAttribute('title');
+          if(!msg) return;
+          tip.textContent = msg;
+          const r = e.currentTarget.getBoundingClientRect();
+          tip.style.left = (r.left + window.scrollX) + 'px';
+          tip.style.top = (r.bottom + window.scrollY + 6) + 'px';
+          tip.style.display = 'block';
+        };
+        const hide = ()=>{ tip.style.display = 'none'; };
+        document.querySelectorAll('.help').forEach(el=>{
+          el.addEventListener('mouseenter', show);
+          el.addEventListener('mouseleave', hide);
+          el.addEventListener('touchstart', show);
+          el.addEventListener('touchend', hide);
+        });
+      }
 
       const state = {
         charts: { race: null, zeros: null, trails: null, heatmap: null },
@@ -612,6 +637,10 @@
         ok('zeros container exists', !!document.getElementById('zeros'));
         ok('trails container exists', !!document.getElementById('trails'));
         ok('heatmap container exists', !!document.getElementById('heatmap'));
+        ok('inputs help exists', !!document.querySelector('[data-testid="help-inputs"]'));
+        ok('dynamics help exists', !!document.querySelector('[data-testid="help-dynamics"]'));
+        ok('trails help exists', !!document.querySelector('[data-testid="help-trails"]'));
+        ok('heatmap help exists', !!document.querySelector('[data-testid="help-heatmap"]'));
         try{ /* empty render */ renderAll(); ok('renderAll without data does not throw', true); }catch(e){ ok('renderAll without data does not throw', false); }
         // Verify wrapLabel inserts a newline for long strings
         const wl = wrapLabel('this is a very very long keyword title that should wrap into two lines', 18);
@@ -630,6 +659,8 @@
       // Make file displays clickable
       document.getElementById('source-display').addEventListener('click', ()=>{ document.getElementById('file-source').click(); });
       document.getElementById('zero-display').addEventListener('click', ()=>{ document.getElementById('file-zero').click(); });
+
+      initHelp();
 
       // Try to autoload defaults on boot (works on GitHub Pages when files are in repo)
       autoLoadDefaults();
