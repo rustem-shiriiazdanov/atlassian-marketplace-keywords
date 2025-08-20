@@ -211,7 +211,7 @@
         months: [],
         topN: 10, playInterval: 1200, timelinePlaying: false,
         trailsN: 6, heatTopK: 15,
-        heatStartIdx: 0, heatEndIdx: 0, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
+        heatStartIdx: 0, heatEndIdx: 0, heatRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
         // default data autoload flags
         manualSource: false, manualZero: false, defaultsTried: false
       };
@@ -366,6 +366,13 @@
       // --- Render pipeline ---
       function updateHeatRangeControls(){
         const months = state.months;
+        
+        // Initialize end date to maximum on first load
+        if(!state.heatRangeInitialized && months.length > 0) {
+          state.heatEndIdx = months.length - 1;
+          state.heatRangeInitialized = true;
+        }
+        
         const start = Math.max(0, Math.min(state.heatStartIdx, months.length-1));
         const end = Math.max(start, Math.min(state.heatEndIdx, months.length-1));
         state.heatStartIdx = start; state.heatEndIdx = end;
@@ -384,7 +391,14 @@
 
       function renderAll(){
         if(!state.sourceRaw.length){ setStatus('waiting for Popular Search Keywords (or demo)'); return; }
-        const { months, topByMonth } = groupByMonthTop(state.sourceRaw, 'percentage', state.topN); state.months = months; if(!months.length){ setStatus('no months detected in source'); return; }
+        const { months, topByMonth } = groupByMonthTop(state.sourceRaw, 'percentage', state.topN); 
+        
+        // Reset range initialization if months changed
+        if(JSON.stringify(state.months) !== JSON.stringify(months)) {
+          state.heatRangeInitialized = false;
+        }
+        
+        state.months = months; if(!months.length){ setStatus('no months detected in source'); return; }
         // 1) Race + zeros overview
         safeSetOption('race', buildRaceOption(months, topByMonth));
         let totals = state.zeroTotals.length ? state.zeroTotals : (state.zeroRaw.length ? totalsByMonth(state.zeroRaw,'count') : []);
