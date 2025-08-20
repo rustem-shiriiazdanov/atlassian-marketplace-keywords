@@ -396,11 +396,11 @@
           {label:'WhatsApp', href:`https://api.whatsapp.com/send?text=${t}%20${u}`},
           {label:'Email', href:`mailto:?subject=${t}&body=${t}%0A%0A${u}`}
         ];
-        navigator.clipboard?.writeText(url).catch(()=>{});
         const w = window.open('', '_blank', 'width=520,height=600');
+        if(!w) return;
         w.document.write('<h3>Share</h3><ul style="line-height:1.9">');
         options.forEach(o=>w.document.write(`<li><a href="${o.href}" target="_blank" rel="noopener">${o.label}</a></li>`));
-        w.document.write('</ul><p>Link copied to clipboard.</p>');
+        w.document.write(`</ul><p><input style="width:100%;" value="${url}" readonly></p>`);
       }
 
       function sharePage(){
