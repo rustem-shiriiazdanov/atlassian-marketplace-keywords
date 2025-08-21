@@ -25,6 +25,13 @@
     .file-input-wrapper{position:relative;display:inline-block}
     .file-input-wrapper input[type="file"]{display:none}
     .file-input-display{cursor:pointer;padding:4px 8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:var(--ink);font-size:11px;display:inline-block;min-width:150px}
+    .keyword-select-wrapper{position:relative;display:inline-block}
+    .keyword-select-display{cursor:pointer;padding:4px 8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:var(--ink);font-size:11px;display:inline-block;min-width:150px}
+    .keyword-select-dropdown{position:absolute;top:100%;left:0;background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:6px;margin-top:4px;box-shadow:var(--shadow);max-height:200px;overflow:auto;display:none;z-index:20}
+    .keyword-select-dropdown.open{display:block}
+    .keyword-select-dropdown label{display:flex;align-items:center;gap:4px;font-size:12px;padding:2px 4px}
+    .keyword-select-dropdown label:hover{background:rgba(255,255,255,.05)}
+    .keyword-select-dropdown input[type="text"]{width:100%;padding:2px 4px;margin-bottom:4px;border:1px solid rgba(255,255,255,.2);border-radius:4px;background:var(--card);color:var(--ink);font-size:12px}
     .btn{cursor:pointer;border:0;border-radius:10px;padding:8px 12px;font-weight:600;color:#0B1021;background:var(--accent)}
     .btn.ghost{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,.12)}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
@@ -118,7 +125,10 @@
           </div>
           <div class="chip">
             <label>Keyword Filter</label>
-            <input id="keywordFilterInput" type="text" list="keywordOptions" placeholder="All keywords" />
+            <div class="keyword-select-wrapper">
+              <div id="keywordFilterInput" class="keyword-select-display">All keywords</div>
+              <div id="keywordOptions" class="keyword-select-dropdown"></div>
+            </div>
             <button id="keywordFilterReset" class="btn ghost" style="padding:4px 6px" aria-label="Reset keyword filter">✕</button>
           </div>
           <button id="btn-load-defaults" class="btn ghost">Load default files</button>
@@ -202,8 +212,6 @@
       </div>
     </section>
   </div>
-
-  <datalist id="keywordOptions"></datalist>
 
   <script>
   // --- Robust sequential loader with fallbacks ---
@@ -302,12 +310,80 @@
       const ICON_FLIP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
 
       // --- Utils ---
+      function sanitizeKeyword(k){
+        return String(k||'').replace(/[<>]/g,'').trim();
+      }
+      function updateKeywordDisplay(){
+        const disp = document.getElementById('keywordFilterInput');
+        if(disp) disp.textContent = state.keywordFilter.length ? state.keywordFilter.join(', ') : 'All keywords';
+      }
       function populateKeywordOptions(){
         const set = new Set();
-        for(const r of state.sourceRaw){ const k = String(r.keyword||'').trim(); if(k) set.add(k); }
-        for(const r of state.zeroRaw){ const k = String(r.keyword||'').trim(); if(k) set.add(k); }
+        for(const r of state.sourceRaw){ const k = sanitizeKeyword(r.keyword); if(k) set.add(k); }
+        for(const r of state.zeroRaw){ const k = sanitizeKeyword(r.keyword); if(k) set.add(k); }
         const list = document.getElementById('keywordOptions');
-        if(list) list.innerHTML = Array.from(set).sort().map(k=>`<option value="${k}"></option>`).join('');
+        if(list){
+          const wasOpen = list.classList.contains('open');
+          const prevSearch = list.querySelector('#keywordSearch')?.value.toLowerCase() || '';
+          list.innerHTML = '';
+          const search = document.createElement('input');
+          search.type = 'text';
+          search.id = 'keywordSearch';
+          search.placeholder = 'Search keywords…';
+          search.value = prevSearch;
+          list.appendChild(search);
+          const box = document.createElement('div');
+          box.id = 'keywordCheckboxes';
+          list.appendChild(box);
+          const keywords = Array.from(set).sort();
+          for(const k of keywords){
+            const label = document.createElement('label');
+            const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = k;
+            cb.checked = state.keywordFilter.includes(k);
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(' '+k));
+            box.appendChild(label);
+            cb.addEventListener('change', ()=>{
+              if(cb.checked){
+                if(!state.keywordFilter.includes(cb.value)) state.keywordFilter.push(cb.value);
+              } else {
+                state.keywordFilter = state.keywordFilter.filter(x=>x!==cb.value);
+              }
+              updateKeywordDisplay();
+              renderAll();
+            });
+          }
+          const applyFilter = (q)=>{
+            for(const label of box.querySelectorAll('label')){
+              const txt = label.textContent.toLowerCase();
+              label.style.display = txt.includes(q) ? '' : 'none';
+            }
+          };
+          search.addEventListener('input', ()=> applyFilter(search.value.toLowerCase()));
+          search.addEventListener('keydown', e=>{
+            if(e.key === 'Enter'){
+              const val = search.value;
+              const cb = Array.from(box.querySelectorAll('input[type="checkbox"]')).find(i=>i.value===val);
+              if(cb){
+                cb.checked = true;
+                cb.dispatchEvent(new Event('change'));
+              }
+              search.value = '';
+              applyFilter('');
+              e.preventDefault();
+            }
+          });
+          if(prevSearch){
+            applyFilter(prevSearch);
+            if(wasOpen){
+              search.focus();
+              const len = search.value.length;
+              search.setSelectionRange(len, len);
+            }
+          }
+          if(wasOpen) list.classList.add('open');
+        }
+        updateKeywordDisplay();
       }
       function toggleRangeSelectors(){
         const disabled = state.keywordFilter.length > 0;
@@ -753,14 +829,28 @@
       $('#btn-play').addEventListener('click', ()=>{ state.timelinePlaying = !state.timelinePlaying; $('#btn-play').textContent = state.timelinePlaying ? '⏸ Pause' : '▶ Play'; renderAll(); });
       document.getElementById('btn-share-page').addEventListener('click', sharePage);
 
-      const parseFilter = (v)=> v.split(',').map(s=>s.trim()).filter(Boolean);
       const keywordInput = document.getElementById('keywordFilterInput');
       const keywordReset = document.getElementById('keywordFilterReset');
+      const keywordDropdown = document.getElementById('keywordOptions');
       if(keywordInput){
-        keywordInput.addEventListener('change', e=>{ state.keywordFilter = parseFilter(e.target.value); renderAll(); });
+        keywordInput.addEventListener('click', e=>{
+          e.stopPropagation();
+          keywordDropdown?.classList.toggle('open');
+        });
       }
+      if(keywordDropdown){
+        keywordDropdown.addEventListener('click', e=> e.stopPropagation());
+      }
+      document.addEventListener('click', ()=> keywordDropdown?.classList.remove('open'));
       if(keywordReset){
-        keywordReset.addEventListener('click', ()=>{ state.keywordFilter = []; if(keywordInput) keywordInput.value=''; renderAll(); });
+        keywordReset.addEventListener('click', ()=>{
+          state.keywordFilter = [];
+          updateKeywordDisplay();
+          keywordDropdown?.querySelectorAll('input[type="checkbox"]').forEach(cb=> cb.checked=false);
+          const s = keywordDropdown?.querySelector('#keywordSearch');
+          if(s){ s.value=''; keywordDropdown.querySelectorAll('label').forEach(l=> l.style.display=''); }
+          renderAll();
+        });
       }
 
       // Legend pager (Trails)
@@ -777,7 +867,7 @@
           const buf = await f.arrayBuffer(); 
           const wb = XLSX.read(buf,{type:'array'}); 
           const rows = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null }); 
-          state.sourceRaw = rows.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), percentage: asNumber(r.percentage) })); 
+          state.sourceRaw = rows.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), percentage: asNumber(r.percentage) }));
           setStatus(`loaded Popular: ${state.sourceRaw.length} rows`); 
           updateFileStatus('source-display', `${f.name} (${state.sourceRaw.length} rows)`);
           renderAll(); 
@@ -797,7 +887,7 @@
             state.zeroTotals = sum.map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) })); 
           } 
           const raw = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null }); 
-          state.zeroRaw = raw.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), count: asNumber(r.count||0) })); 
+          state.zeroRaw = raw.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), count: asNumber(r.count||0) }));
           setStatus(`loaded Zero: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`); 
           updateFileStatus('zero-display', `${f.name} (${state.zeroRaw.length} rows)`);
           renderAll(); 
@@ -820,7 +910,7 @@
         const buf = await fetchFirst(DEFAULT_SOURCE_CANDIDATES);
         const wb = XLSX.read(buf,{type:'array'});
         const rows = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
-        state.sourceRaw = rows.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), percentage: asNumber(r.percentage) }));
+        state.sourceRaw = rows.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), percentage: asNumber(r.percentage) }));
         setStatus(`default Popular loaded: ${state.sourceRaw.length} rows`);
         updateFileStatus('source-display', 'Default data file loaded (see GitHub README)');
         renderAll();
@@ -835,7 +925,7 @@
           state.zeroTotals = sum.map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) }));
         }
         const raw = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
-        state.zeroRaw = raw.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), count: asNumber(r.count||0) }));
+        state.zeroRaw = raw.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), count: asNumber(r.count||0) }));
         setStatus(`default Zero loaded: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
         updateFileStatus('zero-display', 'Default data file loaded (see GitHub README)');
         renderAll();
@@ -932,8 +1022,8 @@
       });
 
       document.getElementById('btn-demo').addEventListener('click', ()=>{
-        state.sourceRaw = demo.sourceRaw.slice();
-        state.zeroRaw = demo.zeroRaw.slice();
+          state.sourceRaw = demo.sourceRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
+          state.zeroRaw = demo.zeroRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
         state.zeroTotals = demo.zeroTotals.slice();
         updateFileStatus('source-display', 'Demo data loaded');
         updateFileStatus('zero-display', 'Demo data loaded');
@@ -955,7 +1045,9 @@
         const wl = wrapLabel('this is a very very long keyword title that should wrap into two lines', 18);
         ok('wrapLabel inserts newline', wl.includes('\n'));
         // With demo
-        state.sourceRaw = demo.sourceRaw.slice(); state.zeroRaw = demo.zeroRaw.slice(); state.zeroTotals = demo.zeroTotals.slice();
+          state.sourceRaw = demo.sourceRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
+          state.zeroRaw = demo.zeroRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
+          state.zeroTotals = demo.zeroTotals.slice();
         try{ renderAll(); const race = ensureChart('race'); const zeros = ensureChart('zeros'); const trails = ensureChart('trails'); const heat = ensureChart('heatmap'); ok('race chart instance created', !!race); ok('zeros chart instance created', !!zeros); ok('trails chart instance created', !!trails); ok('heatmap chart instance created', !!heat); }catch(e){ ok('render with demo data succeeds', false); }
         // Time range controls reflect months
         const s = document.getElementById('heatTimeStart'); const e = document.getElementById('heatTimeEnd');
