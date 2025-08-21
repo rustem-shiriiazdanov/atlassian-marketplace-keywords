@@ -45,6 +45,8 @@
     input[type="range"]{accent-color:var(--accent)}
     input[type="file"]{color:var(--ink);font-size:12px}
     code.bad{color:var(--danger)}
+    .chip.disabled{opacity:.5}
+    .chip.disabled input{accent-color:var(--muted);cursor:not-allowed}
     .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .mini{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px}
@@ -311,7 +313,11 @@
         const disabled = state.keywordFilter.length > 0;
         ['topN','trailsN','heatTopK'].forEach(id=>{
           const el = document.getElementById(id);
-          if(el) el.disabled = disabled;
+          if(el){
+            el.disabled = disabled;
+            const chip = el.closest('.chip');
+            if(chip) chip.classList.toggle('disabled', disabled);
+          }
         });
       }
       const toMonthKey = (v)=>{
