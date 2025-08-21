@@ -25,6 +25,12 @@
     .file-input-wrapper{position:relative;display:inline-block}
     .file-input-wrapper input[type="file"]{display:none}
     .file-input-display{cursor:pointer;padding:4px 8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:var(--ink);font-size:11px;display:inline-block;min-width:150px}
+    .keyword-select-wrapper{position:relative;display:inline-block}
+    .keyword-select-display{cursor:pointer;padding:4px 8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:var(--ink);font-size:11px;display:inline-block;min-width:150px}
+    .keyword-select-dropdown{position:absolute;top:100%;left:0;background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:6px;margin-top:4px;box-shadow:var(--shadow);max-height:200px;overflow:auto;display:none;z-index:20}
+    .keyword-select-dropdown.open{display:block}
+    .keyword-select-dropdown label{display:flex;align-items:center;gap:4px;font-size:12px;padding:2px 4px}
+    .keyword-select-dropdown label:hover{background:rgba(255,255,255,.05)}
     .btn{cursor:pointer;border:0;border-radius:10px;padding:8px 12px;font-weight:600;color:#0B1021;background:var(--accent)}
     .btn.ghost{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,.12)}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
@@ -116,7 +122,10 @@
           </div>
           <div class="chip">
             <label>Keyword Filter</label>
-            <input id="keywordFilterInput" type="text" list="keywordOptions" placeholder="All keywords" />
+            <div class="keyword-select-wrapper">
+              <div id="keywordFilterInput" class="keyword-select-display">All keywords</div>
+              <div id="keywordOptions" class="keyword-select-dropdown"></div>
+            </div>
             <button id="keywordFilterReset" class="btn ghost" style="padding:4px 6px" aria-label="Reset keyword filter">✕</button>
           </div>
           <button id="btn-load-defaults" class="btn ghost">Load default files</button>
@@ -200,8 +209,6 @@
       </div>
     </section>
   </div>
-
-  <datalist id="keywordOptions"></datalist>
 
   <script>
   // --- Robust sequential loader with fallbacks ---
@@ -300,12 +307,31 @@
       const ICON_FLIP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
 
       // --- Utils ---
+      function updateKeywordDisplay(){
+        const disp = document.getElementById('keywordFilterInput');
+        if(disp) disp.textContent = state.keywordFilter.length ? state.keywordFilter.join(', ') : 'All keywords';
+      }
       function populateKeywordOptions(){
         const set = new Set();
         for(const r of state.sourceRaw){ const k = String(r.keyword||'').trim(); if(k) set.add(k); }
         for(const r of state.zeroRaw){ const k = String(r.keyword||'').trim(); if(k) set.add(k); }
         const list = document.getElementById('keywordOptions');
-        if(list) list.innerHTML = Array.from(set).sort().map(k=>`<option value="${k}"></option>`).join('');
+        if(list){
+          list.innerHTML = Array.from(set).sort().map(k=>`<label><input type="checkbox" value="${k}"> ${k}</label>`).join('');
+          for(const cb of list.querySelectorAll('input[type="checkbox"]')){
+            cb.checked = state.keywordFilter.includes(cb.value);
+            cb.addEventListener('change', ()=>{
+              if(cb.checked){
+                if(!state.keywordFilter.includes(cb.value)) state.keywordFilter.push(cb.value);
+              } else {
+                state.keywordFilter = state.keywordFilter.filter(x=>x!==cb.value);
+              }
+              updateKeywordDisplay();
+              renderAll();
+            });
+          }
+        }
+        updateKeywordDisplay();
       }
       function toggleRangeSelectors(){
         const disabled = state.keywordFilter.length > 0;
@@ -747,14 +773,26 @@
       $('#btn-play').addEventListener('click', ()=>{ state.timelinePlaying = !state.timelinePlaying; $('#btn-play').textContent = state.timelinePlaying ? '⏸ Pause' : '▶ Play'; renderAll(); });
       document.getElementById('btn-share-page').addEventListener('click', sharePage);
 
-      const parseFilter = (v)=> v.split(',').map(s=>s.trim()).filter(Boolean);
       const keywordInput = document.getElementById('keywordFilterInput');
       const keywordReset = document.getElementById('keywordFilterReset');
+      const keywordDropdown = document.getElementById('keywordOptions');
       if(keywordInput){
-        keywordInput.addEventListener('change', e=>{ state.keywordFilter = parseFilter(e.target.value); renderAll(); });
+        keywordInput.addEventListener('click', e=>{
+          e.stopPropagation();
+          keywordDropdown?.classList.toggle('open');
+        });
       }
+      if(keywordDropdown){
+        keywordDropdown.addEventListener('click', e=> e.stopPropagation());
+      }
+      document.addEventListener('click', ()=> keywordDropdown?.classList.remove('open'));
       if(keywordReset){
-        keywordReset.addEventListener('click', ()=>{ state.keywordFilter = []; if(keywordInput) keywordInput.value=''; renderAll(); });
+        keywordReset.addEventListener('click', ()=>{
+          state.keywordFilter = [];
+          updateKeywordDisplay();
+          keywordDropdown?.querySelectorAll('input[type="checkbox"]').forEach(cb=> cb.checked=false);
+          renderAll();
+        });
       }
 
       // Legend pager (Trails)
