@@ -325,18 +325,13 @@
           const search = document.createElement('input');
           search.type = 'text';
           search.id = 'keywordSearch';
-          search.setAttribute('list','keywordSuggestions');
           search.placeholder = 'Search keywords…';
           list.appendChild(search);
-          const dl = document.createElement('datalist');
-          dl.id = 'keywordSuggestions';
-          list.appendChild(dl);
           const box = document.createElement('div');
           box.id = 'keywordCheckboxes';
           list.appendChild(box);
           const keywords = Array.from(set).sort();
           for(const k of keywords){
-            const option = document.createElement('option'); option.value = k; dl.appendChild(option);
             const label = document.createElement('label');
             const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = k;
             cb.checked = state.keywordFilter.includes(k);
