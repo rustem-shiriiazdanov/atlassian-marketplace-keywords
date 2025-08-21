@@ -321,11 +321,14 @@
         for(const r of state.zeroRaw){ const k = sanitizeKeyword(r.keyword); if(k) set.add(k); }
         const list = document.getElementById('keywordOptions');
         if(list){
+          const wasOpen = list.classList.contains('open');
+          const prevSearch = list.querySelector('#keywordSearch')?.value.toLowerCase() || '';
           list.innerHTML = '';
           const search = document.createElement('input');
           search.type = 'text';
           search.id = 'keywordSearch';
           search.placeholder = 'Search keywords…';
+          search.value = prevSearch;
           list.appendChild(search);
           const box = document.createElement('div');
           box.id = 'keywordCheckboxes';
@@ -348,23 +351,35 @@
               renderAll();
             });
           }
-          search.addEventListener('input', ()=>{
-            const q = search.value.toLowerCase();
+          const applyFilter = (q)=>{
             for(const label of box.querySelectorAll('label')){
               const txt = label.textContent.toLowerCase();
               label.style.display = txt.includes(q) ? '' : 'none';
             }
-          });
-          search.addEventListener('change', ()=>{
-            const val = search.value;
-            const cb = Array.from(box.querySelectorAll('input[type="checkbox"]')).find(i=>i.value===val);
-            if(cb){
-              cb.checked = true;
-              cb.dispatchEvent(new Event('change'));
+          };
+          search.addEventListener('input', ()=> applyFilter(search.value.toLowerCase()));
+          search.addEventListener('keydown', e=>{
+            if(e.key === 'Enter'){
+              const val = search.value;
+              const cb = Array.from(box.querySelectorAll('input[type="checkbox"]')).find(i=>i.value===val);
+              if(cb){
+                cb.checked = true;
+                cb.dispatchEvent(new Event('change'));
+              }
+              search.value = '';
+              applyFilter('');
+              e.preventDefault();
             }
-            search.value = '';
-            for(const label of box.querySelectorAll('label')) label.style.display = '';
           });
+          if(prevSearch){
+            applyFilter(prevSearch);
+            if(wasOpen){
+              search.focus();
+              const len = search.value.length;
+              search.setSelectionRange(len, len);
+            }
+          }
+          if(wasOpen) list.classList.add('open');
         }
         updateKeywordDisplay();
       }
