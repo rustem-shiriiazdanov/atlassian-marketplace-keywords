@@ -66,6 +66,12 @@
     html.mobile .grid{grid-template-columns:1fr}
     html.mobile .mini-grid{grid-template-columns:1fr}
     html.mobile .chart,html.mobile .short,html.mobile .tall{height:100vh}
+    .duck-mascot{position:fixed;bottom:20px;background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow);z-index:1000;max-width:260px;pointer-events:none;transition:left 20s linear}
+    .duck-mascot img{width:48px;height:48px}
+    .duck-mascot .duck-close{background:transparent;border:0;color:var(--ink);font-size:16px;cursor:pointer;margin-left:auto}
+    .duck-mascot a{color:var(--accent)}
+    .duck-mascot.hidden{display:none}
+    .duck-mascot a,.duck-mascot button{pointer-events:auto}
     </style>
     <script>
       if(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
@@ -211,6 +217,12 @@
         <div class="status">This chart shows the top K zero-result keywords by total count across months, where darker means more empty (zero-result) searches.</div>
       </div>
     </section>
+  </div>
+
+  <div id="duck-mascot" class="duck-mascot hidden">
+    <img src="img/duck.svg" alt="Duck mascot">
+    <div>Want to see more cool analytics? <a href="https://calendly.com/rustem-shiriiazdanov-actonic/30min" target="_blank" rel="noopener noreferrer">Book a 30&nbsp;min call</a></div>
+    <button id="duck-close" class="duck-close" aria-label="Close duck">✕</button>
   </div>
 
   <script>
@@ -1069,6 +1081,34 @@
       window.addEventListener('resize', ()=>{ state.charts.race?.resize?.(); state.charts.zeros?.resize?.(); state.charts.trails?.resize?.(); state.charts.heatmap?.resize?.(); });
     }
   })();
+  </script>
+  <script>
+    (function(){
+      const duck = document.getElementById('duck-mascot');
+      const close = document.getElementById('duck-close');
+      const wrap = document.querySelector('.wrap');
+      const duckImg = duck.querySelector('img');
+      let disabled = false;
+      function showDuck(){
+        if(disabled) return;
+        duck.classList.remove('hidden');
+        const rect = wrap.getBoundingClientRect();
+        const width = duck.offsetWidth;
+        const fromLeft = Math.random() < 0.5;
+        const start = fromLeft ? rect.left - width - 20 : rect.right + 20;
+        const end = fromLeft ? rect.right + 20 : rect.left - width - 20;
+        duckImg.style.transform = fromLeft ? 'scaleX(1)' : 'scaleX(-1)';
+        duck.style.transition = 'none';
+        duck.style.left = start + 'px';
+        requestAnimationFrame(()=>{
+          duck.style.transition = 'left 20s linear';
+          duck.style.left = end + 'px';
+        });
+        setTimeout(()=>{ duck.classList.add('hidden'); }, 20000);
+      }
+      setTimeout(()=>{ showDuck(); setInterval(showDuck, 60000); }, 15000);
+      close.addEventListener('click', ()=>{ duck.classList.add('hidden'); disabled = true; });
+    })();
   </script>
 </body>
 </html>
