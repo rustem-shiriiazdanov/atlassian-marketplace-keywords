@@ -31,6 +31,7 @@
     .keyword-select-dropdown.open{display:block}
     .keyword-select-dropdown label{display:flex;align-items:center;gap:4px;font-size:12px;padding:2px 4px}
     .keyword-select-dropdown label:hover{background:rgba(255,255,255,.05)}
+    .keyword-select-dropdown input[type="text"]{width:100%;padding:2px 4px;margin-bottom:4px;border:1px solid rgba(255,255,255,.2);border-radius:4px;background:var(--card);color:var(--ink);font-size:12px}
     .btn{cursor:pointer;border:0;border-radius:10px;padding:8px 12px;font-weight:600;color:#0B1021;background:var(--accent)}
     .btn.ghost{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,.12)}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
@@ -307,19 +308,41 @@
       const ICON_FLIP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
 
       // --- Utils ---
+      function sanitizeKeyword(k){
+        return String(k||'').replace(/[<>]/g,'').trim();
+      }
       function updateKeywordDisplay(){
         const disp = document.getElementById('keywordFilterInput');
         if(disp) disp.textContent = state.keywordFilter.length ? state.keywordFilter.join(', ') : 'All keywords';
       }
       function populateKeywordOptions(){
         const set = new Set();
-        for(const r of state.sourceRaw){ const k = String(r.keyword||'').trim(); if(k) set.add(k); }
-        for(const r of state.zeroRaw){ const k = String(r.keyword||'').trim(); if(k) set.add(k); }
+        for(const r of state.sourceRaw){ const k = sanitizeKeyword(r.keyword); if(k) set.add(k); }
+        for(const r of state.zeroRaw){ const k = sanitizeKeyword(r.keyword); if(k) set.add(k); }
         const list = document.getElementById('keywordOptions');
         if(list){
-          list.innerHTML = Array.from(set).sort().map(k=>`<label><input type="checkbox" value="${k}"> ${k}</label>`).join('');
-          for(const cb of list.querySelectorAll('input[type="checkbox"]')){
-            cb.checked = state.keywordFilter.includes(cb.value);
+          list.innerHTML = '';
+          const search = document.createElement('input');
+          search.type = 'text';
+          search.id = 'keywordSearch';
+          search.setAttribute('list','keywordSuggestions');
+          search.placeholder = 'Search keywords…';
+          list.appendChild(search);
+          const dl = document.createElement('datalist');
+          dl.id = 'keywordSuggestions';
+          list.appendChild(dl);
+          const box = document.createElement('div');
+          box.id = 'keywordCheckboxes';
+          list.appendChild(box);
+          const keywords = Array.from(set).sort();
+          for(const k of keywords){
+            const option = document.createElement('option'); option.value = k; dl.appendChild(option);
+            const label = document.createElement('label');
+            const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = k;
+            cb.checked = state.keywordFilter.includes(k);
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(' '+k));
+            box.appendChild(label);
             cb.addEventListener('change', ()=>{
               if(cb.checked){
                 if(!state.keywordFilter.includes(cb.value)) state.keywordFilter.push(cb.value);
@@ -330,6 +353,23 @@
               renderAll();
             });
           }
+          search.addEventListener('input', ()=>{
+            const q = search.value.toLowerCase();
+            for(const label of box.querySelectorAll('label')){
+              const txt = label.textContent.toLowerCase();
+              label.style.display = txt.includes(q) ? '' : 'none';
+            }
+          });
+          search.addEventListener('change', ()=>{
+            const val = search.value;
+            const cb = Array.from(box.querySelectorAll('input[type="checkbox"]')).find(i=>i.value===val);
+            if(cb){
+              cb.checked = true;
+              cb.dispatchEvent(new Event('change'));
+            }
+            search.value = '';
+            for(const label of box.querySelectorAll('label')) label.style.display = '';
+          });
         }
         updateKeywordDisplay();
       }
@@ -791,6 +831,8 @@
           state.keywordFilter = [];
           updateKeywordDisplay();
           keywordDropdown?.querySelectorAll('input[type="checkbox"]').forEach(cb=> cb.checked=false);
+          const s = keywordDropdown?.querySelector('#keywordSearch');
+          if(s){ s.value=''; keywordDropdown.querySelectorAll('label').forEach(l=> l.style.display=''); }
           renderAll();
         });
       }
@@ -809,7 +851,7 @@
           const buf = await f.arrayBuffer(); 
           const wb = XLSX.read(buf,{type:'array'}); 
           const rows = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null }); 
-          state.sourceRaw = rows.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), percentage: asNumber(r.percentage) })); 
+          state.sourceRaw = rows.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), percentage: asNumber(r.percentage) }));
           setStatus(`loaded Popular: ${state.sourceRaw.length} rows`); 
           updateFileStatus('source-display', `${f.name} (${state.sourceRaw.length} rows)`);
           renderAll(); 
@@ -829,7 +871,7 @@
             state.zeroTotals = sum.map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) })); 
           } 
           const raw = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null }); 
-          state.zeroRaw = raw.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), count: asNumber(r.count||0) })); 
+          state.zeroRaw = raw.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), count: asNumber(r.count||0) }));
           setStatus(`loaded Zero: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`); 
           updateFileStatus('zero-display', `${f.name} (${state.zeroRaw.length} rows)`);
           renderAll(); 
@@ -852,7 +894,7 @@
         const buf = await fetchFirst(DEFAULT_SOURCE_CANDIDATES);
         const wb = XLSX.read(buf,{type:'array'});
         const rows = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
-        state.sourceRaw = rows.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), percentage: asNumber(r.percentage) }));
+        state.sourceRaw = rows.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), percentage: asNumber(r.percentage) }));
         setStatus(`default Popular loaded: ${state.sourceRaw.length} rows`);
         updateFileStatus('source-display', 'Default data file loaded (see GitHub README)');
         renderAll();
@@ -867,7 +909,7 @@
           state.zeroTotals = sum.map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) }));
         }
         const raw = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
-        state.zeroRaw = raw.map(r=>({ month:r.month, keyword:String(r.keyword||'').trim(), count: asNumber(r.count||0) }));
+        state.zeroRaw = raw.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), count: asNumber(r.count||0) }));
         setStatus(`default Zero loaded: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
         updateFileStatus('zero-display', 'Default data file loaded (see GitHub README)');
         renderAll();
@@ -964,8 +1006,8 @@
       });
 
       document.getElementById('btn-demo').addEventListener('click', ()=>{
-        state.sourceRaw = demo.sourceRaw.slice();
-        state.zeroRaw = demo.zeroRaw.slice();
+          state.sourceRaw = demo.sourceRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
+          state.zeroRaw = demo.zeroRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
         state.zeroTotals = demo.zeroTotals.slice();
         updateFileStatus('source-display', 'Demo data loaded');
         updateFileStatus('zero-display', 'Demo data loaded');
@@ -987,7 +1029,9 @@
         const wl = wrapLabel('this is a very very long keyword title that should wrap into two lines', 18);
         ok('wrapLabel inserts newline', wl.includes('\n'));
         // With demo
-        state.sourceRaw = demo.sourceRaw.slice(); state.zeroRaw = demo.zeroRaw.slice(); state.zeroTotals = demo.zeroTotals.slice();
+          state.sourceRaw = demo.sourceRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
+          state.zeroRaw = demo.zeroRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
+          state.zeroTotals = demo.zeroTotals.slice();
         try{ renderAll(); const race = ensureChart('race'); const zeros = ensureChart('zeros'); const trails = ensureChart('trails'); const heat = ensureChart('heatmap'); ok('race chart instance created', !!race); ok('zeros chart instance created', !!zeros); ok('trails chart instance created', !!trails); ok('heatmap chart instance created', !!heat); }catch(e){ ok('render with demo data succeeds', false); }
         // Time range controls reflect months
         const s = document.getElementById('heatTimeStart'); const e = document.getElementById('heatTimeEnd');
