@@ -598,17 +598,39 @@
 
       // --- Chart options ---
       function buildRaceOption(months, topByMonth){
+        const palette = ['#4C9AFF','#36B37E','#6554C0','#FFAB00','#FF5630','#5E5CE6','#00C7E6','#36B37E','#C0B6F2','#79F2C0'];
+        const colors = {};
+        let idx = 0;
+        for(const m of months){
+          for(const item of (topByMonth[m]||[])){
+            if(!colors[item.name]){
+              colors[item.name] = palette[idx % palette.length];
+              idx++;
+            }
+          }
+        }
         return { backgroundColor:'transparent', animationDurationUpdate: state.playInterval*0.9, animationEasing:'quarticOut',
           timeline:{ axisType:'category', autoPlay: state.timelinePlaying, playInterval: state.playInterval, data: months, label:{ color:'#C8D1EA' }, lineStyle:{ color:'rgba(255,255,255,.35)' }, controlStyle:{ color:'#fff', borderColor:'rgba(255,255,255,.2)' }, bottom: 0 },
-          baseOption:{ grid:{ left:8, right:36, top:40, bottom:90, containLabel:true }, xAxis:{ type:'value', splitLine:{ lineStyle:{ color:'rgba(255,255,255,.08)'} }, axisLabel:{ color:'#BFC7E5', formatter:'{value}%'} }, yAxis:{ type:'category', inverse:true, axisLabel:{ color:'#E6E9F2', margin:6, formatter:(val)=>labelTrim(val, 18) }, axisTick:{ show:false }, axisLine:{ show:false } }, tooltip:{ trigger:'item', borderColor:'rgba(255,255,255,.15)', backgroundColor:'rgba(9,13,31,.96)', textStyle:{ color:'#E6E9F2' }, formatter:p=>`<div><b>${p.name}</b><br/>${p.value} %</div>` }, series:[{ type:'bar', realtimeSort:true, barCategoryGap:'20%', label:{ show:true, position:'right', color:'#E6E9F2', formatter:p=>`${p.value.toFixed(2)}%` }, itemStyle:{ borderRadius:[4,12,12,4], color:(p)=> ['#4C9AFF','#36B37E','#6554C0','#FFAB00','#FF5630','#5E5CE6','#00C7E6','#36B37E','#C0B6F2','#79F2C0'][p.dataIndex%10] } }], graphic:[{ type:'text', left:10, top:6, style:{ text:'Popular Keywords', fill:'#C8D1EA', font:'600 12px Inter'} }] },
-          options: months.map(m=>({ title:{ text:m, left:'center', top:6, textStyle:{ color:'#E6E9F2', fontSize:14, fontWeight:700 } }, yAxis:{ data:(topByMonth[m]||[]).map(d=>d.name) }, series:[{ data:(topByMonth[m]||[]).map(d=>d.value) }] })) };
+          baseOption:{ grid:{ left:8, right:36, top:40, bottom:90, containLabel:true }, xAxis:{ type:'value', splitLine:{ lineStyle:{ color:'rgba(255,255,255,.08)'} }, axisLabel:{ color:'#BFC7E5', formatter:'{value}%'} }, yAxis:{ type:'category', inverse:true, axisLabel:{ color:'#E6E9F2', margin:6, formatter:(val)=>labelTrim(val, 18) }, axisTick:{ show:false }, axisLine:{ show:false } }, tooltip:{ trigger:'item', borderColor:'rgba(255,255,255,.15)', backgroundColor:'rgba(9,13,31,.96)', textStyle:{ color:'#E6E9F2' }, formatter:p=>`<div><b>${p.name}</b><br/>${p.value} %</div>` }, series:[{ type:'bar', realtimeSort:true, barCategoryGap:'20%', label:{ show:true, position:'right', color:'#E6E9F2', formatter:p=>`${p.value.toFixed(2)}%` }, itemStyle:{ borderRadius:[4,12,12,4], color:(p)=> colors[p.name] || palette[p.dataIndex%palette.length] } }], graphic:[{ type:'text', left:10, top:6, style:{ text:'Popular Keywords', fill:'#C8D1EA', font:'600 12px Inter'} }] },
+          options: months.map(m=>({ title:{ text:m, left:'center', top:6, textStyle:{ color:'#E6E9F2', fontSize:14, fontWeight:700 } }, yAxis:{ data:(topByMonth[m]||[]).map(d=>d.name) }, series:[{ data:(topByMonth[m]||[]).map(d=>({ value:d.value, name:d.name })) }] })) };
       }
 
       function buildZeroRaceOption(months, topByMonth){
+        const palette = ['#4C9AFF','#36B37E','#6554C0','#FFAB00','#FF5630','#5E5CE6','#00C7E6','#36B37E','#C0B6F2','#79F2C0'];
+        const colors = {};
+        let idx = 0;
+        for(const m of months){
+          for(const item of (topByMonth[m]||[])){
+            if(!colors[item.name]){
+              colors[item.name] = palette[idx % palette.length];
+              idx++;
+            }
+          }
+        }
         return { backgroundColor:'transparent', animationDurationUpdate: state.playInterval*0.9, animationEasing:'quarticOut',
           timeline:{ axisType:'category', autoPlay: state.timelinePlaying, playInterval: state.playInterval, data: months, label:{ color:'#C8D1EA' }, lineStyle:{ color:'rgba(255,255,255,.35)' }, controlStyle:{ color:'#fff', borderColor:'rgba(255,255,255,.2)' }, bottom: 0 },
-          baseOption:{ grid:{ left:8, right:36, top:40, bottom:90, containLabel:true }, xAxis:{ type:'value', splitLine:{ lineStyle:{ color:'rgba(255,255,255,.08)'} }, axisLabel:{ color:'#BFC7E5' } }, yAxis:{ type:'category', inverse:true, axisLabel:{ color:'#E6E9F2', margin:6, formatter:(val)=>labelTrim(val, 18) }, axisTick:{ show:false }, axisLine:{ show:false } }, tooltip:{ trigger:'item', borderColor:'rgba(255,255,255,.15)', backgroundColor:'rgba(9,13,31,.96)', textStyle:{ color:'#E6E9F2' }, formatter:p=>`<div><b>${p.name}</b><br/>${p.value}</div>` }, series:[{ type:'bar', realtimeSort:true, barCategoryGap:'20%', label:{ show:true, position:'right', color:'#E6E9F2', formatter:p=>p.value }, itemStyle:{ borderRadius:[4,12,12,4], color:(p)=> ['#4C9AFF','#36B37E','#6554C0','#FFAB00','#FF5630','#5E5CE6','#00C7E6','#36B37E','#C0B6F2','#79F2C0'][p.dataIndex%10] } }], graphic:[{ type:'text', left:10, top:6, style:{ text:'Zero-result Keywords', fill:'#C8D1EA', font:'600 12px Inter'} }] },
-          options: months.map(m=>({ title:{ text:m, left:'center', top:6, textStyle:{ color:'#E6E9F2', fontSize:14, fontWeight:700 } }, yAxis:{ data:(topByMonth[m]||[]).map(d=>d.name) }, series:[{ data:(topByMonth[m]||[]).map(d=>d.value) }] })) };
+          baseOption:{ grid:{ left:8, right:36, top:40, bottom:90, containLabel:true }, xAxis:{ type:'value', splitLine:{ lineStyle:{ color:'rgba(255,255,255,.08)'} }, axisLabel:{ color:'#BFC7E5' } }, yAxis:{ type:'category', inverse:true, axisLabel:{ color:'#E6E9F2', margin:6, formatter:(val)=>labelTrim(val, 18) }, axisTick:{ show:false }, axisLine:{ show:false } }, tooltip:{ trigger:'item', borderColor:'rgba(255,255,255,.15)', backgroundColor:'rgba(9,13,31,.96)', textStyle:{ color:'#E6E9F2' }, formatter:p=>`<div><b>${p.name}</b><br/>${p.value}</div>` }, series:[{ type:'bar', realtimeSort:true, barCategoryGap:'20%', label:{ show:true, position:'right', color:'#E6E9F2', formatter:p=>p.value }, itemStyle:{ borderRadius:[4,12,12,4], color:(p)=> colors[p.name] || palette[p.dataIndex%palette.length] } }], graphic:[{ type:'text', left:10, top:6, style:{ text:'Zero-result Keywords', fill:'#C8D1EA', font:'600 12px Inter'} }] },
+          options: months.map(m=>({ title:{ text:m, left:'center', top:6, textStyle:{ color:'#E6E9F2', fontSize:14, fontWeight:700 } }, yAxis:{ data:(topByMonth[m]||[]).map(d=>d.name) }, series:[{ data:(topByMonth[m]||[]).map(d=>({ value:d.value, name:d.name })) }] })) };
       }
       function buildZerosOption(months, totals, currentMonth){
         const data = months.map(m => (totals.find(t=>t.month===m)?.value)||0); const idx = months.indexOf(currentMonth);
