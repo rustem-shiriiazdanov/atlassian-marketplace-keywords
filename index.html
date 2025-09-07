@@ -47,6 +47,8 @@
     .chart-fullscreen-overlay.active{display:flex}
     .chart-fullscreen-overlay .chart{flex:1 1 auto;height:70vh;width:100%}
     .chart-fullscreen-overlay .data-table{overflow:auto;margin-top:16px}
+    .chart-resizer{height:8px;cursor:row-resize;background:rgba(255,255,255,.12);margin:4px 0}
+    .chart-resizer:hover{background:rgba(255,255,255,.25)}
     .chart-fullscreen-overlay table{width:100%;border-collapse:collapse;font-size:12px}
     .chart-fullscreen-overlay th,.chart-fullscreen-overlay td{border:1px solid rgba(255,255,255,.12);padding:4px 6px;text-align:left}
     .chart.flip{animation:flipY .6s}
@@ -585,6 +587,7 @@
           fullscreenState.btn.innerHTML = ICON_FULLSCREEN;
           fullscreenState.btn.dataset.action='fullscreen';
           fullscreenState.chartEl.style.height = '';
+          fullscreenState.chartEl.style.flex = '';
           fullscreenState.chart.resize();
           fullscreenState.chartEl = null;
           fullscreenState.chart = null;
@@ -612,13 +615,42 @@
           }
           overlay.appendChild(chartEl);
           chartEl.style.height = '70vh';
+          chartEl.style.flex = '0 0 auto';
           btn.innerHTML = ICON_FULLSCREEN_EXIT;
           btn.dataset.action='exitfullscreen';
           overlay.classList.add('active');
+          const resizer = document.createElement('div');
+          resizer.className = 'chart-resizer';
+          overlay.appendChild(resizer);
           const tableWrap = document.createElement('div');
           tableWrap.className='data-table';
           tableWrap.appendChild(makeDataTable(chart));
           overlay.appendChild(tableWrap);
+
+          const startDrag = (e)=>{
+            e.preventDefault();
+            const startY = (e.touches?e.touches[0].clientY:e.clientY);
+            const startH = chartEl.offsetHeight;
+            const onMove = (ev)=>{
+              const y = (ev.touches?ev.touches[0].clientY:ev.clientY);
+              const newH = Math.max(200, startH + (y - startY));
+              chartEl.style.height = newH + 'px';
+              chart.resize();
+            };
+            const stopMove = ()=>{
+              document.removeEventListener('mousemove', onMove);
+              document.removeEventListener('mouseup', stopMove);
+              document.removeEventListener('touchmove', onMove);
+              document.removeEventListener('touchend', stopMove);
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', stopMove);
+            document.addEventListener('touchmove', onMove);
+            document.addEventListener('touchend', stopMove);
+          };
+          resizer.addEventListener('mousedown', startDrag);
+          resizer.addEventListener('touchstart', startDrag);
+
           chart.resize();
         }
       }
