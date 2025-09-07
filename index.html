@@ -279,7 +279,7 @@
       fullscreenOverlay.id = 'chartFullscreen';
       fullscreenOverlay.className = 'chart-fullscreen-overlay';
       document.body.appendChild(fullscreenOverlay);
-      const fullscreenState = { chartEl: null, chart: null, placeholder: null, btn: null };
+      const fullscreenState = { chartEl: null, chart: null, placeholder: null, btn: null, toolbar: null, toolbarPlaceholder: null };
 
       function initHelp(){
         const tip = document.createElement('div');
@@ -579,6 +579,9 @@
           overlay.classList.remove('active');
           overlay.innerHTML='';
           fullscreenState.placeholder.replaceWith(fullscreenState.chartEl);
+          if(fullscreenState.toolbar){
+            fullscreenState.toolbarPlaceholder.replaceWith(fullscreenState.toolbar);
+          }
           fullscreenState.btn.innerHTML = ICON_FULLSCREEN;
           fullscreenState.btn.dataset.action='fullscreen';
           fullscreenState.chartEl.style.height = '';
@@ -587,6 +590,8 @@
           fullscreenState.chart = null;
           fullscreenState.placeholder = null;
           fullscreenState.btn = null;
+          fullscreenState.toolbar = null;
+          fullscreenState.toolbarPlaceholder = null;
         }else{
           fullscreenState.chartEl = chartEl;
           fullscreenState.chart = chart;
@@ -596,6 +601,15 @@
           fullscreenState.placeholder = ph;
           chartEl.parentNode.insertBefore(ph, chartEl);
           overlay.innerHTML='';
+          const toolbar = btn.closest('.chart-toolbar');
+          if(toolbar && !chartEl.contains(toolbar)){
+            const tbPh = document.createElement('div');
+            tbPh.style.display='none';
+            fullscreenState.toolbarPlaceholder = tbPh;
+            toolbar.parentNode.insertBefore(tbPh, toolbar);
+            fullscreenState.toolbar = toolbar;
+            overlay.appendChild(toolbar);
+          }
           overlay.appendChild(chartEl);
           chartEl.style.height = '70vh';
           btn.innerHTML = ICON_FULLSCREEN_EXIT;
