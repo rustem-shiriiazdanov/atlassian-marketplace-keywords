@@ -43,6 +43,12 @@
     .chart-toolbar{position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:10}
     .chart-toolbar .btn{padding:4px 6px;font-size:11px}
     .chart-toolbar .btn svg{width:16px;height:16px}
+    .chart-fullscreen-overlay{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:stretch;padding:20px;box-sizing:border-box;z-index:1000;overflow:auto}
+    .chart-fullscreen-overlay.active{display:flex}
+    .chart-fullscreen-overlay .chart{flex:1 1 auto;height:70vh;width:100%}
+    .chart-fullscreen-overlay .data-table{overflow:auto;margin-top:16px}
+    .chart-fullscreen-overlay table{width:100%;border-collapse:collapse;font-size:12px}
+    .chart-fullscreen-overlay th,.chart-fullscreen-overlay td{border:1px solid rgba(255,255,255,.12);padding:4px 6px;text-align:left}
     .chart.flip{animation:flipY .6s}
     @keyframes flipY{0%{transform:rotateY(0)}50%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
     .short{height:420px}
@@ -269,6 +275,11 @@
     function startApp(){
       const $ = (sel)=>document.querySelector(sel);
       const setStatus = (t)=> $('#status').textContent = `Status: ${t}`;
+      const fullscreenOverlay = document.createElement('div');
+      fullscreenOverlay.id = 'chartFullscreen';
+      fullscreenOverlay.className = 'chart-fullscreen-overlay';
+      document.body.appendChild(fullscreenOverlay);
+      const fullscreenState = { chartEl: null, chart: null, placeholder: null, btn: null };
 
       function initHelp(){
         const tip = document.createElement('div');
@@ -308,6 +319,8 @@
       const ICON_DOWNLOAD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
       const ICON_SHARE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
       const ICON_FLIP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
+      const ICON_FULLSCREEN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
+      const ICON_FULLSCREEN_EXIT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="14" y1="10" x2="21" y2="3"/></svg>`;
 
       // --- Utils ---
       function sanitizeKeyword(k){
@@ -520,11 +533,87 @@
         }
       }
 
+      function makeDataTable(chart){
+        const opt = chart.getOption();
+        let rows = [];
+        if(opt.dataset && opt.dataset[0] && opt.dataset[0].source){
+          rows = opt.dataset[0].source;
+        }else if(opt.series && opt.series.length){
+          const categories = opt.xAxis && opt.xAxis[0] && opt.xAxis[0].data ? opt.xAxis[0].data : [];
+          const headers = ['Category', ...opt.series.map(s=>s.name||'Value')];
+          const dataRows = [];
+          for(let i=0;i<categories.length;i++){
+            const row = [categories[i]];
+            for(const s of opt.series){
+              const val = Array.isArray(s.data?.[i]) ? s.data[i][1] : s.data?.[i];
+              row.push(val);
+            }
+            dataRows.push(row);
+          }
+          rows = [headers, ...dataRows];
+        }
+        const table = document.createElement('table');
+        if(rows.length){
+          const [header, ...body] = rows;
+          const trHead = document.createElement('tr');
+          header.forEach(h=>{ const th=document.createElement('th'); th.textContent=h; trHead.appendChild(th); });
+          table.appendChild(trHead);
+          body.forEach(r=>{
+            const tr=document.createElement('tr');
+            r.forEach(c=>{ const td=document.createElement('td'); td.textContent=c; tr.appendChild(td); });
+            table.appendChild(tr);
+          });
+        }else{
+          const tr=document.createElement('tr');
+          const td=document.createElement('td');
+          td.textContent='No data';
+          tr.appendChild(td);
+          table.appendChild(tr);
+        }
+        return table;
+      }
+
+      function toggleFullscreen(chartEl, chart, btn){
+        const overlay = fullscreenOverlay;
+        if(fullscreenState.chartEl){
+          overlay.classList.remove('active');
+          overlay.innerHTML='';
+          fullscreenState.placeholder.replaceWith(fullscreenState.chartEl);
+          fullscreenState.btn.innerHTML = ICON_FULLSCREEN;
+          fullscreenState.btn.dataset.action='fullscreen';
+          fullscreenState.chartEl.style.height = '';
+          fullscreenState.chart.resize();
+          fullscreenState.chartEl = null;
+          fullscreenState.chart = null;
+          fullscreenState.placeholder = null;
+          fullscreenState.btn = null;
+        }else{
+          fullscreenState.chartEl = chartEl;
+          fullscreenState.chart = chart;
+          fullscreenState.btn = btn;
+          const ph = document.createElement('div');
+          ph.style.display='none';
+          fullscreenState.placeholder = ph;
+          chartEl.parentNode.insertBefore(ph, chartEl);
+          overlay.innerHTML='';
+          overlay.appendChild(chartEl);
+          chartEl.style.height = '70vh';
+          btn.innerHTML = ICON_FULLSCREEN_EXIT;
+          btn.dataset.action='exitfullscreen';
+          overlay.classList.add('active');
+          const tableWrap = document.createElement('div');
+          tableWrap.className='data-table';
+          tableWrap.appendChild(makeDataTable(chart));
+          overlay.appendChild(tableWrap);
+          chart.resize();
+        }
+      }
+
       function attachChartToolbar(chartEl, chart, name){
         const makeToolbar = () => {
           const tb = document.createElement('div');
           tb.className = 'chart-toolbar';
-          const btns = [];
+          const btns = [`<button class="btn ghost" data-action="fullscreen" aria-label="Fullscreen chart">${ICON_FULLSCREEN}</button>`];
           if(name === 'zeros') btns.push(`<button class="btn ghost" data-action="flip" aria-label="Flip chart">${ICON_FLIP}</button>`);
           btns.push(`<button class="btn ghost" data-action="download" aria-label="Download chart">${ICON_DOWNLOAD}</button>`);
           btns.push(`<button class="btn ghost" data-action="share" aria-label="Share chart">${ICON_SHARE}</button>`);
@@ -539,6 +628,8 @@
               shareChart(chart, {title: `${document.title} — ${name}`, text: `View the ${name} chart`, permalink, filename: name + '.png'});
             } else if(action === 'flip'){
               flipZeros();
+            } else if(action === 'fullscreen' || action === 'exitfullscreen'){
+              toggleFullscreen(chartEl, chart, btn);
             }
           });
           return tb;
