@@ -1,127 +1,117 @@
 # Atlassian Marketplace Keywords Visualization
 
-Interactive dashboard for analyzing Atlassian Marketplace search keyword trends and zero-result patterns.
+Interactive, browser-only dashboard for exploring Atlassian Marketplace search data. Turn monthly Excel exports into animated bar chart races, keyword trend lines, zero-result overviews, and heatmaps. Works entirely on the client with no build step or backend.
+
 Site is live at https://rustem-shiriiazdanov.github.io/atlassian-marketplace-keywords/
 
 ## Overview
 
-This tool provides comprehensive visualization of:
-- **Popular Search Keywords**: Bar chart race showing trending search terms over time
-- **Zero-Result Analysis**: Keywords that return no marketplace results  
-- **Keyword Trails**: Trend lines for top keywords across months
-- **Heatmap**: Visual representation of zero-result patterns
+The app consumes two spreadsheets:
+
+- **Popular Search Keywords** – top search queries with percentage share
+- **Zero‑Result Keywords** – queries that returned no apps, with counts
+
+With these inputs the dashboard provides:
+
+- **Search Dynamics** – bar chart race of popular keywords plus a zero‑result overview that can flip between total counts and top zero keywords
+- **Keyword Trails** – line chart tracking how top keywords change over time
+- **Zero‑Result Heatmap** – matrix highlighting months and keywords that frequently return nothing
+
+A global **keyword filter** lets you focus on specific terms across all charts. Chart toolbars offer fullscreen, download, and share actions; the zero‑result chart also has a flip button.
 
 ## Quick Start
 
-### Option 1: Use Demo Data
-1. Open `index.html` in a web browser
-2. Click **"Load demo"** to see the visualization with sample data
-3. Click **"▶ Play"** to start the animated bar chart race
+### 1. Use Demo Data
+1. Open `index.html` in a browser.
+2. Click **Load demo**.
+3. Press **▶ Play** to start the race.
 
-### Option 2: Upload Your Own Data
-1. Open `index.html` in a web browser
-2. Upload Excel files using the data input controls:
-   - **Popular Search Keywords**: Upload `.xlsx` file with `Raw` sheet containing `month`, `keyword`, `percentage` columns
-   - **Zero-Result Keywords**: Upload `.xlsx` file with `Raw` sheet containing `month`, `keyword`, `count` columns
+### 2. Upload Your Data
+1. Open `index.html`.
+2. For each file input select the proper spreadsheet:
+   - **Popular Search Keywords**: `.xlsx` with `Raw` sheet containing `month`, `keyword`, `percentage`
+   - **Zero‑Result Keywords**: `.xlsx` with `Raw` sheet containing `month`, `keyword`, `count`. Optional `Monthly_Summary` sheet with `month`, `sum_count`
+3. Use the **Keyword Filter** chip to narrow charts to particular terms (optional).
 
-### Option 3: Use Default Files (GitHub Pages)
-If hosting on GitHub Pages or local server, place your data files in:
-- `./data/source_search_keywords_marketplace.xlsx` (Popular keywords)
-- `./data/zero_result_keywords_marketplace.xlsx` (Zero-result keywords)
+### 3. Load Default Files
+If the files below exist they autoload on startup or via **Load default files**:
+- `./data/source_search_keywords_marketplace.xlsx`
+- `./data/zero_result_keywords_marketplace.xlsx`
 
-The application will automatically load these files on startup.
+### 4. Run Smoke Tests
+Click **Run smoke tests** to verify required elements render.
 
-## Data Format Requirements
+## Data Format
 
-### Popular Search Keywords File
-**Sheet Name**: `Raw`
-**Required Columns**:
-- `month`: Date in format YYYY-MM-DD or Excel date
-- `keyword`: Search term text
-- `percentage`: Numeric percentage value
+### Popular Search Keywords
+- **Sheet**: `Raw`
+- **Columns**: `month` (YYYY-MM-DD or Excel date), `keyword`, `percentage`
 
-### Zero-Result Keywords File
-**Sheet Name**: `Raw`  
-**Required Columns**:
-- `month`: Date in format YYYY-MM-DD or Excel date
-- `keyword`: Search term text  
-- `count`: Numeric count of zero-result searches
+### Zero‑Result Keywords
+- **Sheet**: `Raw`
+- **Columns**: `month`, `keyword`, `count`
+- **Optional Sheet**: `Monthly_Summary` with `month`, `sum_count`
 
-**Optional Sheet**: `Monthly_Summary`
-- `month`: Date in format YYYY-MM-DD or Excel date
-- `sum_count`: Total zero-result count for the month
+## Features & Controls
 
-## Controls & Features
+### Data Inputs & Diagnostics
+- Upload both spreadsheets
+- Keyword filter to limit charts to selected terms
+- Buttons: **Load default files**, **Load demo**, **Run smoke tests**
 
-### Bar Chart Race
-- **Top N**: Adjust number of keywords shown (5-20)
-- **Speed**: Control animation speed (0.3s - 3.0s per frame)
-- **Play/Pause**: Start/stop the timeline animation
+### Search Dynamics — Bar Chart Race & Zero‑Result Overview
+- **Top N** slider (5–20 keywords)
+- **Speed** slider (0.3–3.0 s per frame)
+- **▶ Play/⏸ Pause** animation
+- Zero‑result chart toolbar includes **flip** between totals and top zero keywords
 
 ### Keyword Trails
-- **Trails**: Number of top keywords to track (3-12)
-- **Legend Pages**: Navigate through keyword legend (2 rows per page)
+- **Trails** slider (3–12 lines)
+- Legend page controls to browse keywords
 
-### Zero-Result Heatmap
-- **Heatmap TopK**: Number of top zero-result keywords (8-30)
-- **Heat Range**: Filter by month range using dual sliders
+### Zero‑Result Heatmap
+- **Heatmap TopK** slider (8–30 keywords)
+- **Time Range** sliders to focus on specific months
 
-## Technical Features
+### Chart Toolbars
+Every chart exposes buttons for:
+- **Fullscreen** view
+- **Download** PNG snapshot
+- **Share** image/link (Web Share API or share chooser)
+- **Flip** (zero‑result chart only)
 
-- **Responsive Design**: Works on desktop and mobile devices
-- **CDN Fallbacks**: Automatically tries multiple CDNs for libraries
-- **Real-time Updates**: Charts update instantly when controls change
-- **Data Validation**: Handles missing or malformed data gracefully
-- **Export Ready**: Charts can be screenshot or printed
-
-## Libraries Used
-
-- **ECharts 5.5.0**: Advanced charting library
-- **XLSX**: Excel file reading capability
-- **Pure JavaScript**: No framework dependencies
+## Technical Notes
+- Pure JavaScript with **ECharts 5.5.0** and **XLSX** libraries
+- Responsive layout for desktop and mobile
+- Sequential CDN fallbacks for robust loading
+- Automatic default file loading on GitHub Pages
+- Built‑in smoke tests to confirm rendering
+- No server or build step required
 
 ## Browser Support
-
-- Modern browsers with JavaScript enabled
-- Chrome, Firefox, Safari, Edge
-- Mobile browsers supported
+Modern browsers such as Chrome, Firefox, Safari, Edge, and mobile equivalents with JavaScript enabled.
 
 ## Troubleshooting
-
-### Charts Not Loading
-- Check browser console for errors
-- Ensure JavaScript is enabled
-- Try different CDN by refreshing the page
-
-### Data Not Showing
-- Verify Excel file format matches requirements
-- Check that sheet names are exactly `Raw` (case-sensitive)
-- Ensure date columns contain valid dates
-- Verify numeric columns contain numbers, not text
-
-### File Upload Issues
-- Use `.xlsx` or `.xls` format only
-- File size limit depends on browser memory
-- Try smaller date ranges if performance is slow
-
-### Demo Not Working
-Click **"Run smoke tests"** to verify all components are functioning.
+- **Charts not loading**: check console, ensure JavaScript enabled, refresh to try next CDN
+- **Data not showing**: confirm sheet names, date formats, and numeric fields
+- **File upload issues**: use `.xlsx`/`.xls`; large files may exhaust memory
+- **Demo not working**: click **Run smoke tests** for diagnostics
 
 ## File Structure
-
 ```
 atlassian-marketplace-keywords/
-├── index.html                    # Main application file
-├── README.md                     # This documentation
-└── data/                        # Default data directory
-    ├── source_search_keywords_marketplace.xlsx
-    └── zero_result_keywords_marketplace.xlsx
+├── index.html                    # Main application
+├── README.md                     # Documentation
+├── data/                         # Optional default spreadsheets
+│   ├── source_search_keywords_marketplace.xlsx
+│   └── zero_result_keywords_marketplace.xlsx
+└── img/                          # Static assets
+    └── actonic.svg
 ```
 
 ## Usage Tips
-
-1. **Best Performance**: Use data sets with 6-24 months of data
-2. **Keyword Limits**: For best readability, limit to top 20-30 keywords
-3. **Date Consistency**: Ensure consistent date formats across your data
-4. **File Naming**: Keep original column names for automatic detection
-5. **Memory Usage**: Large files (>50MB) may cause browser slowdown
+1. Use 6–24 months of data for smooth animations
+2. Limit to top 20–30 keywords for clarity
+3. Keep date formats consistent
+4. Preserve original column names
+5. Large (>50 MB) files can slow down the browser
