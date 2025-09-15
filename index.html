@@ -12,7 +12,7 @@
     .layout{position:relative}
     .main{}
     .author-column{position:fixed;top:24px;right:24px;width:260px;overflow:visible;transition:right .3s}
-    .author-column.collapsed{right:-236px}
+    .author-column.collapsed{right:-260px}
     .author-toggle{position:absolute;left:-24px;top:16px;width:24px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--card);border:1px solid rgba(255,255,255,.08);border-right:0;border-radius:8px 0 0 8px;color:var(--ink);cursor:pointer;z-index:1}
     header{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
     .author-card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;font-size:13px;max-width:260px;text-align:left}
@@ -245,7 +245,7 @@
         </section>
       </div>
       <aside class="author-column">
-        <button id="author-toggle" class="author-toggle" aria-label="Toggle author card">&lsaquo;</button>
+        <button id="author-toggle" class="author-toggle" aria-label="Toggle author card">&rsaquo;</button>
         <div class="author-card">
           <img src="https://seibert.group/products/wp-content/uploads/elementor/thumbs/Rustem-Shiriiazdanov_rund_600px-r64m2m9otgwnhlnqpqjdt2ifqy9b0z5if53y46imiw.png" alt="Rustem Shiriiazdanov">
           <h2>Rustem Shiriiazdanov</h2>
@@ -353,7 +353,7 @@
         if(column && btn){
           btn.addEventListener('click', ()=>{
             column.classList.toggle('collapsed');
-            btn.innerHTML = column.classList.contains('collapsed') ? '&rsaquo;' : '&lsaquo;';
+            btn.innerHTML = column.classList.contains('collapsed') ? '&lsaquo;' : '&rsaquo;';
           });
         }
       }
