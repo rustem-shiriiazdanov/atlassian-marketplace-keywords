@@ -9,8 +9,10 @@
     html,body{height:100%}
     body{margin:0;background:#0B1021;color:var(--ink);font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
     .wrap{max-width:1280px;margin:24px auto 64px;padding:0 20px}
+    .layout{display:flex;gap:24px}
+    .main{flex:1}
+    .author-column{flex:0 0 260px}
     header{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
-    .author{display:flex;flex-direction:column;align-items:flex-end;gap:16px}
     .author-card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;font-size:13px;max-width:260px;text-align:center}
     .author-card img{width:96px;height:96px;border-radius:50%;object-fit:cover;margin-bottom:12px}
     .author-card h2{margin:0;font-size:20px}
@@ -73,9 +75,19 @@
     .mini{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px}
     .help{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:4px;border-radius:50%;background:var(--muted);color:#0B1021;font-size:11px;font-weight:700;cursor:pointer}
     .tooltip{position:absolute;z-index:1000;max-width:220px;background:var(--card);color:var(--ink);border:1px solid rgba(255,255,255,.12);padding:6px 8px;font-size:11px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.35);display:none;white-space:pre-wrap}
-    @media (max-width:980px){.grid{grid-template-columns:1fr}.chart{height:460px}.short{height:380px}.tall{height:520px}.two-col{grid-template-columns:1fr}.mini-grid{grid-template-columns:1fr}}
+    @media (max-width:980px){
+      .layout{flex-direction:column}
+      .author-column{flex:1 1 auto}
+      .grid{grid-template-columns:1fr}
+      .chart{height:460px}
+      .short{height:380px}
+      .tall{height:520px}
+      .two-col{grid-template-columns:1fr}
+      .mini-grid{grid-template-columns:1fr}
+    }
     html.mobile .wrap{max-width:100%;margin:12px auto;padding:0 10px}
     html.mobile header{flex-direction:column;align-items:flex-start}
+    html.mobile .layout{flex-direction:column}
     html.mobile .controls{flex-direction:column;align-items:stretch}
     html.mobile .grid{grid-template-columns:1fr}
     html.mobile .mini-grid{grid-template-columns:1fr}
@@ -95,46 +107,32 @@
   </head>
 <body>
   <div class="wrap">
-    <header>
-      <div>
-        <h1>Atlassian Marketplace Keywords Charts (excel-sourced)</h1>
-        <div class="sub">What’s inside:<br>
-        • <strong>Bar Chart Race</strong>: monthly race of top search keywords.<br>
-        • <strong>Zero-Result Overview</strong>: trend of searches that returned no results.<br>
-        • <strong>Keyword Trails</strong>: top keywords’ percentage trajectories by month.<br>
-        • <strong>Zero-Result Heatmap</strong>: where empty (zero-result) searches cluster across months.</div>
-        <div id="status" class="status">Status: bootstrapping…</div>
-      </div>
-      <div class="author">
-        <div class="links">
-          <a href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12z"/></svg>
-            GitHub
-          </a>
-          <a href="https://actonic.de/en/" target="_blank" rel="noopener noreferrer">
-            <img src="img/actonic.svg" alt="Actonic logo">
-            Powered by Actonic
-          </a>
-          <button id="btn-share-page" class="btn ghost" aria-label="Share page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
-        </div>
-        <div class="author-card">
-          <img src="https://seibert.group/products/wp-content/uploads/elementor/thumbs/Rustem-Shiriiazdanov_rund_600px-r64m2m9otgwnhlnqpqjdt2ifqy9b0z5if53y46imiw.png" alt="Rustem Shiriiazdanov">
-          <h2>Rustem Shiriiazdanov</h2>
-          <p>Product Owner @ Report Builder for Jira</p>
-          <div style="text-align:left;line-height:1.4;">
-            <p>🛠️ This is my pet project, built to experience the vibe of coding with Codex.</p>
-            <p>📊 Data is updated monthly.</p>
-            <p>💡 Normally, I lead the development of Report Builder for Jira.</p>
-            <p>👉 Interested in discussing data, visualizations, or Jira? Here are my contacts:<br>
-              <a href="https://www.linkedin.com/in/rustem-shiriiazdanov/" target="_blank" rel="noopener noreferrer">LinkedIn</a> ·
-              <a href="https://calendly.com/rustem-shiriiazdanov-actonic" target="_blank" rel="noopener noreferrer">Calendly</a>
-            </p>
+    <div class="layout">
+      <div class="main">
+        <header>
+          <div>
+            <h1>Atlassian Marketplace Keywords Charts (excel-sourced)</h1>
+            <div class="sub">What’s inside:<br>
+            • <strong>Bar Chart Race</strong>: monthly race of top search keywords.<br>
+            • <strong>Zero-Result Overview</strong>: trend of searches that returned no results.<br>
+            • <strong>Keyword Trails</strong>: top keywords’ percentage trajectories by month.<br>
+            • <strong>Zero-Result Heatmap</strong>: where empty (zero-result) searches cluster across months.</div>
+            <div id="status" class="status">Status: bootstrapping…</div>
           </div>
-        </div>
-      </div>
-    </header>
+          <div class="links">
+            <a href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12z"/></svg>
+              GitHub
+            </a>
+            <a href="https://actonic.de/en/" target="_blank" rel="noopener noreferrer">
+              <img src="img/actonic.svg" alt="Actonic logo">
+              Powered by Actonic
+            </a>
+            <button id="btn-share-page" class="btn ghost" aria-label="Share page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
+          </div>
+        </header>
 
-    <section class="grid">
+        <section class="grid">
       <!-- PANEL 1: Data inputs & diagnostics -->
       <div class="panel card" style="grid-column:1 / -1;">
         <h3>Data Inputs & Diagnostics <span class="help" data-help="Upload monthly keyword spreadsheets to drive the charts and check for missing data." data-testid="help-inputs">?</span></h3>
@@ -240,7 +238,21 @@
         <div id="heatmap" class="chart" data-testid="heatmap"><div class="placeholder">Awaiting data…</div></div>
         <div class="status">This chart shows the top K zero-result keywords by total count across months, where darker means more empty (zero-result) searches.</div>
       </div>
-    </section>
+        </section>
+      </div>
+      <aside class="author-column">
+        <div class="author-card">
+          <img src="https://seibert.group/products/wp-content/uploads/elementor/thumbs/Rustem-Shiriiazdanov_rund_600px-r64m2m9otgwnhlnqpqjdt2ifqy9b0z5if53y46imiw.png" alt="Rustem Shiriiazdanov">
+          <h2>Rustem Shiriiazdanov</h2>
+          <p>Product Owner, Report Builder for Jira</p>
+          <div style="text-align:left;line-height:1.4;">
+            <p>This project explores Atlassian Marketplace keyword trends and is updated monthly.</p>
+            <p>I lead the development of Report Builder for Jira.</p>
+            <p>To discuss data, visualizations, or Jira, connect on <a href="https://www.linkedin.com/in/rustem-shiriiazdanov/" target="_blank" rel="noopener noreferrer">LinkedIn</a> or schedule a call on <a href="https://calendly.com/rustem-shiriiazdanov-actonic" target="_blank" rel="noopener noreferrer">Calendly</a>.</p>
+          </div>
+        </div>
+      </aside>
+    </div>
   </div>
 
   <script>
