@@ -13,11 +13,14 @@
     .main{flex:1}
     .author-column{flex:0 0 260px}
     header{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
-    .author-card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;font-size:13px;max-width:260px;text-align:center}
-    .author-card img{width:96px;height:96px;border-radius:50%;object-fit:cover;margin-bottom:12px}
-    .author-card h2{margin:0;font-size:20px}
-    .author-card p{margin:4px 0;color:var(--muted)}
-    .author-card a{color:var(--accent)}
+    .author-card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;font-size:13px;max-width:260px;text-align:left}
+    .author-card img{width:96px;height:96px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 12px}
+    .author-card h2{margin:0 0 4px;font-size:20px;text-align:center}
+    .author-card p{margin:8px 0;color:var(--muted);line-height:1.4}
+    .author-card ul{margin:8px 0 0;padding-left:20px}
+    .author-card li{margin:4px 0}
+    .author-card a{color:var(--accent);text-decoration:none}
+    .author-card a:hover{text-decoration:underline}
     h1{margin:0 0 6px;font-size:28px;font-weight:700}
     .sub{color:var(--muted);font-size:13px}
     .links{display:flex;gap:12px;align-items:center;font-size:13px}
@@ -244,12 +247,15 @@
         <div class="author-card">
           <img src="https://seibert.group/products/wp-content/uploads/elementor/thumbs/Rustem-Shiriiazdanov_rund_600px-r64m2m9otgwnhlnqpqjdt2ifqy9b0z5if53y46imiw.png" alt="Rustem Shiriiazdanov">
           <h2>Rustem Shiriiazdanov</h2>
-          <p>Product Owner, Report Builder for Jira</p>
-          <div style="text-align:left;line-height:1.4;">
-            <p>This project explores Atlassian Marketplace keyword trends and is updated monthly.</p>
-            <p>I lead the development of Report Builder for Jira.</p>
-            <p>To discuss data, visualizations, or Jira, connect on <a href="https://www.linkedin.com/in/rustem-shiriiazdanov/" target="_blank" rel="noopener noreferrer">LinkedIn</a> or schedule a call on <a href="https://calendly.com/rustem-shiriiazdanov-actonic" target="_blank" rel="noopener noreferrer">Calendly</a>.</p>
-          </div>
+          <p>Product Owner @ Report Builder for Jira</p>
+          <p>Hi all! This is my pet project, built to explore the vibe of coding with Codex.</p>
+          <p>Data is updated monthly.</p>
+          <p>Normally, I work at Actonic Products as a Team Lead and Product Owner for Report Builder for Jira.</p>
+          <p>Interested in discussing data, visualizations, or Jira? Contact me here:</p>
+          <ul class="author-links">
+            <li><a href="https://www.linkedin.com/in/rustem-shiriiazdanov/" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
+            <li><a href="https://calendly.com/rustem-shiriiazdanov-actonic" target="_blank" rel="noopener noreferrer">Calendly</a></li>
+          </ul>
         </div>
       </aside>
     </div>
