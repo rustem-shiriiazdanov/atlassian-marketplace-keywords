@@ -437,6 +437,25 @@
         })));
       }
 
+      function ensurePerspectiveStyles(){
+        if(state.playground.pspStylesLoaded) return;
+        const cssUrls = [
+          'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/css/variables.css',
+          'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/css/icons.css',
+          'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/css/pro.css',
+          'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/css/themes.css'
+        ];
+        for(const href of cssUrls){
+          if(document.querySelector(`link[data-psp-style="${href}"]`)) continue;
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = href;
+          link.dataset.pspStyle = href;
+          document.head.appendChild(link);
+        }
+        state.playground.pspStylesLoaded = true;
+      }
+
       async function ensurePerspectiveLoaded(){
         if(state.playground.pspReady) return true;
         if(state.playground.pspLoadingPromise) return state.playground.pspLoadingPromise;
@@ -475,6 +494,7 @@
                 if(!window.perspective) window.perspective = state.playground.pspApi;
               }
             }
+            ensurePerspectiveStyles();
             state.playground.pspReady = !!((state.playground.pspApi || window.perspective) && customElements.get('perspective-viewer'));
             return state.playground.pspReady;
           }catch(e){
@@ -598,7 +618,7 @@
               throw new Error('Perspective API did not expose a usable table() constructor');
             }
             await viewer.load(table);
-            await viewer.restore({settings:true, plugin:'Datagrid'});
+            await viewer.restore({settings:true, plugin:'Datagrid', theme:'Pro Light'});
             if(window.ResizeObserver){
               const ro = new ResizeObserver(()=> viewer.resize?.());
               ro.observe(el);
@@ -649,7 +669,7 @@
         heatTimeStartIdx: 0, heatTimeEndIdx: 0, heatTimeRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
         // default data autoload flags
         manualSource: false, manualZero: false, defaultsTried: false,
-        playground: { nextId: 1, linkMode: false, selectedParentId: null, nodes: [], links: [], pspReady: false, pspLoadingPromise: null, pspApi: null, lastError: '' }
+        playground: { nextId: 1, linkMode: false, selectedParentId: null, nodes: [], links: [], pspReady: false, pspLoadingPromise: null, pspApi: null, pspStylesLoaded: false, lastError: '' }
       };
 
       const ICON_DOWNLOAD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
