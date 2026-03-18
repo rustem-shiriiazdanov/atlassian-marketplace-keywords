@@ -30,6 +30,23 @@
     .links a:hover{color:var(--accent)}
     .links img,.links svg{height:16px;width:16px}
     .links button{font-size:13px;white-space:nowrap}
+    .tabs{display:flex;gap:8px;margin-top:16px}
+    .tab-btn{cursor:pointer;border:1px solid rgba(255,255,255,.14);background:var(--chip);color:var(--ink);border-radius:10px;padding:8px 12px;font-weight:600}
+    .tab-btn.active{background:var(--accent);color:#0B1021;border-color:transparent}
+    .tab-panel{display:none;margin-top:12px}
+    .tab-panel.active{display:block}
+    .playground-shell{display:flex;flex-direction:column;gap:12px}
+    .playground-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px;background:var(--card);border-radius:12px}
+    .playground-toolbar .chip{padding:6px 10px}
+    .canvas-wrap{position:relative;overflow:auto;height:72vh;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#0a0f24}
+    .canvas-inner{position:relative;width:3600px;height:2200px;background-image:radial-gradient(rgba(255,255,255,.14) 1px, transparent 0);background-size:26px 26px}
+    .node-card{position:absolute;width:420px;min-height:290px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(18,24,53,.9);box-shadow:var(--shadow)}
+    .node-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.1);cursor:grab}
+    .node-meta{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+    .node-body{height:240px}
+    .node-body perspective-viewer{width:100%;height:100%}
+    .link-layer{position:absolute;inset:0;pointer-events:none}
+    .mapping-list{font-size:12px;color:var(--muted);max-height:120px;overflow:auto}
     .panel{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.00));border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow)}
     .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px;background:var(--card);border-radius:var(--radius)}
     .controls.soft{padding:10px;margin-top:8px}
@@ -135,8 +152,13 @@
             <button id="btn-share-page" class="btn ghost" aria-label="Share page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
           </div>
         </header>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+          <button class="tab-btn" data-tab="raw-playground">Raw Data Playground</button>
+        </div>
 
-        <section class="grid">
+        <section id="tab-dashboard" class="tab-panel active">
+        <div class="grid">
       <!-- PANEL 1: Data inputs & diagnostics -->
       <div class="panel card" style="grid-column:1 / -1;">
         <h3>Data Inputs & Diagnostics <span class="help" data-help="Upload monthly keyword spreadsheets to drive the charts and check for missing data." data-testid="help-inputs">?</span></h3>
@@ -242,6 +264,33 @@
         <div id="heatmap" class="chart" data-testid="heatmap"><div class="placeholder">Awaiting data…</div></div>
         <div class="status">This chart shows the top K zero-result keywords by total count across months, where darker means more empty (zero-result) searches.</div>
       </div>
+        </div>
+        </section>
+
+        <section id="tab-raw-playground" class="tab-panel panel card">
+          <h3>Raw Data Playground — Visual Data Modeler</h3>
+          <div class="playground-shell">
+            <div class="playground-toolbar">
+              <button id="btn-add-node" class="btn">+ Add Perspective Widget</button>
+              <button id="btn-link-mode" class="btn ghost">Link mode: Off</button>
+              <button id="btn-clear-links" class="btn ghost">Clear Links</button>
+              <div class="chip">
+                <label>Parent field</label>
+                <input id="parent-field" type="text" value="keyword" />
+              </div>
+              <div class="chip">
+                <label>Child field</label>
+                <input id="child-field" type="text" value="keyword" />
+              </div>
+            </div>
+            <div id="mapping-list" class="mapping-list">No links yet.</div>
+            <div id="canvas-wrap" class="canvas-wrap">
+              <div id="link-layer" class="link-layer">
+                <svg id="link-svg" width="100%" height="100%"></svg>
+              </div>
+              <div id="canvas-inner" class="canvas-inner"></div>
+            </div>
+          </div>
         </section>
       </div>
       <aside class="author-column">
@@ -358,7 +407,180 @@
         }
       }
 
-    const state = {
+      function initTabs(){
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+        tabButtons.forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            const target = btn.dataset.tab;
+            tabButtons.forEach(b=> b.classList.toggle('active', b === btn));
+            tabPanels.forEach(panel=> panel.classList.toggle('active', panel.id === `tab-${target}`));
+            window.dispatchEvent(new Event('resize'));
+          });
+        });
+      }
+
+      function getCombinedRows(){
+        return state.sourceRaw.map((r, idx)=>({
+          id: idx + 1,
+          source: 'popular',
+          month: toMonthKey(r.month),
+          keyword: String(r.keyword || ''),
+          value: Number.isFinite(asNumber(r.percentage)) ? asNumber(r.percentage) : 0
+        })).concat(state.zeroRaw.map((r, idx)=>({
+          id: state.sourceRaw.length + idx + 1,
+          source: 'zero',
+          month: toMonthKey(r.month),
+          keyword: String(r.keyword || ''),
+          value: Number.isFinite(asNumber(r.count)) ? asNumber(r.count) : 0
+        })));
+      }
+
+      async function ensurePerspectiveLoaded(){
+        if(state.playground.pspReady) return true;
+        const urls = [
+          'https://cdn.jsdelivr.net/npm/@finos/perspective@2.11.0/dist/cdn/perspective.js',
+          'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer@2.11.0/dist/cdn/perspective-viewer.js',
+          'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid@2.11.0/dist/cdn/perspective-viewer-datagrid.js',
+          'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-d3fc@2.11.0/dist/cdn/perspective-viewer-d3fc.js'
+        ];
+        try{
+          for(const url of urls){
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise((resolve, reject)=>{
+              const s = document.createElement('script');
+              s.src = url;
+              s.onload = resolve;
+              s.onerror = reject;
+              document.head.appendChild(s);
+            });
+          }
+          state.playground.pspReady = true;
+          return true;
+        }catch(e){
+          setStatus('Perspective.js failed to load for raw playground');
+          return false;
+        }
+      }
+
+      function updateMappingsLabel(){
+        const el = document.getElementById('mapping-list');
+        if(!el) return;
+        if(!state.playground.links.length){
+          el.textContent = 'No links yet.';
+          return;
+        }
+        el.innerHTML = state.playground.links.map((l, i)=>`${i+1}. parent #${l.parentId} → child #${l.childId} (${l.parentField} → ${l.childField})`).join('<br>');
+      }
+
+      function findNode(nodeId){
+        return state.playground.nodes.find(n=>n.id === nodeId);
+      }
+
+      function renderLinks(){
+        const svg = document.getElementById('link-svg');
+        const wrap = document.getElementById('canvas-wrap');
+        if(!svg || !wrap) return;
+        const rect = wrap.getBoundingClientRect();
+        svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+        svg.innerHTML = state.playground.links.map(link=>{
+          const p = findNode(link.parentId);
+          const c = findNode(link.childId);
+          if(!p || !c) return '';
+          const x1 = p.x + 210 - wrap.scrollLeft;
+          const y1 = p.y + 145 - wrap.scrollTop;
+          const x2 = c.x + 210 - wrap.scrollLeft;
+          const y2 = c.y + 145 - wrap.scrollTop;
+          const cx = (x1 + x2) / 2;
+          return `<path d="M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}" stroke="#4C9AFF" stroke-width="2" fill="none"></path>`;
+        }).join('');
+      }
+
+      async function createPlaygroundNode(){
+        const ok = await ensurePerspectiveLoaded();
+        if(!ok) return;
+        const canvas = document.getElementById('canvas-inner');
+        if(!canvas) return;
+        const id = state.playground.nextId++;
+        const node = { id, x: 120 + (id-1) * 40, y: 120 + (id-1) * 30 };
+        state.playground.nodes.push(node);
+        const el = document.createElement('div');
+        el.className = 'node-card';
+        el.style.left = `${node.x}px`;
+        el.style.top = `${node.y}px`;
+        el.dataset.nodeId = String(id);
+        el.innerHTML = `<div class="node-head"><div class="node-meta">Widget #${id}</div><button class="btn ghost" data-node-link="${id}" style="padding:4px 8px">Select</button></div><div class="node-body"><perspective-viewer></perspective-viewer></div>`;
+        canvas.appendChild(el);
+        const viewer = el.querySelector('perspective-viewer');
+        const rows = getCombinedRows();
+        const table = await window.perspective.worker().table(rows.length ? rows : [{id:1, source:'empty', month:'-', keyword:'-', value:0}]);
+        await viewer.load(table);
+        await viewer.restore({settings:true, plugin:'Datagrid'});
+
+        const head = el.querySelector('.node-head');
+        head.addEventListener('mousedown', (evt)=>{
+          if(evt.target.closest('button')) return;
+          evt.preventDefault();
+          const startX = evt.clientX;
+          const startY = evt.clientY;
+          const baseX = node.x;
+          const baseY = node.y;
+          const onMove = (e)=>{
+            node.x = Math.max(0, baseX + e.clientX - startX);
+            node.y = Math.max(0, baseY + e.clientY - startY);
+            el.style.left = `${node.x}px`;
+            el.style.top = `${node.y}px`;
+            renderLinks();
+          };
+          const onUp = ()=>{
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+          };
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+        });
+        el.querySelector('[data-node-link]').addEventListener('click', ()=>{
+          if(!state.playground.linkMode) return;
+          if(!state.playground.selectedParentId){
+            state.playground.selectedParentId = id;
+            setStatus(`Link mode: parent selected (#${id}), click child next`);
+          }else if(state.playground.selectedParentId !== id){
+            state.playground.links.push({
+              parentId: state.playground.selectedParentId,
+              childId: id,
+              parentField: document.getElementById('parent-field').value.trim() || 'keyword',
+              childField: document.getElementById('child-field').value.trim() || 'keyword'
+            });
+            state.playground.selectedParentId = null;
+            updateMappingsLabel();
+            renderLinks();
+          }
+        });
+        renderLinks();
+      }
+
+      function initPlayground(){
+        const addBtn = document.getElementById('btn-add-node');
+        const linkBtn = document.getElementById('btn-link-mode');
+        const clearBtn = document.getElementById('btn-clear-links');
+        const wrap = document.getElementById('canvas-wrap');
+        if(!addBtn || !linkBtn || !clearBtn || !wrap) return;
+        addBtn.addEventListener('click', createPlaygroundNode);
+        linkBtn.addEventListener('click', ()=>{
+          state.playground.linkMode = !state.playground.linkMode;
+          state.playground.selectedParentId = null;
+          linkBtn.textContent = `Link mode: ${state.playground.linkMode ? 'On' : 'Off'}`;
+        });
+        clearBtn.addEventListener('click', ()=>{
+          state.playground.links = [];
+          state.playground.selectedParentId = null;
+          updateMappingsLabel();
+          renderLinks();
+        });
+        wrap.addEventListener('scroll', renderLinks);
+      }
+
+      const state = {
         charts: { race: null, zeros: null, trails: null, heatmap: null },
         sourceRaw: [], zeroRaw: [], zeroTotals: [],
         months: [],
@@ -368,7 +590,8 @@
         keywordFilter: [],
         heatTimeStartIdx: 0, heatTimeEndIdx: 0, heatTimeRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
         // default data autoload flags
-        manualSource: false, manualZero: false, defaultsTried: false
+        manualSource: false, manualZero: false, defaultsTried: false,
+        playground: { nextId: 1, linkMode: false, selectedParentId: null, nodes: [], links: [], pspReady: false }
       };
 
       const ICON_DOWNLOAD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
@@ -1276,6 +1499,8 @@
 
       initHelp();
       initAuthorToggle();
+      initTabs();
+      initPlayground();
 
       // Try to autoload defaults on boot (works on GitHub Pages when files are in repo)
       autoLoadDefaults();
