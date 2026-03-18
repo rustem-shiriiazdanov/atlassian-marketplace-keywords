@@ -441,10 +441,11 @@
         if(state.playground.pspReady) return true;
         if(state.playground.pspLoadingPromise) return state.playground.pspLoadingPromise;
         const bundles = [
-          { required: true, urls: ['https://esm.sh/@finos/perspective@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective/dist/esm/perspective.js'] },
-          { required: true, urls: ['https://esm.sh/@finos/perspective-viewer@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer/dist/esm/perspective-viewer.js'] },
-          { required: true, urls: ['https://esm.sh/@finos/perspective-viewer-datagrid@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid/dist/esm/perspective-viewer-datagrid.js'] }
+          { required: true, urls: ['https://unpkg.com/@finos/perspective?module', 'https://esm.sh/@finos/perspective@latest?bundle'] },
+          { required: true, urls: ['https://unpkg.com/@finos/perspective-viewer?module', 'https://esm.sh/@finos/perspective-viewer@latest?bundle'] },
+          { required: true, urls: ['https://unpkg.com/@finos/perspective-viewer-datagrid?module', 'https://esm.sh/@finos/perspective-viewer-datagrid@latest?bundle'] }
         ];
+        state.playground.lastError = '';
         state.playground.pspLoadingPromise = (async ()=>{
           try{
             const loadModuleAny = async (urls)=>{
@@ -454,6 +455,7 @@
                   const mod = await import(url);
                   return mod;
                 }catch(e){
+                  state.playground.lastError = `${url}: ${e?.message || e}`;
                   console.warn('Perspective module failed', url, e?.message || e);
                 }
               }
@@ -472,6 +474,7 @@
             return state.playground.pspReady;
           }catch(e){
             console.error('Perspective load failed', e);
+            state.playground.lastError = e?.message || String(e);
             state.playground.pspLoadingPromise = null;
             return false;
           }
@@ -584,7 +587,8 @@
             setStatus(`Widget #${id}: fallback mode`);
           }
         }else{
-          body.innerHTML = `<div class="node-fallback">Perspective CDN is not available right now. Please check your network/CDN access and try again.</div>`;
+          const details = state.playground.lastError ? `<br><br><code>${state.playground.lastError}</code>` : '';
+          body.innerHTML = `<div class="node-fallback">Perspective modules failed to load in this browser session.${details}</div>`;
           setStatus(`Widget #${id}: fallback mode`);
         }
         renderLinks();
@@ -622,7 +626,7 @@
         heatTimeStartIdx: 0, heatTimeEndIdx: 0, heatTimeRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
         // default data autoload flags
         manualSource: false, manualZero: false, defaultsTried: false,
-        playground: { nextId: 1, linkMode: false, selectedParentId: null, nodes: [], links: [], pspReady: false, pspLoadingPromise: null, pspApi: null }
+        playground: { nextId: 1, linkMode: false, selectedParentId: null, nodes: [], links: [], pspReady: false, pspLoadingPromise: null, pspApi: null, lastError: '' }
       };
 
       const ICON_DOWNLOAD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
