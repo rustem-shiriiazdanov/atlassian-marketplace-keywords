@@ -45,6 +45,8 @@
     .node-meta{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
     .node-body{height:240px}
     .node-body perspective-viewer{width:100%;height:100%}
+    .node-body iframe{width:100%;height:100%;border:0}
+    .node-fallback{height:100%;display:flex;align-items:center;justify-content:center;padding:12px;font-size:12px;color:var(--muted);text-align:center}
     .link-layer{position:absolute;inset:0;pointer-events:none}
     .mapping-list{font-size:12px;color:var(--muted);max-height:120px;overflow:auto}
     .panel{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.00));border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow)}
@@ -455,10 +457,10 @@
               document.head.appendChild(s);
             });
           }
-          state.playground.pspReady = true;
-          return true;
+          state.playground.pspReady = !!(window.perspective && customElements.get('perspective-viewer'));
+          return state.playground.pspReady;
         }catch(e){
-          setStatus('Perspective.js failed to load for raw playground');
+          console.error('Perspective load failed', e);
           return false;
         }
       }
@@ -497,10 +499,9 @@
       }
 
       async function createPlaygroundNode(){
-        const ok = await ensurePerspectiveLoaded();
-        if(!ok) return;
         const canvas = document.getElementById('canvas-inner');
         if(!canvas) return;
+        setStatus('Creating Perspective widget…');
         const id = state.playground.nextId++;
         const node = { id, x: 120 + (id-1) * 40, y: 120 + (id-1) * 30 };
         state.playground.nodes.push(node);
@@ -509,13 +510,8 @@
         el.style.left = `${node.x}px`;
         el.style.top = `${node.y}px`;
         el.dataset.nodeId = String(id);
-        el.innerHTML = `<div class="node-head"><div class="node-meta">Widget #${id}</div><button class="btn ghost" data-node-link="${id}" style="padding:4px 8px">Select</button></div><div class="node-body"><perspective-viewer></perspective-viewer></div>`;
+        el.innerHTML = `<div class="node-head"><div class="node-meta">Widget #${id}</div><button class="btn ghost" data-node-link="${id}" style="padding:4px 8px">Select</button></div><div class="node-body"><div class="node-fallback">Loading widget…</div></div>`;
         canvas.appendChild(el);
-        const viewer = el.querySelector('perspective-viewer');
-        const rows = getCombinedRows();
-        const table = await window.perspective.worker().table(rows.length ? rows : [{id:1, source:'empty', month:'-', keyword:'-', value:0}]);
-        await viewer.load(table);
-        await viewer.restore({settings:true, plugin:'Datagrid'});
 
         const head = el.querySelector('.node-head');
         head.addEventListener('mousedown', (evt)=>{
@@ -556,6 +552,26 @@
             renderLinks();
           }
         });
+        const body = el.querySelector('.node-body');
+        const ok = await ensurePerspectiveLoaded();
+        if(ok){
+          try{
+            body.innerHTML = '<perspective-viewer></perspective-viewer>';
+            const viewer = body.querySelector('perspective-viewer');
+            const rows = getCombinedRows();
+            const table = await window.perspective.worker().table(rows.length ? rows : [{id:1, source:'empty', month:'-', keyword:'-', value:0}]);
+            await viewer.load(table);
+            await viewer.restore({settings:true, plugin:'Datagrid'});
+            setStatus(`Widget #${id} ready`);
+          }catch(e){
+            console.error('Perspective widget init failed', e);
+            body.innerHTML = `<div class="node-fallback">Perspective failed to initialize. Opening editable demo fallback below.</div><iframe title="Perspective editable demo" src="https://perspective-dev.github.io/block/?example=editable"></iframe>`;
+            setStatus(`Widget #${id}: fallback mode`);
+          }
+        }else{
+          body.innerHTML = `<div class="node-fallback">Perspective CDN not reachable in this environment. Showing editable fallback demo.</div><iframe title="Perspective editable demo" src="https://perspective-dev.github.io/block/?example=editable"></iframe>`;
+          setStatus(`Widget #${id}: fallback mode`);
+        }
         renderLinks();
       }
 
