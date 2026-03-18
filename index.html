@@ -43,6 +43,7 @@
     .node-card{position:absolute;width:420px;min-width:320px;min-height:290px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(18,24,53,.9);box-shadow:var(--shadow);resize:both;overflow:hidden}
     .node-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.1);cursor:grab}
     .node-meta{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+    .node-state{font-size:11px;color:#8EA2E3}
     .node-body{height:calc(100% - 45px)}
     .node-body perspective-viewer{width:100%;height:100%}
     .node-fallback{height:100%;display:flex;align-items:center;justify-content:center;padding:12px;font-size:12px;color:var(--muted);text-align:center}
@@ -437,23 +438,32 @@
         })));
       }
 
-      function ensurePerspectiveStyles(){
-        if(state.playground.pspStylesLoaded) return;
+      async function ensurePerspectiveStyles(){
+        if(state.playground.pspStylesLoaded) return true;
+        if(state.playground.pspStylesPromise) return state.playground.pspStylesPromise;
         const cssUrls = [
           'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/css/variables.css',
           'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/css/icons.css',
           'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/css/pro.css',
           'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/css/themes.css'
         ];
-        for(const href of cssUrls){
-          if(document.querySelector(`link[data-psp-style="${href}"]`)) continue;
+        state.playground.pspStylesPromise = Promise.all(cssUrls.map((href)=> new Promise((resolve)=>{
+          const existing = document.querySelector(`link[data-psp-style="${href}"]`);
+          if(existing){
+            if(existing.dataset.pspLoaded === 'true') return resolve(true);
+            existing.addEventListener('load', ()=> resolve(true), { once:true });
+            existing.addEventListener('error', ()=> resolve(false), { once:true });
+            return;
+          }
           const link = document.createElement('link');
           link.rel = 'stylesheet';
           link.href = href;
           link.dataset.pspStyle = href;
+          link.addEventListener('load', ()=>{ link.dataset.pspLoaded = 'true'; resolve(true); }, { once:true });
+          link.addEventListener('error', ()=> resolve(false), { once:true });
           document.head.appendChild(link);
-        }
-        state.playground.pspStylesLoaded = true;
+        }))).then(()=>{ state.playground.pspStylesLoaded = true; return true; });
+        return state.playground.pspStylesPromise;
       }
 
       async function ensurePerspectiveLoaded(){
@@ -494,7 +504,7 @@
                 if(!window.perspective) window.perspective = state.playground.pspApi;
               }
             }
-            ensurePerspectiveStyles();
+            await ensurePerspectiveStyles();
             state.playground.pspReady = !!((state.playground.pspApi || window.perspective) && customElements.get('perspective-viewer'));
             return state.playground.pspReady;
           }catch(e){
@@ -552,7 +562,7 @@
         el.style.left = `${node.x}px`;
         el.style.top = `${node.y}px`;
         el.dataset.nodeId = String(id);
-        el.innerHTML = `<div class="node-head"><div class="node-meta">Widget #${id}</div><button class="btn ghost" data-node-link="${id}" style="padding:4px 8px">Select</button></div><div class="node-body"><div class="node-fallback">Loading widget…</div></div>`;
+        el.innerHTML = `<div class="node-head"><div class="node-meta">Widget #${id} <span class="node-state">Loading…</span></div><button class="btn ghost" data-node-link="${id}" style="padding:4px 8px">Select</button></div><div class="node-body"><div class="node-fallback">Loading widget…</div></div>`;
         canvas.appendChild(el);
 
         const head = el.querySelector('.node-head');
@@ -595,13 +605,20 @@
           }
         });
         const body = el.querySelector('.node-body');
+        const nodeState = el.querySelector('.node-state');
         const ok = await ensurePerspectiveLoaded();
         if(ok){
           try{
+            const rows = getCombinedRows();
+            if(!rows.length){
+              body.innerHTML = `<div class="node-fallback">No data yet. Upload Popular/Zero files or click <b>Load demo</b>, then add a widget again.</div>`;
+              if(nodeState) nodeState.textContent = 'No data';
+              setStatus(`Widget #${id}: no data`);
+              return;
+            }
             body.innerHTML = '<perspective-viewer></perspective-viewer>';
             const viewer = body.querySelector('perspective-viewer');
             viewer.setAttribute('settings', '');
-            const rows = getCombinedRows();
             const perspectiveApi = state.playground.pspApi || window.perspective;
             const payload = rows.length ? rows : [{id:1, source:'empty', month:'-', keyword:'-', value:0}];
             let table;
@@ -623,15 +640,18 @@
               const ro = new ResizeObserver(()=> viewer.resize?.());
               ro.observe(el);
             }
+            if(nodeState) nodeState.textContent = `Rows: ${rows.length}`;
             setStatus(`Widget #${id} ready`);
           }catch(e){
             console.error('Perspective widget init failed', e);
             body.innerHTML = `<div class="node-fallback">Perspective failed to initialize in this browser session. You can still drag and link nodes, and retry by creating a new widget.</div>`;
+            if(nodeState) nodeState.textContent = 'Error';
             setStatus(`Widget #${id}: fallback mode`);
           }
         }else{
           const details = state.playground.lastError ? `<br><br><code>${state.playground.lastError}</code>` : '';
           body.innerHTML = `<div class="node-fallback">Perspective modules failed to load in this browser session.${details}</div>`;
+          if(nodeState) nodeState.textContent = 'Error';
           setStatus(`Widget #${id}: fallback mode`);
         }
         renderLinks();
@@ -669,7 +689,7 @@
         heatTimeStartIdx: 0, heatTimeEndIdx: 0, heatTimeRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
         // default data autoload flags
         manualSource: false, manualZero: false, defaultsTried: false,
-        playground: { nextId: 1, linkMode: false, selectedParentId: null, nodes: [], links: [], pspReady: false, pspLoadingPromise: null, pspApi: null, pspStylesLoaded: false, lastError: '' }
+        playground: { nextId: 1, linkMode: false, selectedParentId: null, nodes: [], links: [], pspReady: false, pspLoadingPromise: null, pspApi: null, pspStylesLoaded: false, pspStylesPromise: null, lastError: '' }
       };
 
       const ICON_DOWNLOAD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
