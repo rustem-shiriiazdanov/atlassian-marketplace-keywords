@@ -72,6 +72,7 @@
     .status{font-size:12px;color:var(--muted);margin-top:6px;white-space:pre-line}
     input[type="range"]{accent-color:var(--accent)}
     input[type="file"]{color:var(--ink);font-size:12px}
+    input[type="text"],input[type="month"],select{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:var(--ink);border-radius:6px;padding:6px 8px;font-size:12px}
     code.bad{color:var(--danger)}
     .chip.disabled{opacity:.5}
     .chip.disabled input{accent-color:var(--muted);cursor:not-allowed}
@@ -80,6 +81,22 @@
     .mini{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px}
     .help{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:4px;border-radius:50%;background:var(--muted);color:#0B1021;font-size:11px;font-weight:700;cursor:pointer}
     .tooltip{position:absolute;z-index:1000;max-width:220px;background:var(--card);color:var(--ink);border:1px solid rgba(255,255,255,.12);padding:6px 8px;font-size:11px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.35);display:none;white-space:pre-wrap}
+
+    .tab-nav{display:flex;gap:8px;margin:18px 0 10px}
+    .tab-btn{cursor:pointer;border:1px solid rgba(255,255,255,.12);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 12px;font-weight:600}
+    .tab-btn.active{background:var(--accent);color:#0B1021;border-color:transparent}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+    .raw-layout{display:grid;grid-template-columns:280px 1fr;gap:16px}
+    .raw-sidebar .mini{margin-bottom:12px}
+    .raw-main{display:flex;flex-direction:column;gap:12px}
+    .raw-kpis{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:8px}
+    .kpi{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px}
+    .kpi .kpi-label{font-size:11px;color:var(--muted)}
+    .kpi .kpi-value{font-size:18px;font-weight:700;margin-top:4px}
+    .raw-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .perspective-host{height:420px;min-height:320px;background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden}
+    .raw-chart{height:320px;background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:12px}
     @media (max-width:980px){
       .author-column{position:static;margin-top:24px;width:auto}
       .grid{grid-template-columns:1fr}
@@ -88,6 +105,9 @@
       .tall{height:520px}
       .two-col{grid-template-columns:1fr}
       .mini-grid{grid-template-columns:1fr}
+      .raw-layout{grid-template-columns:1fr}
+      .raw-grid{grid-template-columns:1fr}
+      .raw-kpis{grid-template-columns:1fr 1fr}
     }
     html.mobile .wrap{max-width:100%;margin:12px auto;padding:0 10px}
     html.mobile header{flex-direction:column;align-items:flex-start}
@@ -136,7 +156,12 @@
           </div>
         </header>
 
-        <section class="grid">
+        <div id="tabNav" class="tab-nav" role="tablist" aria-label="Analysis Tabs">
+          <button id="tabBtnCharts" class="tab-btn active" role="tab" aria-selected="true" aria-controls="tabPanelCharts">Charts</button>
+          <button id="tabBtnRaw" class="tab-btn" role="tab" aria-selected="false" aria-controls="tabPanelRaw">Raw Analysis</button>
+        </div>
+
+        <section id="tabPanelCharts" class="grid tab-panel active" role="tabpanel">
       <!-- PANEL 1: Data inputs & diagnostics -->
       <div class="panel card" style="grid-column:1 / -1;">
         <h3>Data Inputs & Diagnostics <span class="help" data-help="Upload monthly keyword spreadsheets to drive the charts and check for missing data." data-testid="help-inputs">?</span></h3>
@@ -243,6 +268,58 @@
         <div class="status">This chart shows the top K zero-result keywords by total count across months, where darker means more empty (zero-result) searches.</div>
       </div>
         </section>
+
+        <section id="tabPanelRaw" class="tab-panel" role="tabpanel" aria-label="Raw Analysis">
+          <div class="panel card">
+            <h3>Raw Analysis Workspace (Perspective MVP)</h3>
+            <div class="controls soft">
+              <div class="chip"><label>Dataset</label>
+                <select id="rawDataset">
+                  <option value="combined">Combined</option>
+                  <option value="popular">Popular</option>
+                  <option value="zero">Zero-result</option>
+                </select>
+              </div>
+              <div class="chip"><label>Keyword contains</label><input id="rawKeywordSearch" type="text" placeholder="e.g. automation" /></div>
+              <div class="chip"><label>Month from</label><input id="rawMonthFrom" type="month" /></div>
+              <div class="chip"><label>Month to</label><input id="rawMonthTo" type="month" /></div>
+              <button id="rawApplyFilters" class="btn">Apply</button>
+              <button id="rawResetFilters" class="btn ghost">Reset</button>
+            </div>
+            <div class="raw-layout">
+              <aside class="raw-sidebar">
+                <div class="mini">
+                  <h3 style="margin-top:0">Linked analysis</h3>
+                  <div class="status">Click a row in either pivot to focus keyword across all views.</div>
+                  <div class="chip" style="margin-top:8px"><label>Selected keyword</label><span id="rawSelectedKeyword">All</span></div>
+                </div>
+              </aside>
+              <div class="raw-main">
+                <div class="raw-kpis">
+                  <div class="kpi"><div class="kpi-label">Rows</div><div id="rawKpiRows" class="kpi-value">0</div></div>
+                  <div class="kpi"><div class="kpi-label">Unique keywords</div><div id="rawKpiKeywords" class="kpi-value">0</div></div>
+                  <div class="kpi"><div class="kpi-label">Total count</div><div id="rawKpiCount" class="kpi-value">0</div></div>
+                  <div class="kpi"><div class="kpi-label">Avg percentage</div><div id="rawKpiPct" class="kpi-value">0%</div></div>
+                </div>
+                <div class="raw-grid">
+                  <div>
+                    <h3 style="margin:0 0 6px">Pivot A — Popular demand</h3>
+                    <perspective-viewer id="rawPivotPopular" class="perspective-host"></perspective-viewer>
+                  </div>
+                  <div>
+                    <h3 style="margin:0 0 6px">Pivot B — Zero-result pressure</h3>
+                    <perspective-viewer id="rawPivotZero" class="perspective-host"></perspective-viewer>
+                  </div>
+                </div>
+                <div>
+                  <h3 style="margin:0 0 6px">Linked trend chart (selection aware)</h3>
+                  <div id="rawLinkedChart" class="raw-chart"></div>
+                </div>
+                <div id="rawStatus" class="status">Raw analysis is waiting for data and Perspective libraries.</div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
       <aside class="author-column">
         <button id="author-toggle" class="author-toggle" aria-label="Toggle author card">&rsaquo;</button>
@@ -297,12 +374,33 @@
       'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
       'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'
     ];
+    const PERSPECTIVE_URLS = [
+      'https://cdn.jsdelivr.net/npm/@finos/perspective@3.8.0/dist/cdn/perspective.min.js',
+      'https://unpkg.com/@finos/perspective@3.8.0/dist/cdn/perspective.min.js'
+    ];
+    const PERSPECTIVE_VIEWER_URLS = [
+      'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer@3.8.0/dist/cdn/perspective-viewer.min.js',
+      'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/cdn/perspective-viewer.min.js'
+    ];
+    const PERSPECTIVE_DATAGRID_URLS = [
+      'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid@3.8.0/dist/cdn/perspective-viewer-datagrid.min.js',
+      'https://unpkg.com/@finos/perspective-viewer-datagrid@3.8.0/dist/cdn/perspective-viewer-datagrid.min.js'
+    ];
 
     function boot(){
       Promise.all([
         window.echarts ? Promise.resolve(window.echarts) : loadScriptSeq(ECHARTS_URLS, 'echarts'),
         window.XLSX ? Promise.resolve(window.XLSX) : loadScriptSeq(XLSX_URLS, 'XLSX')
       ]).then(()=>{
+        return loadScriptSeq(PERSPECTIVE_URLS, 'perspective')
+          .then(()=> loadScriptSeq(PERSPECTIVE_VIEWER_URLS, 'customElements'))
+          .then(()=> loadScriptSeq(PERSPECTIVE_DATAGRID_URLS, 'customElements'))
+          .then(()=> setStatus('Perspective loaded'))
+          .catch((err)=>{
+            console.warn('Perspective libraries failed to load:', err);
+            setStatus('Perspective failed to load; raw tab will be limited');
+          });
+      }).then(()=>{
         setStatus('libraries ready');
         startApp();
       }).catch(err=>{
@@ -367,6 +465,14 @@
         trailsN: 6, heatTopK: 15,
         keywordFilter: [],
         heatTimeStartIdx: 0, heatTimeEndIdx: 0, heatTimeRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
+        raw: {
+          dataset: 'combined',
+          keywordSearch: '',
+          monthFrom: '',
+          monthTo: '',
+          selectedKeyword: '',
+          rows: []
+        },
         // default data autoload flags
         manualSource: false, manualZero: false, defaultsTried: false
       };
@@ -958,6 +1064,178 @@
         if(el) el.textContent = `${state.trailsLegendPage+1}/${total}`;
       }
 
+      function setActiveTab(tabName){
+        const isRaw = tabName === 'raw';
+        document.getElementById('tabPanelCharts')?.classList.toggle('active', !isRaw);
+        document.getElementById('tabPanelRaw')?.classList.toggle('active', isRaw);
+        document.getElementById('tabBtnCharts')?.classList.toggle('active', !isRaw);
+        document.getElementById('tabBtnRaw')?.classList.toggle('active', isRaw);
+        document.getElementById('tabBtnCharts')?.setAttribute('aria-selected', String(!isRaw));
+        document.getElementById('tabBtnRaw')?.setAttribute('aria-selected', String(isRaw));
+        history.replaceState(null, '', isRaw ? '#raw' : '#charts');
+        if(isRaw){ updateRawAnalysis(); }
+      }
+
+      function getRawRows(){
+        const rows = [];
+        if(state.raw.dataset !== 'zero'){
+          for(const r of state.sourceRaw){
+            rows.push({
+              dataset: 'popular',
+              month: toMonthKey(r.month),
+              keyword: sanitizeKeyword(r.keyword),
+              percentage: asNumber(r.percentage),
+              count: null
+            });
+          }
+        }
+        if(state.raw.dataset !== 'popular'){
+          for(const r of state.zeroRaw){
+            rows.push({
+              dataset: 'zero',
+              month: toMonthKey(r.month),
+              keyword: sanitizeKeyword(r.keyword),
+              percentage: null,
+              count: asNumber(r.count || 0)
+            });
+          }
+        }
+        return rows.filter(r=>{
+          if(state.raw.keywordSearch && !r.keyword.toLowerCase().includes(state.raw.keywordSearch.toLowerCase())) return false;
+          if(state.raw.monthFrom && r.month < state.raw.monthFrom) return false;
+          if(state.raw.monthTo && r.month > state.raw.monthTo) return false;
+          if(state.raw.selectedKeyword && r.keyword !== state.raw.selectedKeyword) return false;
+          return !!r.keyword;
+        });
+      }
+
+      function initRawTabsAndFilters(){
+        document.getElementById('tabBtnCharts')?.addEventListener('click', ()=> setActiveTab('charts'));
+        document.getElementById('tabBtnRaw')?.addEventListener('click', ()=> setActiveTab('raw'));
+        window.addEventListener('hashchange', ()=>{
+          setActiveTab(location.hash === '#raw' ? 'raw' : 'charts');
+        });
+        setActiveTab(location.hash === '#raw' ? 'raw' : 'charts');
+
+        const dataset = document.getElementById('rawDataset');
+        const keywordSearch = document.getElementById('rawKeywordSearch');
+        const monthFrom = document.getElementById('rawMonthFrom');
+        const monthTo = document.getElementById('rawMonthTo');
+        const apply = document.getElementById('rawApplyFilters');
+        const reset = document.getElementById('rawResetFilters');
+        const applyFilters = ()=>{
+          state.raw.dataset = dataset?.value || 'combined';
+          state.raw.keywordSearch = keywordSearch?.value?.trim() || '';
+          state.raw.monthFrom = monthFrom?.value || '';
+          state.raw.monthTo = monthTo?.value || '';
+          updateRawAnalysis();
+        };
+        apply?.addEventListener('click', applyFilters);
+        keywordSearch?.addEventListener('keydown', (e)=>{ if(e.key==='Enter') applyFilters(); });
+        dataset?.addEventListener('change', applyFilters);
+        reset?.addEventListener('click', ()=>{
+          state.raw = { dataset:'combined', keywordSearch:'', monthFrom:'', monthTo:'', selectedKeyword:'', rows:[] };
+          if(dataset) dataset.value = 'combined';
+          if(keywordSearch) keywordSearch.value = '';
+          if(monthFrom) monthFrom.value = '';
+          if(monthTo) monthTo.value = '';
+          updateRawAnalysis();
+        });
+      }
+
+      function buildRawLinkedTrend(rows){
+        const byMonth = new Map();
+        for(const r of rows){
+          const m = r.month;
+          if(!byMonth.has(m)) byMonth.set(m, { popular:0, zero:0 });
+          const bucket = byMonth.get(m);
+          if(Number.isFinite(r.percentage)) bucket.popular += r.percentage;
+          if(Number.isFinite(r.count)) bucket.zero += r.count;
+        }
+        const months = Array.from(byMonth.keys()).sort();
+        return {
+          tooltip: { trigger: 'axis' },
+          legend: { data:['Popular %','Zero count'], top: 8, textStyle:{ color:'#E6E9F2' } },
+          grid: { top: 38, left: 46, right: 30, bottom: 36 },
+          xAxis: { type:'category', data: months, axisLabel:{ color:'#A9B0C6' } },
+          yAxis: [
+            { type:'value', name:'Popular %', axisLabel:{ color:'#A9B0C6' } },
+            { type:'value', name:'Zero', axisLabel:{ color:'#A9B0C6' } }
+          ],
+          series: [
+            { name:'Popular %', type:'line', smooth:true, data: months.map(m=> +(byMonth.get(m).popular||0).toFixed(2)) },
+            { name:'Zero count', type:'bar', yAxisIndex:1, data: months.map(m=> byMonth.get(m).zero||0), itemStyle:{ color:'#4C9AFF' }, opacity:.65 }
+          ]
+        };
+      }
+
+      async function bindPerspectiveViewer(el, rows, config){
+        if(!el) return;
+        if(!window.perspective || !el.load){
+          document.getElementById('rawStatus').textContent = 'Perspective libraries are not available. Please reload page/network.';
+          return;
+        }
+        const table = await window.perspective.table(rows);
+        await el.load(table);
+        await el.restore(config);
+      }
+
+      function updateRawKpis(rows){
+        const keywordSet = new Set(rows.map(r=>r.keyword).filter(Boolean));
+        const totalCount = rows.reduce((s,r)=> s + (Number.isFinite(r.count)?r.count:0), 0);
+        const pctRows = rows.filter(r=>Number.isFinite(r.percentage));
+        const avgPct = pctRows.length ? pctRows.reduce((s,r)=> s+r.percentage,0)/pctRows.length : 0;
+        document.getElementById('rawKpiRows').textContent = String(rows.length);
+        document.getElementById('rawKpiKeywords').textContent = String(keywordSet.size);
+        document.getElementById('rawKpiCount').textContent = String(Math.round(totalCount));
+        document.getElementById('rawKpiPct').textContent = `${avgPct.toFixed(2)}%`;
+      }
+
+      async function updateRawAnalysis(){
+        const status = document.getElementById('rawStatus');
+        const rows = getRawRows();
+        state.raw.rows = rows;
+        updateRawKpis(rows);
+        const selected = document.getElementById('rawSelectedKeyword');
+        if(selected) selected.textContent = state.raw.selectedKeyword || 'All';
+        if(!rows.length){
+          if(status) status.textContent = 'No rows to analyze in current filters.';
+          return;
+        }
+        if(status) status.textContent = `Loaded ${rows.length} rows into raw workspace`;
+        const popularRows = rows.filter(r=> r.dataset === 'popular');
+        const zeroRows = rows.filter(r=> r.dataset === 'zero');
+        await bindPerspectiveViewer(document.getElementById('rawPivotPopular'), popularRows.length ? popularRows : [{ month:'-', keyword:'no popular rows', percentage:0 }], {
+          plugin: 'Datagrid',
+          group_by: ['keyword'],
+          split_by: ['month'],
+          columns: ['percentage'],
+          sort: [['percentage','desc']]
+        });
+        await bindPerspectiveViewer(document.getElementById('rawPivotZero'), zeroRows.length ? zeroRows : [{ month:'-', keyword:'no zero rows', count:0 }], {
+          plugin: 'Datagrid',
+          group_by: ['keyword'],
+          split_by: ['month'],
+          columns: ['count'],
+          sort: [['count','desc']]
+        });
+        for(const id of ['rawPivotPopular','rawPivotZero']){
+          const el = document.getElementById(id);
+          if(el && !el.dataset.linked){
+            el.dataset.linked = '1';
+            el.addEventListener('perspective-click', (evt)=>{
+              const key = evt?.detail?.config?.row_pivots?.[0] || evt?.detail?.row?.[0] || '';
+              if(key && key !== '__ROW_PATH__'){
+                state.raw.selectedKeyword = String(key);
+                updateRawAnalysis();
+              }
+            });
+          }
+        }
+        const linkedChart = ensureChart('rawLinkedChart');
+        if(linkedChart){ linkedChart.setOption(buildRawLinkedTrend(rows), true); }
+      }
+
       // --- Render pipeline ---
       function updateHeatTimeRangeControls(){
         const max = state.months.length;
@@ -991,6 +1269,7 @@
       function renderAll(){
         populateKeywordOptions();
         toggleRangeSelectors();
+        updateRawAnalysis();
         if(!state.sourceRaw.length){ setStatus('waiting for Popular Search Keywords (or demo)'); return; }
         const { months, topByMonth } = groupByMonthTop(state.sourceRaw, 'percentage', state.topN, state.keywordFilter);
         
@@ -1249,6 +1528,9 @@
         ok('zeros container exists', !!document.getElementById('zeros'));
         ok('trails container exists', !!document.getElementById('trails'));
         ok('heatmap container exists', !!document.getElementById('heatmap'));
+        ok('raw tab button exists', !!document.getElementById('tabBtnRaw'));
+        ok('raw pivot A exists', !!document.getElementById('rawPivotPopular'));
+        ok('raw pivot B exists', !!document.getElementById('rawPivotZero'));
         ok('inputs help exists', !!document.querySelector('[data-testid="help-inputs"]'));
         ok('dynamics help exists', !!document.querySelector('[data-testid="help-dynamics"]'));
         ok('trails help exists', !!document.querySelector('[data-testid="help-trails"]'));
@@ -1276,11 +1558,12 @@
 
       initHelp();
       initAuthorToggle();
+      initRawTabsAndFilters();
 
       // Try to autoload defaults on boot (works on GitHub Pages when files are in repo)
       autoLoadDefaults();
 
-      window.addEventListener('resize', ()=>{ state.charts.race?.resize?.(); state.charts.zeros?.resize?.(); state.charts.trails?.resize?.(); state.charts.heatmap?.resize?.(); });
+      window.addEventListener('resize', ()=>{ state.charts.race?.resize?.(); state.charts.zeros?.resize?.(); state.charts.trails?.resize?.(); state.charts.heatmap?.resize?.(); state.charts.rawLinkedChart?.resize?.(); });
     }
   })();
   </script>
