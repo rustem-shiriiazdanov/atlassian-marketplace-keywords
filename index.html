@@ -441,10 +441,10 @@
         if(state.playground.pspReady) return true;
         if(state.playground.pspLoadingPromise) return state.playground.pspLoadingPromise;
         const bundles = [
-          ['https://cdn.jsdelivr.net/npm/@finos/perspective/dist/esm/perspective.js', 'https://unpkg.com/@finos/perspective/dist/esm/perspective.js'],
-          ['https://cdn.jsdelivr.net/npm/@finos/perspective-viewer/dist/esm/perspective-viewer.js', 'https://unpkg.com/@finos/perspective-viewer/dist/esm/perspective-viewer.js'],
-          ['https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid/dist/esm/perspective-viewer-datagrid.js', 'https://unpkg.com/@finos/perspective-viewer-datagrid/dist/esm/perspective-viewer-datagrid.js'],
-          ['https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-d3fc/dist/esm/perspective-viewer-d3fc.js', 'https://unpkg.com/@finos/perspective-viewer-d3fc/dist/esm/perspective-viewer-d3fc.js']
+          ['https://esm.sh/@finos/perspective@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective/dist/esm/perspective.js'],
+          ['https://esm.sh/@finos/perspective-viewer@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer/dist/esm/perspective-viewer.js'],
+          ['https://esm.sh/@finos/perspective-viewer-datagrid@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid/dist/esm/perspective-viewer-datagrid.js'],
+          ['https://esm.sh/@finos/perspective-viewer-d3fc@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-d3fc/dist/esm/perspective-viewer-d3fc.js']
         ];
         state.playground.pspLoadingPromise = (async ()=>{
           try{
@@ -455,7 +455,7 @@
                   const mod = await import(url);
                   return mod;
                 }catch(e){
-                  console.warn('Perspective module failed', url);
+                  console.warn('Perspective module failed', url, e?.message || e);
                 }
               }
               return null;
