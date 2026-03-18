@@ -577,7 +577,20 @@
             const viewer = body.querySelector('perspective-viewer');
             const rows = getCombinedRows();
             const perspectiveApi = state.playground.pspApi || window.perspective;
-            const table = await perspectiveApi.worker().table(rows.length ? rows : [{id:1, source:'empty', month:'-', keyword:'-', value:0}]);
+            const payload = rows.length ? rows : [{id:1, source:'empty', month:'-', keyword:'-', value:0}];
+            let table;
+            if(typeof perspectiveApi.worker === 'function'){
+              const workerClient = await perspectiveApi.worker();
+              if(workerClient && typeof workerClient.table === 'function'){
+                table = await workerClient.table(payload);
+              }
+            }
+            if(!table && typeof perspectiveApi.table === 'function'){
+              table = await perspectiveApi.table(payload);
+            }
+            if(!table){
+              throw new Error('Perspective API did not expose a usable table() constructor');
+            }
             await viewer.load(table);
             await viewer.restore({settings:true, plugin:'Datagrid'});
             setStatus(`Widget #${id} ready`);
