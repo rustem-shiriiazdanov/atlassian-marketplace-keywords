@@ -441,10 +441,10 @@
         if(state.playground.pspReady) return true;
         if(state.playground.pspLoadingPromise) return state.playground.pspLoadingPromise;
         const bundles = [
-          ['https://esm.sh/@finos/perspective@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective/dist/esm/perspective.js'],
-          ['https://esm.sh/@finos/perspective-viewer@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer/dist/esm/perspective-viewer.js'],
-          ['https://esm.sh/@finos/perspective-viewer-datagrid@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid/dist/esm/perspective-viewer-datagrid.js'],
-          ['https://esm.sh/@finos/perspective-viewer-d3fc@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-d3fc/dist/esm/perspective-viewer-d3fc.js']
+          { required: true, urls: ['https://esm.sh/@finos/perspective@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective/dist/esm/perspective.js'] },
+          { required: true, urls: ['https://esm.sh/@finos/perspective-viewer@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer/dist/esm/perspective-viewer.js'] },
+          { required: true, urls: ['https://esm.sh/@finos/perspective-viewer-datagrid@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid/dist/esm/perspective-viewer-datagrid.js'] },
+          { required: false, urls: ['https://esm.sh/@finos/perspective-viewer-d3fc@latest?bundle', 'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-d3fc/dist/esm/perspective-viewer-d3fc.js'] }
         ];
         state.playground.pspLoadingPromise = (async ()=>{
           try{
@@ -462,8 +462,12 @@
             };
             for(let idx=0; idx<bundles.length; idx++){
               // eslint-disable-next-line no-await-in-loop
-              const mod = await loadModuleAny(bundles[idx]);
-              if(!mod) throw new Error('Unable to load one of Perspective bundles');
+              const mod = await loadModuleAny(bundles[idx].urls);
+              if(!mod){
+                if(bundles[idx].required) throw new Error('Unable to load one of Perspective required bundles');
+                console.warn('Optional Perspective plugin unavailable; continuing without it');
+                continue;
+              }
               if(idx === 0){
                 state.playground.pspApi = mod.default || mod;
                 if(!window.perspective) window.perspective = state.playground.pspApi;
