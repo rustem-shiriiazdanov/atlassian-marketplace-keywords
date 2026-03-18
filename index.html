@@ -366,6 +366,23 @@
       });
     }
 
+    async function loadModuleSeq(urls, validate){
+      let lastErr = null;
+      for(const url of urls){
+        try{
+          setStatus(`loading module from ${new URL(url).hostname}…`);
+          const mod = await import(url);
+          if(!validate || validate(mod)){
+            return mod;
+          }
+        }catch(err){
+          lastErr = err;
+          setStatus(`module failed from ${new URL(url).hostname}, trying next…`);
+        }
+      }
+      throw lastErr || new Error('All module URLs failed');
+    }
+
     const ECHARTS_URLS = [
       'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
       'https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js',
@@ -378,16 +395,16 @@
       'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'
     ];
     const PERSPECTIVE_URLS = [
-      'https://cdn.jsdelivr.net/npm/@finos/perspective@3.8.0/dist/cdn/perspective.min.js',
-      'https://unpkg.com/@finos/perspective@3.8.0/dist/cdn/perspective.min.js'
+      'https://cdn.jsdelivr.net/npm/@finos/perspective@3.8.0/dist/cdn/perspective.js',
+      'https://unpkg.com/@finos/perspective@3.8.0/dist/cdn/perspective.js'
     ];
     const PERSPECTIVE_VIEWER_URLS = [
-      'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer@3.8.0/dist/cdn/perspective-viewer.min.js',
-      'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/cdn/perspective-viewer.min.js'
+      'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer@3.8.0/dist/cdn/perspective-viewer.js',
+      'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/cdn/perspective-viewer.js'
     ];
     const PERSPECTIVE_DATAGRID_URLS = [
-      'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid@3.8.0/dist/cdn/perspective-viewer-datagrid.min.js',
-      'https://unpkg.com/@finos/perspective-viewer-datagrid@3.8.0/dist/cdn/perspective-viewer-datagrid.min.js'
+      'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid@3.8.0/dist/cdn/perspective-viewer-datagrid.js',
+      'https://unpkg.com/@finos/perspective-viewer-datagrid@3.8.0/dist/cdn/perspective-viewer-datagrid.js'
     ];
 
     function boot(){
@@ -395,9 +412,10 @@
         window.echarts ? Promise.resolve(window.echarts) : loadScriptSeq(ECHARTS_URLS, 'echarts'),
         window.XLSX ? Promise.resolve(window.XLSX) : loadScriptSeq(XLSX_URLS, 'XLSX')
       ]).then(()=>{
-        return loadScriptSeq(PERSPECTIVE_URLS, 'perspective')
-          .then(()=> loadScriptSeq(PERSPECTIVE_VIEWER_URLS, 'customElements'))
-          .then(()=> loadScriptSeq(PERSPECTIVE_DATAGRID_URLS, 'customElements'))
+        return loadModuleSeq(PERSPECTIVE_URLS, (mod)=> !!(mod?.default || mod?.worker || mod?.websocket))
+          .then((mod)=>{ window.perspective = mod.default || mod; })
+          .then(()=> loadModuleSeq(PERSPECTIVE_VIEWER_URLS, ()=> !!customElements.get('perspective-viewer')))
+          .then(()=> loadModuleSeq(PERSPECTIVE_DATAGRID_URLS, ()=> true))
           .then(()=> setStatus('Perspective loaded'))
           .catch((err)=>{
             console.warn('Perspective libraries failed to load:', err);
@@ -476,7 +494,8 @@
           links: { keyword: '', month: '' },
           rows: [],
           instances: [],
-          nextInstanceId: 1
+          nextInstanceId: 1,
+          perspectiveWorker: null
         },
         // default data autoload flags
         manualSource: false, manualZero: false, defaultsTried: false
@@ -1210,7 +1229,7 @@
           updateRawAnalysis();
         });
         reset?.addEventListener('click', ()=>{
-          state.raw = { dataset:'combined', keywordSearch:'', monthFrom:'', monthTo:'', links:{ keyword:'', month:'' }, rows:[], instances:[], nextInstanceId:1 };
+          state.raw = { dataset:'combined', keywordSearch:'', monthFrom:'', monthTo:'', links:{ keyword:'', month:'' }, rows:[], instances:[], nextInstanceId:1, perspectiveWorker:null };
           if(dataset) dataset.value = 'combined';
           if(keywordSearch) keywordSearch.value = '';
           if(monthFrom) monthFrom.value = '';
@@ -1253,11 +1272,14 @@
 
       async function bindPerspectiveViewer(el, rows, config){
         if(!el) return;
-        if(!window.perspective || !el.load){
+        if(!window.perspective || typeof window.perspective.worker !== 'function' || !el.load){
           document.getElementById('rawStatus').textContent = 'Perspective libraries are not available. Please reload page/network.';
           return;
         }
-        const table = await window.perspective.table(rows);
+        if(!state.raw.perspectiveWorker){
+          state.raw.perspectiveWorker = await window.perspective.worker();
+        }
+        const table = await state.raw.perspectiveWorker.table(rows);
         await el.load(table);
         await el.restore(config);
       }
