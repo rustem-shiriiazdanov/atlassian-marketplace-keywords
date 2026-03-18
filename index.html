@@ -439,54 +439,45 @@
 
       async function ensurePerspectiveLoaded(){
         if(state.playground.pspReady) return true;
+        if(state.playground.pspLoadingPromise) return state.playground.pspLoadingPromise;
         const bundles = [
-          [
-            'https://cdn.jsdelivr.net/npm/@finos/perspective/dist/cdn/perspective.js',
-            'https://unpkg.com/@finos/perspective/dist/cdn/perspective.js'
-          ],
-          [
-            'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer/dist/cdn/perspective-viewer.js',
-            'https://unpkg.com/@finos/perspective-viewer/dist/cdn/perspective-viewer.js'
-          ],
-          [
-            'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid/dist/cdn/perspective-viewer-datagrid.js',
-            'https://unpkg.com/@finos/perspective-viewer-datagrid/dist/cdn/perspective-viewer-datagrid.js'
-          ],
-          [
-            'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-d3fc/dist/cdn/perspective-viewer-d3fc.js',
-            'https://unpkg.com/@finos/perspective-viewer-d3fc/dist/cdn/perspective-viewer-d3fc.js'
-          ]
+          ['https://cdn.jsdelivr.net/npm/@finos/perspective/dist/esm/perspective.js', 'https://unpkg.com/@finos/perspective/dist/esm/perspective.js'],
+          ['https://cdn.jsdelivr.net/npm/@finos/perspective-viewer/dist/esm/perspective-viewer.js', 'https://unpkg.com/@finos/perspective-viewer/dist/esm/perspective-viewer.js'],
+          ['https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid/dist/esm/perspective-viewer-datagrid.js', 'https://unpkg.com/@finos/perspective-viewer-datagrid/dist/esm/perspective-viewer-datagrid.js'],
+          ['https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-d3fc/dist/esm/perspective-viewer-d3fc.js', 'https://unpkg.com/@finos/perspective-viewer-d3fc/dist/esm/perspective-viewer-d3fc.js']
         ];
-        try{
-          const loadAny = async (urls)=>{
-            for(const url of urls){
-              try{
-                // eslint-disable-next-line no-await-in-loop
-                await new Promise((resolve, reject)=>{
-                  const s = document.createElement('script');
-                  s.src = url;
-                  s.onload = resolve;
-                  s.onerror = reject;
-                  document.head.appendChild(s);
-                });
-                return true;
-              }catch(e){
-                console.warn('Perspective script failed', url);
+        state.playground.pspLoadingPromise = (async ()=>{
+          try{
+            const loadModuleAny = async (urls)=>{
+              for(const url of urls){
+                try{
+                  // eslint-disable-next-line no-await-in-loop
+                  const mod = await import(url);
+                  return mod;
+                }catch(e){
+                  console.warn('Perspective module failed', url);
+                }
+              }
+              return null;
+            };
+            for(let idx=0; idx<bundles.length; idx++){
+              // eslint-disable-next-line no-await-in-loop
+              const mod = await loadModuleAny(bundles[idx]);
+              if(!mod) throw new Error('Unable to load one of Perspective bundles');
+              if(idx === 0){
+                state.playground.pspApi = mod.default || mod;
+                if(!window.perspective) window.perspective = state.playground.pspApi;
               }
             }
+            state.playground.pspReady = !!((state.playground.pspApi || window.perspective) && customElements.get('perspective-viewer'));
+            return state.playground.pspReady;
+          }catch(e){
+            console.error('Perspective load failed', e);
+            state.playground.pspLoadingPromise = null;
             return false;
-          };
-          for(const urlGroup of bundles){
-            // eslint-disable-next-line no-await-in-loop
-            const loaded = await loadAny(urlGroup);
-            if(!loaded) throw new Error('Unable to load one of Perspective bundles');
           }
-          state.playground.pspReady = !!(window.perspective && customElements.get('perspective-viewer'));
-          return state.playground.pspReady;
-        }catch(e){
-          console.error('Perspective load failed', e);
-          return false;
-        }
+        })();
+        return state.playground.pspLoadingPromise;
       }
 
       function updateMappingsLabel(){
@@ -583,7 +574,8 @@
             body.innerHTML = '<perspective-viewer></perspective-viewer>';
             const viewer = body.querySelector('perspective-viewer');
             const rows = getCombinedRows();
-            const table = await window.perspective.worker().table(rows.length ? rows : [{id:1, source:'empty', month:'-', keyword:'-', value:0}]);
+            const perspectiveApi = state.playground.pspApi || window.perspective;
+            const table = await perspectiveApi.worker().table(rows.length ? rows : [{id:1, source:'empty', month:'-', keyword:'-', value:0}]);
             await viewer.load(table);
             await viewer.restore({settings:true, plugin:'Datagrid'});
             setStatus(`Widget #${id} ready`);
@@ -631,7 +623,7 @@
         heatTimeStartIdx: 0, heatTimeEndIdx: 0, heatTimeRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
         // default data autoload flags
         manualSource: false, manualZero: false, defaultsTried: false,
-        playground: { nextId: 1, linkMode: false, selectedParentId: null, nodes: [], links: [], pspReady: false }
+        playground: { nextId: 1, linkMode: false, selectedParentId: null, nodes: [], links: [], pspReady: false, pspLoadingPromise: null, pspApi: null }
       };
 
       const ICON_DOWNLOAD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
