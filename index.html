@@ -45,7 +45,6 @@
     .node-meta{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
     .node-body{height:240px}
     .node-body perspective-viewer{width:100%;height:100%}
-    .node-body iframe{width:100%;height:100%;border:0}
     .node-fallback{height:100%;display:flex;align-items:center;justify-content:center;padding:12px;font-size:12px;color:var(--muted);text-align:center}
     .link-layer{position:absolute;inset:0;pointer-events:none}
     .mapping-list{font-size:12px;color:var(--muted);max-height:120px;overflow:auto}
@@ -440,22 +439,47 @@
 
       async function ensurePerspectiveLoaded(){
         if(state.playground.pspReady) return true;
-        const urls = [
-          'https://cdn.jsdelivr.net/npm/@finos/perspective@2.11.0/dist/cdn/perspective.js',
-          'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer@2.11.0/dist/cdn/perspective-viewer.js',
-          'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid@2.11.0/dist/cdn/perspective-viewer-datagrid.js',
-          'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-d3fc@2.11.0/dist/cdn/perspective-viewer-d3fc.js'
+        const bundles = [
+          [
+            'https://cdn.jsdelivr.net/npm/@finos/perspective/dist/cdn/perspective.js',
+            'https://unpkg.com/@finos/perspective/dist/cdn/perspective.js'
+          ],
+          [
+            'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer/dist/cdn/perspective-viewer.js',
+            'https://unpkg.com/@finos/perspective-viewer/dist/cdn/perspective-viewer.js'
+          ],
+          [
+            'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid/dist/cdn/perspective-viewer-datagrid.js',
+            'https://unpkg.com/@finos/perspective-viewer-datagrid/dist/cdn/perspective-viewer-datagrid.js'
+          ],
+          [
+            'https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-d3fc/dist/cdn/perspective-viewer-d3fc.js',
+            'https://unpkg.com/@finos/perspective-viewer-d3fc/dist/cdn/perspective-viewer-d3fc.js'
+          ]
         ];
         try{
-          for(const url of urls){
+          const loadAny = async (urls)=>{
+            for(const url of urls){
+              try{
+                // eslint-disable-next-line no-await-in-loop
+                await new Promise((resolve, reject)=>{
+                  const s = document.createElement('script');
+                  s.src = url;
+                  s.onload = resolve;
+                  s.onerror = reject;
+                  document.head.appendChild(s);
+                });
+                return true;
+              }catch(e){
+                console.warn('Perspective script failed', url);
+              }
+            }
+            return false;
+          };
+          for(const urlGroup of bundles){
             // eslint-disable-next-line no-await-in-loop
-            await new Promise((resolve, reject)=>{
-              const s = document.createElement('script');
-              s.src = url;
-              s.onload = resolve;
-              s.onerror = reject;
-              document.head.appendChild(s);
-            });
+            const loaded = await loadAny(urlGroup);
+            if(!loaded) throw new Error('Unable to load one of Perspective bundles');
           }
           state.playground.pspReady = !!(window.perspective && customElements.get('perspective-viewer'));
           return state.playground.pspReady;
@@ -565,11 +589,11 @@
             setStatus(`Widget #${id} ready`);
           }catch(e){
             console.error('Perspective widget init failed', e);
-            body.innerHTML = `<div class="node-fallback">Perspective failed to initialize. Opening editable demo fallback below.</div><iframe title="Perspective editable demo" src="https://perspective-dev.github.io/block/?example=editable"></iframe>`;
+            body.innerHTML = `<div class="node-fallback">Perspective failed to initialize in this browser session. You can still drag and link nodes, and retry by creating a new widget.</div>`;
             setStatus(`Widget #${id}: fallback mode`);
           }
         }else{
-          body.innerHTML = `<div class="node-fallback">Perspective CDN not reachable in this environment. Showing editable fallback demo.</div><iframe title="Perspective editable demo" src="https://perspective-dev.github.io/block/?example=editable"></iframe>`;
+          body.innerHTML = `<div class="node-fallback">Perspective CDN is not available right now. Please check your network/CDN access and try again.</div>`;
           setStatus(`Widget #${id}: fallback mode`);
         }
         renderLinks();
