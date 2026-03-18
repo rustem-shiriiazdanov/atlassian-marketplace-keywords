@@ -95,7 +95,12 @@
     .kpi .kpi-label{font-size:11px;color:var(--muted)}
     .kpi .kpi-value{font-size:18px;font-weight:700;margin-top:4px}
     .raw-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .perspective-host{height:420px;min-height:320px;background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden}
+    .raw-instance{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:8px}
+    .raw-instance-head{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:6px}
+    .raw-instance-title{font-size:12px;font-weight:700;color:var(--ink)}
+    .raw-instance-tools{display:flex;gap:6px;align-items:center}
+    .raw-instance-tools select{padding:4px 6px}
+    .perspective-host{height:360px;min-height:280px;background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:8px;overflow:hidden;width:100%}
     .raw-chart{height:320px;background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:12px}
     @media (max-width:980px){
       .author-column{position:static;margin-top:24px;width:auto}
@@ -271,7 +276,7 @@
 
         <section id="tabPanelRaw" class="tab-panel" role="tabpanel" aria-label="Raw Analysis">
           <div class="panel card">
-            <h3>Raw Analysis Workspace (Perspective MVP)</h3>
+            <h3>Raw Analysis Playground (Perspective MVP)</h3>
             <div class="controls soft">
               <div class="chip"><label>Dataset</label>
                 <select id="rawDataset">
@@ -283,15 +288,26 @@
               <div class="chip"><label>Keyword contains</label><input id="rawKeywordSearch" type="text" placeholder="e.g. automation" /></div>
               <div class="chip"><label>Month from</label><input id="rawMonthFrom" type="month" /></div>
               <div class="chip"><label>Month to</label><input id="rawMonthTo" type="month" /></div>
+              <div class="chip"><label>New instance</label>
+                <select id="rawNewInstanceType">
+                  <option value="pivot-popular">Pivot: Popular</option>
+                  <option value="pivot-zero">Pivot: Zero-result</option>
+                  <option value="table">Table: Combined</option>
+                  <option value="chart">Chart: Trend</option>
+                </select>
+              </div>
+              <button id="rawAddInstance" class="btn">+ Add instance</button>
               <button id="rawApplyFilters" class="btn">Apply</button>
               <button id="rawResetFilters" class="btn ghost">Reset</button>
+              <button id="rawClearLinks" class="btn ghost">Clear links</button>
             </div>
             <div class="raw-layout">
               <aside class="raw-sidebar">
                 <div class="mini">
-                  <h3 style="margin-top:0">Linked analysis</h3>
-                  <div class="status">Click a row in either pivot to focus keyword across all views.</div>
-                  <div class="chip" style="margin-top:8px"><label>Selected keyword</label><span id="rawSelectedKeyword">All</span></div>
+                  <h3 style="margin-top:0">Workspace links</h3>
+                  <div class="status">Click inside any Perspective instance to set shared link filters. All linked instances refresh together.</div>
+                  <div class="chip" style="margin-top:8px"><label>keyword</label><span id="rawLinkKeyword">All</span></div>
+                  <div class="chip" style="margin-top:8px"><label>month</label><span id="rawLinkMonth">All</span></div>
                 </div>
               </aside>
               <div class="raw-main">
@@ -301,20 +317,7 @@
                   <div class="kpi"><div class="kpi-label">Total count</div><div id="rawKpiCount" class="kpi-value">0</div></div>
                   <div class="kpi"><div class="kpi-label">Avg percentage</div><div id="rawKpiPct" class="kpi-value">0%</div></div>
                 </div>
-                <div class="raw-grid">
-                  <div>
-                    <h3 style="margin:0 0 6px">Pivot A — Popular demand</h3>
-                    <perspective-viewer id="rawPivotPopular" class="perspective-host"></perspective-viewer>
-                  </div>
-                  <div>
-                    <h3 style="margin:0 0 6px">Pivot B — Zero-result pressure</h3>
-                    <perspective-viewer id="rawPivotZero" class="perspective-host"></perspective-viewer>
-                  </div>
-                </div>
-                <div>
-                  <h3 style="margin:0 0 6px">Linked trend chart (selection aware)</h3>
-                  <div id="rawLinkedChart" class="raw-chart"></div>
-                </div>
+                <div id="rawWorkspaceInstances" class="raw-grid"></div>
                 <div id="rawStatus" class="status">Raw analysis is waiting for data and Perspective libraries.</div>
               </div>
             </div>
@@ -470,8 +473,10 @@
           keywordSearch: '',
           monthFrom: '',
           monthTo: '',
-          selectedKeyword: '',
-          rows: []
+          links: { keyword: '', month: '' },
+          rows: [],
+          instances: [],
+          nextInstanceId: 1
         },
         // default data autoload flags
         manualSource: false, manualZero: false, defaultsTried: false
@@ -1104,9 +1109,70 @@
           if(state.raw.keywordSearch && !r.keyword.toLowerCase().includes(state.raw.keywordSearch.toLowerCase())) return false;
           if(state.raw.monthFrom && r.month < state.raw.monthFrom) return false;
           if(state.raw.monthTo && r.month > state.raw.monthTo) return false;
-          if(state.raw.selectedKeyword && r.keyword !== state.raw.selectedKeyword) return false;
+          if(state.raw.links.keyword && r.keyword !== state.raw.links.keyword) return false;
+          if(state.raw.links.month && r.month !== state.raw.links.month) return false;
           return !!r.keyword;
         });
+      }
+
+      function defaultInstanceFor(type){
+        const id = state.raw.nextInstanceId++;
+        const map = {
+          'pivot-popular': { id, type:'pivot-popular', title:'Pivot (Popular)', linkKey:'keyword' },
+          'pivot-zero': { id, type:'pivot-zero', title:'Pivot (Zero-result)', linkKey:'keyword' },
+          'table': { id, type:'table', title:'Table (Combined)', linkKey:'keyword' },
+          'chart': { id, type:'chart', title:'Chart (Trend)', linkKey:'keyword' }
+        };
+        return map[type] || map['table'];
+      }
+
+      function addRawInstance(type){
+        state.raw.instances.push(defaultInstanceFor(type));
+        renderRawWorkspaceShell();
+        updateRawAnalysis();
+      }
+
+      function removeRawInstance(id){
+        state.raw.instances = state.raw.instances.filter(x=>x.id !== id);
+        renderRawWorkspaceShell();
+        updateRawAnalysis();
+      }
+
+      function renderRawWorkspaceShell(){
+        const host = document.getElementById('rawWorkspaceInstances');
+        if(!host) return;
+        host.innerHTML = '';
+        for(const inst of state.raw.instances){
+          const card = document.createElement('div');
+          card.className = 'raw-instance';
+          card.id = `rawInstCard${inst.id}`;
+          const title = inst.type === 'chart' ? `<div id="rawInstBody${inst.id}" class="raw-chart"></div>` : `<perspective-viewer id="rawInstBody${inst.id}" class="perspective-host"></perspective-viewer>`;
+          card.innerHTML = `
+            <div class="raw-instance-head">
+              <div class="raw-instance-title">${inst.title}</div>
+              <div class="raw-instance-tools">
+                <label style="font-size:11px;color:var(--muted)">Link key</label>
+                <select id="rawInstLink${inst.id}">
+                  <option value="keyword" ${inst.linkKey==='keyword'?'selected':''}>keyword</option>
+                  <option value="month" ${inst.linkKey==='month'?'selected':''}>month</option>
+                  <option value="none" ${inst.linkKey==='none'?'selected':''}>none</option>
+                </select>
+                <button id="rawInstRemove${inst.id}" class="btn ghost" style="padding:4px 8px">Remove</button>
+              </div>
+            </div>
+            ${title}
+          `;
+          host.appendChild(card);
+          document.getElementById(`rawInstRemove${inst.id}`)?.addEventListener('click', ()=> removeRawInstance(inst.id));
+          document.getElementById(`rawInstLink${inst.id}`)?.addEventListener('change', (e)=>{ inst.linkKey = e.target.value; });
+        }
+      }
+
+      function updateRawLinkBadges(){
+        const keyword = document.getElementById('rawLinkKeyword');
+        const month = document.getElementById('rawLinkMonth');
+        if(keyword) keyword.textContent = state.raw.links.keyword || 'All';
+        if(month) month.textContent = state.raw.links.month || 'All';
       }
 
       function initRawTabsAndFilters(){
@@ -1121,8 +1187,11 @@
         const keywordSearch = document.getElementById('rawKeywordSearch');
         const monthFrom = document.getElementById('rawMonthFrom');
         const monthTo = document.getElementById('rawMonthTo');
+        const newType = document.getElementById('rawNewInstanceType');
+        const addInstanceBtn = document.getElementById('rawAddInstance');
         const apply = document.getElementById('rawApplyFilters');
         const reset = document.getElementById('rawResetFilters');
+        const clearLinks = document.getElementById('rawClearLinks');
         const applyFilters = ()=>{
           state.raw.dataset = dataset?.value || 'combined';
           state.raw.keywordSearch = keywordSearch?.value?.trim() || '';
@@ -1133,14 +1202,27 @@
         apply?.addEventListener('click', applyFilters);
         keywordSearch?.addEventListener('keydown', (e)=>{ if(e.key==='Enter') applyFilters(); });
         dataset?.addEventListener('change', applyFilters);
+        addInstanceBtn?.addEventListener('click', ()=> addRawInstance(newType?.value || 'table'));
+        clearLinks?.addEventListener('click', ()=>{
+          state.raw.links.keyword = '';
+          state.raw.links.month = '';
+          updateRawLinkBadges();
+          updateRawAnalysis();
+        });
         reset?.addEventListener('click', ()=>{
-          state.raw = { dataset:'combined', keywordSearch:'', monthFrom:'', monthTo:'', selectedKeyword:'', rows:[] };
+          state.raw = { dataset:'combined', keywordSearch:'', monthFrom:'', monthTo:'', links:{ keyword:'', month:'' }, rows:[], instances:[], nextInstanceId:1 };
           if(dataset) dataset.value = 'combined';
           if(keywordSearch) keywordSearch.value = '';
           if(monthFrom) monthFrom.value = '';
           if(monthTo) monthTo.value = '';
+          addRawInstance('pivot-popular');
+          addRawInstance('pivot-zero');
+          addRawInstance('chart');
           updateRawAnalysis();
         });
+        addRawInstance('pivot-popular');
+        addRawInstance('pivot-zero');
+        addRawInstance('chart');
       }
 
       function buildRawLinkedTrend(rows){
@@ -1195,45 +1277,47 @@
         const status = document.getElementById('rawStatus');
         const rows = getRawRows();
         state.raw.rows = rows;
+        updateRawLinkBadges();
         updateRawKpis(rows);
-        const selected = document.getElementById('rawSelectedKeyword');
-        if(selected) selected.textContent = state.raw.selectedKeyword || 'All';
         if(!rows.length){
           if(status) status.textContent = 'No rows to analyze in current filters.';
           return;
         }
         if(status) status.textContent = `Loaded ${rows.length} rows into raw workspace`;
-        const popularRows = rows.filter(r=> r.dataset === 'popular');
-        const zeroRows = rows.filter(r=> r.dataset === 'zero');
-        await bindPerspectiveViewer(document.getElementById('rawPivotPopular'), popularRows.length ? popularRows : [{ month:'-', keyword:'no popular rows', percentage:0 }], {
-          plugin: 'Datagrid',
-          group_by: ['keyword'],
-          split_by: ['month'],
-          columns: ['percentage'],
-          sort: [['percentage','desc']]
-        });
-        await bindPerspectiveViewer(document.getElementById('rawPivotZero'), zeroRows.length ? zeroRows : [{ month:'-', keyword:'no zero rows', count:0 }], {
-          plugin: 'Datagrid',
-          group_by: ['keyword'],
-          split_by: ['month'],
-          columns: ['count'],
-          sort: [['count','desc']]
-        });
-        for(const id of ['rawPivotPopular','rawPivotZero']){
-          const el = document.getElementById(id);
-          if(el && !el.dataset.linked){
+        for(const inst of state.raw.instances){
+          const el = document.getElementById(`rawInstBody${inst.id}`);
+          if(!el) continue;
+          if(inst.type === 'chart'){
+            const chart = ensureChart(`rawInstBody${inst.id}`);
+            if(chart){ chart.setOption(buildRawLinkedTrend(rows), true); }
+            continue;
+          }
+          const instRows = inst.type === 'pivot-popular'
+            ? rows.filter(r=> r.dataset === 'popular')
+            : inst.type === 'pivot-zero'
+              ? rows.filter(r=> r.dataset === 'zero')
+              : rows;
+          const fallback = inst.type === 'pivot-zero' ? [{ month:'-', keyword:'no zero rows', count:0 }] : [{ month:'-', keyword:'no rows', percentage:0, count:0 }];
+          const config = inst.type === 'pivot-popular'
+            ? { plugin:'Datagrid', group_by:['keyword'], split_by:['month'], columns:['percentage'], sort:[['percentage','desc']] }
+            : inst.type === 'pivot-zero'
+              ? { plugin:'Datagrid', group_by:['keyword'], split_by:['month'], columns:['count'], sort:[['count','desc']] }
+              : { plugin:'Datagrid', columns:['dataset','month','keyword','percentage','count'], sort:[['month','asc']] };
+          await bindPerspectiveViewer(el, instRows.length ? instRows : fallback, config);
+          if(!el.dataset.linked){
             el.dataset.linked = '1';
             el.addEventListener('perspective-click', (evt)=>{
-              const key = evt?.detail?.config?.row_pivots?.[0] || evt?.detail?.row?.[0] || '';
-              if(key && key !== '__ROW_PATH__'){
-                state.raw.selectedKeyword = String(key);
+              if(inst.linkKey === 'none') return;
+              const row = evt?.detail?.row || {};
+              const maybeValue = inst.linkKey === 'keyword' ? (row.keyword || row[0] || '') : (row.month || row[0] || '');
+              if(maybeValue){
+                if(inst.linkKey === 'keyword') state.raw.links.keyword = String(maybeValue);
+                if(inst.linkKey === 'month') state.raw.links.month = String(maybeValue).slice(0,7);
                 updateRawAnalysis();
               }
             });
           }
         }
-        const linkedChart = ensureChart('rawLinkedChart');
-        if(linkedChart){ linkedChart.setOption(buildRawLinkedTrend(rows), true); }
       }
 
       // --- Render pipeline ---
@@ -1529,8 +1613,7 @@
         ok('trails container exists', !!document.getElementById('trails'));
         ok('heatmap container exists', !!document.getElementById('heatmap'));
         ok('raw tab button exists', !!document.getElementById('tabBtnRaw'));
-        ok('raw pivot A exists', !!document.getElementById('rawPivotPopular'));
-        ok('raw pivot B exists', !!document.getElementById('rawPivotZero'));
+        ok('raw workspace host exists', !!document.getElementById('rawWorkspaceInstances'));
         ok('inputs help exists', !!document.querySelector('[data-testid="help-inputs"]'));
         ok('dynamics help exists', !!document.querySelector('[data-testid="help-dynamics"]'));
         ok('trails help exists', !!document.querySelector('[data-testid="help-trails"]'));
@@ -1563,7 +1646,7 @@
       // Try to autoload defaults on boot (works on GitHub Pages when files are in repo)
       autoLoadDefaults();
 
-      window.addEventListener('resize', ()=>{ state.charts.race?.resize?.(); state.charts.zeros?.resize?.(); state.charts.trails?.resize?.(); state.charts.heatmap?.resize?.(); state.charts.rawLinkedChart?.resize?.(); });
+      window.addEventListener('resize', ()=>{ state.charts.race?.resize?.(); state.charts.zeros?.resize?.(); state.charts.trails?.resize?.(); state.charts.heatmap?.resize?.(); });
     }
   })();
   </script>
