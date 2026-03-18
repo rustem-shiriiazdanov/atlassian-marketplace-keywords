@@ -445,7 +445,8 @@
           'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/css/variables.css',
           'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/css/icons.css',
           'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/css/pro.css',
-          'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/css/themes.css'
+          'https://unpkg.com/@finos/perspective-viewer@3.8.0/dist/css/themes.css',
+          'https://unpkg.com/@finos/perspective-viewer-d3fc@3.8.0/dist/css/perspective-viewer-d3fc.css'
         ];
         state.playground.pspStylesPromise = Promise.all(cssUrls.map((href)=> new Promise((resolve)=>{
           const existing = document.querySelector(`link[data-psp-style="${href}"]`);
