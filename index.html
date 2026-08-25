@@ -30,6 +30,11 @@
     .links a:hover{color:var(--accent)}
     .links img,.links svg{height:16px;width:16px}
     .links button{font-size:13px;white-space:nowrap}
+    .site-tabs{display:flex;gap:6px;margin:22px 0 0;border-bottom:1px solid rgba(255,255,255,.09)}
+    .site-tabs a{position:relative;padding:10px 14px;color:var(--muted);font-size:14px;font-weight:700;text-decoration:none}
+    .site-tabs a:hover{color:var(--ink)}
+    .site-tabs a.active{color:var(--ink)}
+    .site-tabs a.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--accent)}
     .panel{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.00));border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow)}
     .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px;background:var(--card);border-radius:var(--radius)}
     .controls.soft{padding:10px;margin-top:8px}
@@ -135,6 +140,11 @@
             <button id="btn-share-page" class="btn ghost" aria-label="Share page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
           </div>
         </header>
+
+        <nav class="site-tabs" aria-label="Primary navigation">
+          <a class="active" href="./index.html" aria-current="page">Overview</a>
+          <a href="./keyword-explorer.html">Keyword Explorer</a>
+        </nav>
 
         <section class="grid">
       <!-- PANEL 1: Data inputs & diagnostics -->
@@ -1286,3 +1296,4 @@
   </script>
 </body>
 </html>
+
