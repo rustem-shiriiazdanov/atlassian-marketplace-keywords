@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Keyword Explorer — Atlassian Marketplace Keywords</title>
+  <style>
+    :root{
+      --bg:#0B1021;--card:#121835;--card-2:#171F43;--chip:#1B2348;--ink:#E6E9F2;
+      --muted:#A9B0C6;--accent:#4C9AFF;--green:#36B37E;--orange:#FFAB00;--danger:#FF5630;
+      --border:rgba(255,255,255,.09);--radius:16px;--shadow:0 20px 40px rgba(0,0,0,.28)
+    }
+    *{box-sizing:border-box}
+    html,body{min-height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+    button,input,select{font:inherit}
+    button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .wrap{max-width:1400px;margin:24px auto 64px;padding:0 20px}
+    header{display:flex;gap:20px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+    h1{margin:0 0 8px;font-size:30px;line-height:1.15}
+    .sub{max-width:850px;color:var(--muted);font-size:14px;line-height:1.5}
+    .links{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .links a{color:var(--ink);text-decoration:none;font-size:13px}
+    .links a:hover{color:var(--accent)}
+    .site-tabs{display:flex;gap:6px;margin:22px 0 18px;border-bottom:1px solid var(--border)}
+    .site-tabs a{position:relative;padding:10px 14px;color:var(--muted);font-size:14px;font-weight:700;text-decoration:none}
+    .site-tabs a:hover{color:var(--ink)}
+    .site-tabs a.active{color:var(--ink)}
+    .site-tabs a.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--accent)}
+    .panel{background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,0));border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .panel-body{padding:16px}
+    .section-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .section-title h2,.section-title h3{margin:0;font-size:15px}
+    .section-title p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.45}
+    .metric-guide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px}
+    .metric-definition{padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:12px}
+    .metric-definition strong{display:block;font-size:13px;margin-bottom:4px}
+    .metric-definition span{color:var(--muted);font-size:12px;line-height:1.4}
+    .metric-dot{display:inline-block;width:8px;height:8px;margin-right:7px;border-radius:50%}
+    .toolbar{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+    .field{display:flex;flex-direction:column;gap:5px;min-width:150px}
+    .field.grow{flex:1 1 310px}
+    .field label{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+    .input,.select{width:100%;height:38px;padding:0 10px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:#0F1632;color:var(--ink)}
+    .select{cursor:pointer}
+    .btn{height:38px;padding:0 13px;border:0;border-radius:9px;background:var(--accent);color:#071020;font-weight:750;cursor:pointer;white-space:nowrap}
+    .btn:hover{filter:brightness(1.08)}
+    .btn.ghost{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,.14)}
+    .btn.small{height:30px;padding:0 9px;font-size:11px}
+    .btn:disabled{cursor:not-allowed;opacity:.45;filter:none}
+    .data-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:12px}
+    .data-file{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;background:var(--chip);font-size:12px}
+    .data-file strong{font-size:11px;color:var(--muted)}
+    .data-file input{display:none}
+    .data-file button{border:0;background:none;color:var(--accent);cursor:pointer;padding:0}
+    .status{margin-left:auto;color:var(--muted);font-size:12px}
+    .status.ready{color:#79F2C0}
+    .picker{position:relative}
+    .suggestions{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:50;display:none;max-height:300px;overflow:auto;padding:6px;background:#101733;border:1px solid rgba(255,255,255,.16);border-radius:10px;box-shadow:var(--shadow)}
+    .suggestions.open{display:block}
+    .suggestion{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;padding:8px;border:0;border-radius:7px;background:transparent;color:var(--ink);text-align:left;cursor:pointer}
+    .suggestion:hover,.suggestion.active{background:rgba(76,154,255,.14)}
+    .badges{display:flex;gap:4px;flex:0 0 auto}
+    .badge{padding:2px 6px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--muted);font-size:9px;font-weight:800;text-transform:uppercase}
+    .badge.popular{color:#9CCBFF;background:rgba(76,154,255,.15)}
+    .badge.zero{color:#FFB5A4;background:rgba(255,86,48,.14)}
+    .selected-chips{display:flex;gap:7px;flex-wrap:wrap;min-height:34px;margin-top:12px}
+    .selected-chip{display:inline-flex;align-items:center;gap:7px;max-width:100%;padding:7px 9px;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:var(--chip);font-size:12px}
+    .selected-chip .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+    .selected-chip .text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .selected-chip button{border:0;background:none;color:var(--muted);cursor:pointer;padding:0 2px;font-size:14px}
+    .selected-chip button:hover{color:var(--ink)}
+    .match-info{margin-top:10px;color:var(--muted);font-size:12px}
+    .match-details{margin-top:8px;padding:8px 10px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:9px;color:var(--muted);font-size:11px}
+    .match-details summary{cursor:pointer;color:var(--ink)}
+    .match-list{max-height:140px;overflow:auto;margin:8px 0 0;padding-left:20px;columns:2}
+    .match-list li{margin:3px 0;break-inside:avoid}
+    .filter-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(200px,.7fr);gap:14px}
+    .date-panel{padding:12px;background:var(--card);border:1px solid var(--border);border-radius:12px}
+    .preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+    .preset.active{background:var(--accent);color:#071020;border-color:transparent}
+    .date-selects{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .toggle-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:12px}
+    .toggle-row label{display:flex;align-items:center;gap:6px;cursor:pointer}
+    input[type="checkbox"]{accent-color:var(--accent)}
+    .kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:16px 0}
+    .kpi{min-height:94px;padding:13px;background:var(--card);border:1px solid var(--border);border-radius:12px}
+    .kpi .label{color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    .kpi .value{margin-top:9px;font-size:21px;font-weight:800;overflow-wrap:anywhere}
+    .kpi .note{margin-top:4px;color:var(--muted);font-size:10px;line-height:1.35}
+    .charts{display:grid;gap:16px}
+    .chart-card{position:relative;min-width:0}
+    .chart-card .chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px 14px 0}
+    .chart-card h3{margin:0;font-size:14px}
+    .chart-card .description{margin:4px 0 0;color:var(--muted);font-size:11px;line-height:1.4}
+    .chart-actions{display:flex;gap:5px;flex:0 0 auto}
+    .chart{height:390px;width:100%}
+    .chart.rank{height:360px}
+    .chart.zero{height:350px}
+    .chart-placeholder{display:flex;height:280px;align-items:center;justify-content:center;padding:24px;color:var(--muted);font-size:13px;text-align:center}
+    .chart-card.is-fullscreen{position:fixed;inset:14px;z-index:1000;background:var(--bg);overflow:auto}
+    .chart-card.is-fullscreen .chart{height:calc(100vh - 100px)}
+    .table-panel{margin-top:16px}
+    .table-wrap{overflow:auto;border-radius:0 0 var(--radius) var(--radius)}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th,td{padding:10px 12px;border-top:1px solid var(--border);text-align:right;white-space:nowrap}
+    th{position:sticky;top:0;background:#151D3E;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+    th:first-child,td:first-child{text-align:left}
+    tbody tr:hover{background:rgba(76,154,255,.06)}
+    .keyword-cell{display:flex;align-items:center;gap:8px;max-width:300px;white-space:normal}
+    .keyword-cell .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+    .outside{color:var(--muted)}
+    .positive{color:#79F2C0}.negative{color:#FF8F73}
+    .empty-state{padding:28px;text-align:center;color:var(--muted)}
+    .toast{position:fixed;left:50%;bottom:24px;z-index:2000;transform:translate(-50%,20px);opacity:0;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:#172044;color:var(--ink);box-shadow:var(--shadow);font-size:12px;transition:.2s}
+    .toast.show{transform:translate(-50%,0);opacity:1}
+    .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.filter-grid{grid-template-columns:1fr}.metric-guide{grid-template-columns:1fr}}
+    @media(max-width:700px){
+      .wrap{margin:14px auto 40px;padding:0 10px}h1{font-size:24px}.kpi-grid{grid-template-columns:repeat(2,1fr)}
+      .toolbar{align-items:stretch}.field,.field.grow{flex:1 1 100%;min-width:100%}.date-selects{grid-template-columns:1fr}
+      .chart{height:340px}.chart.rank,.chart.zero{height:320px}.chart-card .chart-head{flex-direction:column}.match-list{columns:1}
+      .status{width:100%;margin-left:0}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Keyword Explorer</h1>
+        <div class="sub">Analyze one query or compare a focused set using Marketplace search share, direct top-500 rank, and zero-result volume.</div>
+      </div>
+      <div class="links">
+        <a href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://actonic.de/en/" target="_blank" rel="noopener noreferrer">Powered by Actonic</a>
+        <button id="sharePage" class="btn ghost">Copy share link</button>
+      </div>
+    </header>
+
+    <nav class="site-tabs" aria-label="Primary navigation">
+      <a href="./index.html">Overview</a>
+      <a class="active" href="./keyword-explorer.html" aria-current="page">Keyword Explorer</a>
+    </nav>
+
+    <section class="metric-guide" aria-label="Metric definitions">
+      <div class="metric-definition"><strong><span class="metric-dot" style="background:#4C9AFF"></span>Search share</strong><span>Percentage of all Marketplace searches, including searches beyond the top 500.</span></div>
+      <div class="metric-definition"><strong><span class="metric-dot" style="background:#B8A1FF"></span>Marketplace Top-500 Rank</strong><span>Direct rank supplied by the monthly Marketplace report. Missing rows are outside the top 500.</span></div>
+      <div class="metric-definition"><strong><span class="metric-dot" style="background:#FF7452"></span>Zero-result searches</strong><span>Raw count from the zero-result report. It is not a rate and is never divided by search share.</span></div>
+    </section>
+
+    <section class="panel" aria-labelledby="focusTitle">
+      <div class="panel-body">
+        <div class="section-title">
+          <div><h2 id="focusTitle">Define your focus</h2><p>Choose exact Marketplace queries, or aggregate every query containing specified words.</p></div>
+        </div>
+
+        <div class="data-row">
+          <div class="data-file"><strong>Popular report</strong><button id="popularFileButton" type="button">Default file</button><input id="popularFile" type="file" accept=".xlsx,.xls" /></div>
+          <div class="data-file"><strong>Zero-result report</strong><button id="zeroFileButton" type="button">Default file</button><input id="zeroFile" type="file" accept=".xlsx,.xls" /></div>
+          <button id="reloadDefaults" class="btn ghost small" type="button">Reload defaults</button>
+          <span id="status" class="status">Loading libraries…</span>
+        </div>
+
+        <div class="filter-grid">
+          <div>
+            <div class="toolbar">
+              <div class="field" style="min-width:170px">
+                <label for="matchMode">Selection mode</label>
+                <select id="matchMode" class="select">
+                  <option value="exact">Exact queries</option>
+                  <option value="contains">Queries containing words</option>
+                </select>
+              </div>
+              <div id="containsLogicField" class="field" style="min-width:150px;display:none">
+                <label for="containsLogic">Words must match</label>
+                <select id="containsLogic" class="select">
+                  <option value="any">Any selected word</option>
+                  <option value="all">All selected words</option>
+                </select>
+              </div>
+              <div id="compareModeField" class="field" style="min-width:165px">
+                <label for="compareMode">Display</label>
+                <select id="compareMode" class="select">
+                  <option value="separate">Compare separately</option>
+                  <option value="group">Treat as one group</option>
+                </select>
+              </div>
+              <div class="field grow picker">
+                <label for="keywordInput">Keywords or phrases</label>
+                <input id="keywordInput" class="input" type="text" autocomplete="off" placeholder="Search queries, then press Enter…" />
+                <div id="suggestions" class="suggestions" role="listbox" aria-label="Keyword suggestions"></div>
+              </div>
+              <button id="clearSelection" class="btn ghost" type="button">Clear</button>
+            </div>
+            <div id="selectedChips" class="selected-chips" aria-live="polite"></div>
+            <div id="matchInfo" class="match-info">Select at least one keyword.</div>
+            <details id="matchDetails" class="match-details" hidden>
+              <summary id="matchSummary">Matched queries</summary>
+              <ul id="matchList" class="match-list"></ul>
+            </details>
+          </div>
+
+          <div class="date-panel">
+            <div class="field" style="margin-bottom:8px"><label>Time range</label></div>
+            <div class="preset-row">
+              <button class="btn ghost small preset" data-months="6" type="button">6M</button>
+              <button class="btn ghost small preset active" data-months="12" type="button">12M</button>
+              <button class="btn ghost small preset" data-months="24" type="button">24M</button>
+              <button class="btn ghost small preset" data-months="all" type="button">All</button>
+            </div>
+            <div class="date-selects">
+              <div class="field"><label for="fromMonth">From</label><select id="fromMonth" class="select"></select></div>
+              <div class="field"><label for="toMonth">To</label><select id="toMonth" class="select"></select></div>
+            </div>
+            <div class="toggle-row">
+              <label><input id="smoothSeries" type="checkbox" /> 3-month average</label>
+              <button id="exportCsv" class="btn ghost small" type="button">Export CSV</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kpis" class="kpi-grid" aria-label="Keyword summary">
+      <div class="kpi"><div class="label">Selected queries</div><div id="kpiSelected" class="value">—</div><div id="kpiSelectedNote" class="note">No selection</div></div>
+      <div class="kpi"><div class="label">Latest search share</div><div id="kpiShare" class="value">—</div><div id="kpiShareNote" class="note">Percentage of all searches</div></div>
+      <div class="kpi"><div class="label">Share change</div><div id="kpiDelta" class="value">—</div><div class="note">Versus previous month</div></div>
+      <div class="kpi"><div class="label">Marketplace rank</div><div id="kpiRank" class="value">—</div><div id="kpiRankNote" class="note">Direct top-500 rank</div></div>
+      <div class="kpi"><div class="label">Zero results</div><div id="kpiZero" class="value">—</div><div class="note">Raw count in selected period</div></div>
+      <div class="kpi"><div class="label">Peak search share</div><div id="kpiPeak" class="value">—</div><div id="kpiPeakNote" class="note">Within selected period</div></div>
+    </section>
+
+    <main class="charts">
+      <section id="shareCard" class="panel chart-card">
+        <div class="chart-head"><div><h3>Search Share Over Time</h3><p class="description">Percentage of all Marketplace searches. Missing popular-report rows are rendered as 0%.</p></div><div class="chart-actions"><button class="btn ghost small" data-chart-action="download" data-chart="shareChart">PNG</button><button class="btn ghost small" data-chart-action="fullscreen" data-chart="shareChart">Fullscreen</button></div></div>
+        <div id="shareChart" class="chart"><div class="chart-placeholder">Select keywords to render this chart.</div></div>
+      </section>
+
+      <section id="rankCard" class="panel chart-card">
+        <div class="chart-head"><div><h3>Marketplace Top-500 Rank Over Time</h3><p class="description">Direct monthly Marketplace rank. Rank #1 is best; missing popular-report rows appear as Outside top 500.</p></div><div class="chart-actions"><button class="btn ghost small" data-chart-action="download" data-chart="rankChart">PNG</button><button class="btn ghost small" data-chart-action="fullscreen" data-chart="rankChart">Fullscreen</button></div></div>
+        <div id="rankChart" class="chart rank"><div class="chart-placeholder">Exact-query selections display their direct Marketplace ranks here.</div></div>
+      </section>
+
+      <section id="zeroCard" class="panel chart-card">
+        <div class="chart-head"><div><h3>Zero-Result Searches Over Time</h3><p class="description">Raw zero-result search counts. This metric is separate from search share and is not a rate.</p></div><div class="chart-actions"><button class="btn ghost small" data-chart-action="download" data-chart="zeroChart">PNG</button><button class="btn ghost small" data-chart-action="fullscreen" data-chart="zeroChart">Fullscreen</button></div></div>
+        <div id="zeroChart" class="chart zero"><div class="chart-placeholder">Select keywords to render this chart.</div></div>
+      </section>
+    </main>
+
+    <section class="panel table-panel" aria-labelledby="comparisonTitle">
+      <div class="panel-body" style="padding-bottom:10px"><div class="section-title" style="margin:0"><div><h3 id="comparisonTitle">Selected Keyword Comparison</h3><p>Rank is always shown per exact Marketplace query and is never combined with search share.</p></div></div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Keyword / group</th><th>Matches</th><th>Latest share</th><th>Share change</th><th>Current rank</th><th>Best rank</th><th>Peak share</th><th>Zero results</th></tr></thead>
+          <tbody id="summaryBody"><tr><td colspan="8" class="empty-state">Select keywords to see their comparison.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+  (function(){
+    const ECHARTS_URLS = [
+      'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js',
+      'https://unpkg.com/echarts@5.5.0/dist/echarts.min.js'
+    ];
+    const XLSX_URLS = [
+      'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+      'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'
+    ];
+    const DEFAULT_SOURCE = ['./data/source_search_keywords_marketplace.xlsx','./source_search_keywords_marketplace.xlsx'];
+    const DEFAULT_ZERO = ['./data/zero_result_keywords_marketplace.xlsx','./zero_result_keywords_marketplace.xlsx'];
+    const COLORS = ['#4C9AFF','#36B37E','#B8A1FF','#FFAB00','#FF7452','#00C7E6','#F47BBA','#79F2C0'];
+    const $ = (selector)=>document.querySelector(selector);
+    const state = {
+      popular:[], zero:[], months:[], allKeywords:[], selections:[],
+      matchMode:'exact', containsLogic:'any', compareMode:'separate', smooth:false,
+      from:0, to:0, charts:{}, urlHadSelection:false, dataReady:false
+    };
+
+    function setStatus(text, ready=false){ const el=$('#status'); el.textContent=text; el.classList.toggle('ready',ready); }
+    function toast(message){ const el=$('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toast.timer); toast.timer=setTimeout(()=>el.classList.remove('show'),2200); }
+    function normalize(value){ return String(value ?? '').trim().toLocaleLowerCase(); }
+    function keywordText(value){ return String(value ?? '').trim(); }
+    function number(value){ const n=Number(value); return Number.isFinite(n)?n:0; }
+    function formatShare(value){ return `${number(value).toFixed(2)}%`; }
+    function formatCount(value){ return Math.round(number(value)).toLocaleString(); }
+    function formatRank(value){ return Number.isFinite(value)&&value>=1&&value<=500?`#${Math.round(value)}`:'Outside top 500'; }
+    function escapeHtml(value){ return String(value).replace(/[&<>"']/g,(ch)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+    function toMonthKey(value){
+      if(value instanceof Date&&!Number.isNaN(value.getTime())) return value.toISOString().slice(0,7);
+      if(typeof value==='number'&&window.XLSX?.SSF){ const d=XLSX.SSF.parse_date_code(value); if(d) return `${d.y}-${String(d.m).padStart(2,'0')}`; }
+      const text=String(value??'').trim();
+      const match=text.match(/^(\d{4})[-/]?(\d{2})/); if(match) return `${match[1]}-${match[2]}`;
+      const parsed=new Date(text); return Number.isNaN(parsed.getTime())?'':parsed.toISOString().slice(0,7);
+    }
+    function movingAverage(values,size=3){ return values.map((_,i)=>{ const slice=values.slice(Math.max(0,i-size+1),i+1); return slice.reduce((sum,v)=>sum+number(v),0)/slice.length; }); }
+    function loadScriptSeq(urls,globalName){
+      return new Promise((resolve,reject)=>{ let index=0; const next=()=>{ if(index>=urls.length){reject(new Error(`Unable to load ${globalName}`));return;} const url=urls[index++]; const script=document.createElement('script'); script.src=url; script.async=true; script.crossOrigin='anonymous'; script.referrerPolicy='no-referrer'; script.onload=()=>window[globalName]?resolve(window[globalName]):next(); script.onerror=next; document.head.appendChild(script); }; next(); });
+    }
+    async function fetchFirst(urls){ for(const url of urls){ try{ const response=await fetch(url,{cache:'no-cache'}); if(response.ok) return await response.arrayBuffer(); }catch(error){} } throw new Error('Default workbook not found'); }
+    function workbookRows(buffer){ const workbook=XLSX.read(buffer,{type:'array'}); const sheet=workbook.Sheets.Raw; if(!sheet) throw new Error('The workbook has no Raw sheet'); return XLSX.utils.sheet_to_json(sheet,{defval:null}); }
+    function parsePopular(buffer){ return workbookRows(buffer).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),percentage:number(row.percentage),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
+    function parseZero(buffer){ return workbookRows(buffer).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),count:number(row.count),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
+    function hydrateUrl(){
+      const params=new URLSearchParams(location.search); const queries=params.getAll('q').map(keywordText).filter(Boolean);
+      state.urlHadSelection=queries.length>0; state.selections=queries;
+      if(['exact','contains'].includes(params.get('mode'))) state.matchMode=params.get('mode');
+      if(['any','all'].includes(params.get('logic'))) state.containsLogic=params.get('logic');
+      if(['separate','group'].includes(params.get('compare'))) state.compareMode=params.get('compare');
+      state.smooth=params.get('smooth')==='1';
+      state.urlFrom=params.get('from'); state.urlTo=params.get('to');
+    }
+    function updateUrl(){
+      const params=new URLSearchParams(); state.selections.forEach(item=>params.append('q',item));
+      params.set('mode',state.matchMode); if(state.matchMode==='contains') params.set('logic',state.containsLogic);
+      if(state.matchMode==='exact') params.set('compare',state.compareMode);
+      if(state.months[state.from]) params.set('from',state.months[state.from]); if(state.months[state.to]) params.set('to',state.months[state.to]);
+      if(state.smooth) params.set('smooth','1');
+      const query=params.toString(); history.replaceState(null,'',`${location.pathname}${query?'?'+query:''}`);
+    }
+    function finalizeData(){
+      state.months=Array.from(new Set([...state.popular.map(row=>row.month),...state.zero.map(row=>row.month)])).filter(Boolean).sort();
+      const names=new Map(); for(const row of [...state.popular,...state.zero]) if(!names.has(normalize(row.keyword))) names.set(normalize(row.keyword),row.keyword);
+      state.allKeywords=Array.from(names.values()).sort((a,b)=>a.localeCompare(b));
+      if(!state.urlHadSelection&&!state.selections.length){
+        const latest=state.months[state.months.length-1];
+        state.selections=state.popular.filter(row=>row.month===latest&&row.rank>=1&&row.rank<=500).sort((a,b)=>a.rank-b.rank).slice(0,3).map(row=>row.keyword);
+      } else if(state.matchMode==='exact'){
+        state.selections=state.selections.map(item=>names.get(normalize(item))||item).filter((item,index,array)=>array.findIndex(x=>normalize(x)===normalize(item))===index);
+      }
+      populateDateControls(); state.dataReady=true; renderControls(); renderAll(); setStatus(`Ready · ${state.months.length} months · ${state.popular.length.toLocaleString()} popular rows · ${state.zero.length.toLocaleString()} zero-result rows`,true);
+    }
+    function populateDateControls(){
+      const from=$('#fromMonth'),to=$('#toMonth'); from.textContent='';to.textContent='';
+      state.months.forEach((month,index)=>{ for(const select of [from,to]){ const option=document.createElement('option'); option.value=String(index);option.textContent=month;select.appendChild(option); } });
+      const fromUrl=state.months.indexOf(state.urlFrom),toUrl=state.months.indexOf(state.urlTo);
+      state.to=toUrl>=0?toUrl:Math.max(0,state.months.length-1); state.from=fromUrl>=0?fromUrl:Math.max(0,state.to-11);
+      from.value=String(state.from);to.value=String(state.to); syncPresetButtons();
+    }
+    async function loadDefaults(){
+      setStatus('Loading default Marketplace reports…');
+      const [popularResult,zeroResult]=await Promise.allSettled([fetchFirst(DEFAULT_SOURCE),fetchFirst(DEFAULT_ZERO)]);
+      if(popularResult.status==='fulfilled'){ state.popular=parsePopular(popularResult.value); $('#popularFileButton').textContent=`Default · ${state.popular.length.toLocaleString()} rows`; }
+      if(zeroResult.status==='fulfilled'){ state.zero=parseZero(zeroResult.value); $('#zeroFileButton').textContent=`Default · ${state.zero.length.toLocaleString()} rows`; }
+      if(!state.popular.length) throw new Error('Popular report could not be loaded'); finalizeData();
+    }
+    async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); if(type==='popular'){state.popular=parsePopular(buffer);$('#popularFileButton').textContent=`${file.name} · ${state.popular.length.toLocaleString()} rows`;}else{state.zero=parseZero(buffer);$('#zeroFileButton').textContent=`${file.name} · ${state.zero.length.toLocaleString()} rows`;} finalizeData(); }
+    function canonicalKeyword(input){ return state.allKeywords.find(item=>normalize(item)===normalize(input)); }
+    function addSelection(input){
+      const parts=String(input).split(/[\n,]+/).map(keywordText).filter(Boolean); let added=0;
+      for(let part of parts){ if(state.matchMode==='exact'){ part=canonicalKeyword(part); if(!part) continue; } if(!state.selections.some(item=>normalize(item)===normalize(part))){state.selections.push(part);added++;} }
+      if(!added){toast(state.matchMode==='exact'?'Choose a query from the Marketplace data.':'Enter a word or phrase.');return;}
+      $('#keywordInput').value=''; closeSuggestions(); renderControls(); renderAll();
+    }
+    function removeSelection(index){ state.selections.splice(index,1); renderControls(); renderAll(); }
+    function selectedMatches(){
+      if(!state.selections.length) return [];
+      if(state.matchMode==='exact') return state.selections.map(canonicalKeyword).filter(Boolean);
+      const needles=state.selections.map(normalize).filter(Boolean);
+      return state.allKeywords.filter(keyword=>{ const hay=normalize(keyword); return state.containsLogic==='all'?needles.every(term=>hay.includes(term)):needles.some(term=>hay.includes(term)); });
+    }
+    function seriesDefinitions(){
+      const matches=selectedMatches(); if(!matches.length) return [];
+      if(state.matchMode==='contains') return [{label:`Contains ${state.containsLogic}: ${state.selections.join(', ')}`,keywords:matches,color:COLORS[0],group:true}];
+      if(state.compareMode==='group') return [{label:'Selected group',keywords:matches,color:COLORS[0],group:true}];
+      return matches.map((keyword,index)=>({label:keyword,keywords:[keyword],color:COLORS[index%COLORS.length],group:false}));
+    }
+    function rankDefinitions(){ if(state.matchMode!=='exact') return []; return selectedMatches().map((keyword,index)=>({label:keyword,keywords:[keyword],color:COLORS[index%COLORS.length]})); }
+    function visibleMonths(){ return state.months.slice(state.from,state.to+1); }
+    function aggregate(rows,field,definition,months){ const wanted=new Set(definition.keywords.map(normalize)); const sums=new Map(months.map(month=>[month,0])); for(const row of rows){ if(sums.has(row.month)&&wanted.has(normalize(row.keyword))) sums.set(row.month,sums.get(row.month)+number(row[field])); } return months.map(month=>sums.get(month)||0); }
+    function ranksFor(keyword,months){ const wanted=normalize(keyword),map=new Map(); for(const row of state.popular){ if(normalize(row.keyword)===wanted&&row.rank>=1&&row.rank<=500) map.set(row.month,row.rank); } return months.map(month=>map.get(month)||null); }
+    function summaryFor(definition,months){
+      let share=aggregate(state.popular,'percentage',definition,months),zero=aggregate(state.zero,'count',definition,months); const rawShare=share.slice();
+      const latest=rawShare.at(-1)||0,previous=rawShare.length>1?rawShare.at(-2):0,peak=Math.max(0,...rawShare),peakIndex=rawShare.indexOf(peak);
+      const rank=definition.keywords.length===1?ranksFor(definition.keywords[0],months):[]; const ranked=rank.filter(Number.isFinite);
+      return {definition,share,zero,latest,delta:latest-previous,peak,peakMonth:peak>0&&peakIndex>=0?months[peakIndex]:'—',currentRank:rank.length?rank.at(-1):null,bestRank:ranked.length?Math.min(...ranked):null,zeroTotal:zero.reduce((sum,value)=>sum+value,0)};
+    }
+    function renderControls(){
+      $('#matchMode').value=state.matchMode;$('#containsLogic').value=state.containsLogic;$('#compareMode').value=state.compareMode;$('#smoothSeries').checked=state.smooth;
+      $('#containsLogicField').style.display=state.matchMode==='contains'?'flex':'none';$('#compareModeField').style.display=state.matchMode==='exact'?'flex':'none';
+      $('#keywordInput').placeholder=state.matchMode==='exact'?'Search exact Marketplace queries…':'Enter words or phrases, then press Enter…';
+      const chips=$('#selectedChips');chips.textContent='';state.selections.forEach((item,index)=>{ const chip=document.createElement('span');chip.className='selected-chip'; const dot=document.createElement('span');dot.className='dot';dot.style.background=COLORS[index%COLORS.length]; const text=document.createElement('span');text.className='text';text.textContent=item; const remove=document.createElement('button');remove.type='button';remove.setAttribute('aria-label',`Remove ${item}`);remove.textContent='×';remove.addEventListener('click',()=>removeSelection(index));chip.append(dot,text,remove);chips.appendChild(chip); });
+      const matches=selectedMatches(); const exact=state.matchMode==='exact'; $('#matchInfo').textContent=!state.selections.length?'Select at least one keyword.':exact?`${matches.length} exact Marketplace ${matches.length===1?'query':'queries'} selected.`:`${matches.length.toLocaleString()} Marketplace queries match ${state.containsLogic==='all'?'all':'any'} selected words.`;
+      const details=$('#matchDetails'); details.hidden=!matches.length; $('#matchSummary').textContent=`Inspect ${matches.length.toLocaleString()} matched ${matches.length===1?'query':'queries'}`; const list=$('#matchList'); list.textContent=''; matches.slice(0,200).forEach(keyword=>{const li=document.createElement('li');li.textContent=keyword;list.appendChild(li);}); if(matches.length>200){const li=document.createElement('li');li.textContent=`…and ${(matches.length-200).toLocaleString()} more`;list.appendChild(li);}
+      updateUrl();
+    }
+    function renderSuggestions(){
+      const box=$('#suggestions'),term=normalize($('#keywordInput').value); box.textContent=''; if(!term||!state.dataReady){closeSuggestions();return;}
+      const popularSet=new Set(state.popular.map(row=>normalize(row.keyword))),zeroSet=new Set(state.zero.map(row=>normalize(row.keyword)));
+      const results=state.allKeywords.filter(keyword=>normalize(keyword).includes(term)).sort((a,b)=>Number(!normalize(a).startsWith(term))-Number(!normalize(b).startsWith(term))||a.localeCompare(b)).slice(0,60);
+      results.forEach(keyword=>{ const button=document.createElement('button');button.type='button';button.className='suggestion';button.setAttribute('role','option'); const text=document.createElement('span');text.textContent=keyword; const badges=document.createElement('span');badges.className='badges'; const key=normalize(keyword); if(popularSet.has(key)){const badge=document.createElement('span');badge.className='badge popular';badge.textContent='Popular';badges.appendChild(badge);} if(zeroSet.has(key)){const badge=document.createElement('span');badge.className='badge zero';badge.textContent='Zero';badges.appendChild(badge);} button.append(text,badges);button.addEventListener('click',()=>addSelection(state.matchMode==='exact'?keyword:$('#keywordInput').value));box.appendChild(button); });
+      if(!results.length&&state.matchMode==='contains'){const button=document.createElement('button');button.type='button';button.className='suggestion';button.textContent=`Add “${$('#keywordInput').value.trim()}” as a contains filter`;button.addEventListener('click',()=>addSelection($('#keywordInput').value));box.appendChild(button);}
+      box.classList.toggle('open',box.childElementCount>0);
+    }
+    function closeSuggestions(){ $('#suggestions').classList.remove('open'); }
+    function ensureChart(id){ const el=document.getElementById(id); el.querySelector('.chart-placeholder')?.remove(); if(!state.charts[id]||state.charts[id].isDisposed?.()){state.charts[id]=echarts.init(el);state.charts[id].group='keywordExplorer';} return state.charts[id]; }
+    function disposeChart(id,message){ if(state.charts[id]){state.charts[id].dispose();state.charts[id]=null;} const el=document.getElementById(id);el.textContent='';const placeholder=document.createElement('div');placeholder.className='chart-placeholder';placeholder.textContent=message;el.appendChild(placeholder); }
+    function commonOption(months){ return {backgroundColor:'transparent',animationDuration:350,legend:{type:'scroll',top:12,left:18,right:18,textStyle:{color:'#C9D1E8'},pageTextStyle:{color:'#C9D1E8'},pageIconColor:'#4C9AFF',pageIconInactiveColor:'#59617A'},grid:{left:66,right:24,top:64,bottom:70},tooltip:{trigger:'axis',backgroundColor:'rgba(9,13,31,.97)',borderColor:'rgba(255,255,255,.15)',textStyle:{color:'#E6E9F2'}},dataZoom:[{type:'inside',xAxisIndex:0,zoomOnMouseWheel:false,moveOnMouseWheel:false},{type:'slider',xAxisIndex:0,bottom:14,height:20,borderColor:'rgba(255,255,255,.1)',backgroundColor:'rgba(255,255,255,.025)',fillerColor:'rgba(76,154,255,.15)',dataBackground:{lineStyle:{color:'#536083'},areaStyle:{color:'#273251'}},selectedDataBackground:{lineStyle:{color:'#4C9AFF'},areaStyle:{color:'#284C7A'}},textStyle:{color:'#A9B0C6'}}],xAxis:{type:'category',boundaryGap:false,data:months,axisLabel:{color:'#A9B0C6'},axisLine:{lineStyle:{color:'rgba(255,255,255,.16)'}}}}; }
+    function renderShareChart(definitions,months){
+      if(!definitions.length){disposeChart('shareChart','Select keywords to render search share.');return;}
+      const option=commonOption(months); option.yAxis={type:'value',min:0,axisLabel:{color:'#A9B0C6',formatter:value=>`${value}%`},splitLine:{lineStyle:{color:'rgba(255,255,255,.07)'}}};
+      option.tooltip.formatter=params=>{const rows=params.map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${formatShare(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(params[0]?.axisValue||'')}</b><br>${rows}`;};
+      option.series=definitions.map(def=>{let values=aggregate(state.popular,'percentage',def,months);if(state.smooth)values=movingAverage(values);return{name:state.smooth?`${def.label} · 3M average`:def.label,type:'line',data:values,smooth:state.smooth,showSymbol:months.length<=18,symbolSize:6,lineStyle:{width:3,color:def.color},itemStyle:{color:def.color},areaStyle:definitions.length===1?{color:def.color,opacity:.08}:undefined,emphasis:{focus:'series'}};}); ensureChart('shareChart').setOption(option,true);
+    }
+    function renderRankChart(definitions,months){
+      if(state.matchMode!=='exact'){disposeChart('rankChart','Marketplace rank belongs to exact queries. Switch to Exact queries mode to view direct top-500 ranks.');return;}
+      if(!definitions.length){disposeChart('rankChart','Select exact queries to render Marketplace rank.');return;}
+      const categories=Array.from({length:500},(_,index)=>`#${index+1}`);categories.push('Outside top 500'); const option=commonOption(months);
+      option.yAxis={type:'category',inverse:true,data:categories,axisLabel:{color:'#A9B0C6',interval:(index)=>index===0||index===99||index===199||index===299||index===399||index===499||index===500,formatter:value=>value==='Outside top 500'?'Outside 500':value},axisLine:{lineStyle:{color:'rgba(255,255,255,.16)'}},splitLine:{show:false}};
+      option.tooltip.formatter=params=>{const rows=params.map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${escapeHtml(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(params[0]?.axisValue||'')}</b><br>${rows}`;};
+      option.series=definitions.map(def=>({name:def.label,type:'line',data:ranksFor(def.keywords[0],months).map(rank=>rank?`#${rank}`:'Outside top 500'),showSymbol:months.length<=18,symbolSize:6,lineStyle:{width:2.5,color:def.color},itemStyle:{color:def.color},emphasis:{focus:'series'}})); ensureChart('rankChart').setOption(option,true);
+    }
+    function renderZeroChart(definitions,months){
+      if(!definitions.length){disposeChart('zeroChart','Select keywords to render zero-result counts.');return;}
+      const option=commonOption(months);option.xAxis.boundaryGap=definitions.length===1;option.yAxis={type:'value',min:0,minInterval:1,axisLabel:{color:'#A9B0C6',formatter:value=>Number(value).toLocaleString()},splitLine:{lineStyle:{color:'rgba(255,255,255,.07)'}}};
+      option.tooltip.formatter=params=>{const rows=params.map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${formatCount(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(params[0]?.axisValue||'')}</b><br>${rows}`;};
+      option.series=definitions.map(def=>{let values=aggregate(state.zero,'count',def,months);if(state.smooth)values=movingAverage(values);return{name:state.smooth?`${def.label} · 3M average`:def.label,type:definitions.length===1?'bar':'line',data:values,smooth:state.smooth,showSymbol:definitions.length>1&&months.length<=18,symbolSize:6,lineStyle:{width:2.5,color:def.color},itemStyle:{color:def.color,borderRadius:definitions.length===1?[5,5,0,0]:0},emphasis:{focus:'series'}};});ensureChart('zeroChart').setOption(option,true);
+    }
+    function renderKpis(definitions,months){
+      const matches=selectedMatches(),aggregateDefinition=matches.length?{label:'Combined selection',keywords:matches}:null,summary=aggregateDefinition?summaryFor(aggregateDefinition,months):null;
+      $('#kpiSelected').textContent=matches.length?matches.length.toLocaleString():'—';$('#kpiSelectedNote').textContent=state.matchMode==='contains'?'Matched exact Marketplace queries':'Exact Marketplace queries';
+      $('#kpiShare').textContent=summary?formatShare(summary.latest):'—';$('#kpiShareNote').textContent=matches.length>1?'Combined selected-query share':'Percentage of all searches';
+      $('#kpiDelta').textContent=summary?`${summary.delta>=0?'+':''}${summary.delta.toFixed(2)} pp`:'—';$('#kpiDelta').className=`value ${summary?(summary.delta>0?'positive':summary.delta<0?'negative':''):''}`;
+      if(state.matchMode==='exact'&&matches.length===1){const rank=ranksFor(matches[0],months).at(-1);$('#kpiRank').textContent=formatRank(rank);$('#kpiRankNote').textContent=`${months.at(-1)||'Latest month'} · direct report rank`;}else if(state.matchMode==='contains'&&matches.length){$('#kpiRank').textContent='Not applicable';$('#kpiRankNote').textContent='Grouped matches have no combined rank';}else{$('#kpiRank').textContent=matches.length?'See table':'—';$('#kpiRankNote').textContent='Rank remains per exact query';}
+      $('#kpiZero').textContent=summary?formatCount(summary.zeroTotal):'—';$('#kpiPeak').textContent=summary?formatShare(summary.peak):'—';$('#kpiPeakNote').textContent=summary&&summary.peak>0?summary.peakMonth:summary?'No share in selected period':'Within selected period';
+    }
+    function tableDefinitions(){
+      const matches=selectedMatches();if(!matches.length)return[];
+      if(state.matchMode==='contains')return[{label:`Contains ${state.containsLogic}: ${state.selections.join(', ')}`,keywords:matches,color:COLORS[0],group:true}];
+      const individual=matches.map((keyword,index)=>({label:keyword,keywords:[keyword],color:COLORS[index%COLORS.length],group:false}));
+      return state.compareMode==='group'&&matches.length>1?[{label:'Selected group',keywords:matches,color:COLORS[0],group:true},...individual]:individual;
+    }
+    function renderTable(months){
+      const body=$('#summaryBody');body.textContent='';const definitions=tableDefinitions();if(!definitions.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=8;cell.className='empty-state';cell.textContent='Select keywords to see their comparison.';row.appendChild(cell);body.appendChild(row);return;}
+      definitions.forEach(def=>{const summary=summaryFor(def,months),row=document.createElement('tr');const values=[def.keywords.length,formatShare(summary.latest),`${summary.delta>=0?'+':''}${summary.delta.toFixed(2)} pp`,def.group?'—':formatRank(summary.currentRank),def.group?'—':formatRank(summary.bestRank),`${formatShare(summary.peak)} · ${summary.peakMonth}`,formatCount(summary.zeroTotal)];const first=document.createElement('td');const cell=document.createElement('div');cell.className='keyword-cell';const dot=document.createElement('span');dot.className='dot';dot.style.background=def.color;const text=document.createElement('span');text.textContent=def.label;cell.append(dot,text);first.appendChild(cell);row.appendChild(first);values.forEach((value,index)=>{const td=document.createElement('td');td.textContent=String(value);if((index===3||index===4)&&String(value).includes('Outside'))td.className='outside';if(index===2&&summary.delta>0)td.className='positive';if(index===2&&summary.delta<0)td.className='negative';row.appendChild(td);});body.appendChild(row);});
+    }
+    function renderAll(){ if(!state.dataReady)return; if(state.from>state.to)state.from=state.to;const months=visibleMonths(),definitions=seriesDefinitions(),rankDefs=rankDefinitions();renderKpis(definitions,months);renderShareChart(definitions,months);renderRankChart(rankDefs,months);renderZeroChart(definitions,months);renderTable(months);echarts.connect('keywordExplorer');updateUrl(); }
+    function syncPresetButtons(){ const length=state.to-state.from+1;document.querySelectorAll('.preset').forEach(button=>{const value=button.dataset.months;button.classList.toggle('active',value==='all'?state.from===0&&state.to===state.months.length-1:Number(value)===length&&state.to===state.months.length-1);}); }
+    function setPreset(value){ state.to=Math.max(0,state.months.length-1);state.from=value==='all'?0:Math.max(0,state.to-Number(value)+1);$('#fromMonth').value=String(state.from);$('#toMonth').value=String(state.to);syncPresetButtons();renderAll(); }
+    function csvEscape(value){const text=String(value??'');return /[",\n]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;}
+    function exportCsv(){
+      const months=visibleMonths(),definitions=seriesDefinitions();if(!definitions.length){toast('Select keywords before exporting.');return;}const rows=[['month','series','search_share_percentage','marketplace_top_500_rank','zero_result_count']];
+      for(const def of definitions){const shares=aggregate(state.popular,'percentage',def,months),zeros=aggregate(state.zero,'count',def,months),ranks=def.keywords.length===1?ranksFor(def.keywords[0],months):months.map(()=>null);months.forEach((month,index)=>rows.push([month,def.label,shares[index],ranks[index]||'Outside top 500',zeros[index]]));}
+      const csv=rows.map(row=>row.map(csvEscape).join(',')).join('\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='keyword-explorer.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('CSV export started.');
+    }
+    function downloadChart(id){const chart=state.charts[id];if(!chart){toast('This chart has no data to download.');return;}const link=document.createElement('a');link.href=chart.getDataURL({type:'png',pixelRatio:2,backgroundColor:'#0B1021'});link.download=`${id}.png`;document.body.appendChild(link);link.click();link.remove();toast('PNG export started.');}
+    function toggleFullscreen(id,button){const card=document.getElementById(id).closest('.chart-card'),active=card.classList.toggle('is-fullscreen');document.body.style.overflow=active?'hidden':'';button.textContent=active?'Exit fullscreen':'Fullscreen';setTimeout(()=>state.charts[id]?.resize(),50);}
+    async function copyShareLink(){updateUrl();try{await navigator.clipboard.writeText(location.href);toast('Share link copied.');}catch(error){toast('Copy the URL from the address bar.');}}
+    function bindEvents(){
+      $('#keywordInput').addEventListener('input',renderSuggestions);$('#keywordInput').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();const first=$('#suggestions .suggestion');if(state.matchMode==='exact'&&first)first.click();else addSelection(event.currentTarget.value);}if(event.key==='Escape')closeSuggestions();});
+      document.addEventListener('click',event=>{if(!event.target.closest('.picker'))closeSuggestions();});
+      $('#matchMode').addEventListener('change',event=>{state.matchMode=event.target.value;if(state.matchMode==='contains')state.compareMode='group';renderControls();renderAll();});
+      $('#containsLogic').addEventListener('change',event=>{state.containsLogic=event.target.value;renderControls();renderAll();});
+      $('#compareMode').addEventListener('change',event=>{state.compareMode=event.target.value;renderControls();renderAll();});
+      $('#smoothSeries').addEventListener('change',event=>{state.smooth=event.target.checked;renderAll();});
+      $('#clearSelection').addEventListener('click',()=>{state.selections=[];renderControls();renderAll();});
+      document.querySelectorAll('.preset').forEach(button=>button.addEventListener('click',()=>setPreset(button.dataset.months)));
+      $('#fromMonth').addEventListener('change',event=>{state.from=Number(event.target.value);if(state.from>state.to){state.to=state.from;$('#toMonth').value=String(state.to);}syncPresetButtons();renderAll();});
+      $('#toMonth').addEventListener('change',event=>{state.to=Number(event.target.value);if(state.to<state.from){state.from=state.to;$('#fromMonth').value=String(state.from);}syncPresetButtons();renderAll();});
+      $('#exportCsv').addEventListener('click',exportCsv);$('#sharePage').addEventListener('click',copyShareLink);$('#reloadDefaults').addEventListener('click',()=>loadDefaults().catch(error=>setStatus(`Error: ${error.message}`)));
+      $('#popularFileButton').addEventListener('click',()=>$('#popularFile').click());$('#zeroFileButton').addEventListener('click',()=>$('#zeroFile').click());
+      $('#popularFile').addEventListener('change',event=>{const file=event.target.files[0];if(file)loadUploaded(file,'popular').catch(error=>setStatus(`Error: ${error.message}`));});
+      $('#zeroFile').addEventListener('change',event=>{const file=event.target.files[0];if(file)loadUploaded(file,'zero').catch(error=>setStatus(`Error: ${error.message}`));});
+      document.querySelectorAll('[data-chart-action]').forEach(button=>button.addEventListener('click',()=>button.dataset.chartAction==='download'?downloadChart(button.dataset.chart):toggleFullscreen(button.dataset.chart,button)));
+      document.addEventListener('keydown',event=>{if(event.key==='Escape'){document.querySelectorAll('.chart-card.is-fullscreen').forEach(card=>{card.classList.remove('is-fullscreen');card.querySelector('[data-chart-action="fullscreen"]').textContent='Fullscreen';document.body.style.overflow='';const chart=card.querySelector('.chart');setTimeout(()=>state.charts[chart.id]?.resize(),50);});}});
+      window.addEventListener('resize',()=>Object.values(state.charts).forEach(chart=>chart?.resize?.()));
+    }
+    function exposeDiagnostics(){window.KeywordExplorer={getState:()=>({popularRows:state.popular.length,zeroRows:state.zero.length,months:state.months.slice(),selections:state.selections.slice(),matchMode:state.matchMode,compareMode:state.compareMode,matchedQueries:selectedMatches().length,chartIds:Object.entries(state.charts).filter(([,chart])=>chart&&!chart.isDisposed?.()).map(([id])=>id)}),runSmokeTests:()=>({dataLoaded:state.popular.length>0,rankFieldPresent:state.popular.some(row=>row.rank>=1&&row.rank<=500),monthsLoaded:state.months.length>0,selectionPresent:state.selections.length>0,chartsRendered:['shareChart','rankChart','zeroChart'].every(id=>state.charts[id]&&!state.charts[id].isDisposed?.())})};}
+    async function boot(){
+      hydrateUrl();bindEvents();renderControls();
+      try{setStatus('Loading chart and spreadsheet libraries…');await Promise.all([window.echarts?Promise.resolve():loadScriptSeq(ECHARTS_URLS,'echarts'),window.XLSX?Promise.resolve():loadScriptSeq(XLSX_URLS,'XLSX')]);await loadDefaults();exposeDiagnostics();}catch(error){console.error(error);setStatus(`Error: ${error.message}`);}
+    }
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+  })();
+  </script>
+</body>
+</html>
+
