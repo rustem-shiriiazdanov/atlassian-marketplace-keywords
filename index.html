@@ -1836,6 +1836,11 @@
           document.querySelectorAll('.chart .placeholder').forEach(p=> p.textContent = 'No data loaded');
           $('#heroInput').placeholder = 'Reports not loaded'; $('#heroInput').disabled = true; $('#heroMeta').textContent = '';
           $('#topList').innerHTML = '<li class="empty-note">No report loaded.</li>'; $('#topListTitle').textContent = 'Biggest climbers';
+          state.heroSrc = null;
+        } else if($('#heroInput').disabled){
+          // Data arrived after a failed load (retry or upload): bring the search back. renderHero sets the placeholder from the new data.
+          $('#heroInput').disabled = false;
+          if($('#heroInput').placeholder === 'Reports not loaded') $('#heroInput').placeholder = 'Search a query, e.g. scriptrunner';
         }
       }
       $('#btn-retry').addEventListener('click', async ()=>{ $('#btn-retry').disabled = true; await loadDefaults(true); $('#btn-retry').disabled = false; });
