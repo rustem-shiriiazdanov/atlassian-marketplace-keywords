@@ -82,17 +82,24 @@
     .hero-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:20px;align-items:start}
     .hero-main{padding-right:36px}
     .hero h1{margin:0 0 28px;font-size:clamp(34px,4.6vw,56px);line-height:1.04;letter-spacing:-.03em;font-weight:800;max-width:15ch}
-    .searchbox{display:flex;align-items:center;gap:16px;min-height:76px;padding:0 24px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--search-shadow)}
+    .searchbox{display:flex;align-items:center;gap:14px;min-height:72px;padding:0 10px 0 22px;margin:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--search-shadow)}
     .searchbox svg{flex:0 0 auto;width:26px;height:26px;color:var(--muted)}
-    .searchbox .query{flex:1 1 auto;min-width:0;font-size:clamp(22px,2.6vw,32px);font-weight:600;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .caret{display:inline-block;width:2px;height:1.05em;margin-left:2px;vertical-align:-.15em;background:var(--blue);animation:blink 1s steps(1) infinite}
-    @keyframes blink{50%{opacity:0}}
-    .searchbox .result{flex:0 0 auto;font-size:15px;font-weight:700;color:var(--blue);background:var(--blue-soft);padding:6px 12px;border-radius:999px;white-space:nowrap}
+    .searchbox input{flex:1 1 auto;width:0;min-width:0;height:100%;border:0;outline:none;background:transparent;font-size:clamp(20px,2.2vw,26px);font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+    .searchbox input::placeholder{color:var(--muted);font-weight:500}
+    .searchbox input::-webkit-search-cancel-button{display:none}
+    .searchbox:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+    .searchbox .btn{flex:0 0 auto}
+    .hero-search{position:relative}
+    .hero-suggest{position:absolute;z-index:45;top:calc(100% + 6px);left:0;right:0;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(15,23,42,.18)}
+    .hero-suggest button{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border:0;border-radius:8px;background:none;text-align:left;font-size:16px;cursor:pointer;color:var(--ink)}
+    .hero-suggest button b{font-weight:800}
+    .hero-suggest button span:last-child{color:var(--muted);font-size:14px;white-space:nowrap}
+    .hero-suggest button:hover,.hero-suggest button.active{background:var(--blue-soft)}
+    .hero-suggest .none{padding:9px 12px;color:var(--muted);font-size:15px}
     .hero-meta{margin:14px 0 0;color:var(--ink-2);font-size:15px;min-height:24px}
     .hero-meta strong{color:var(--ink)}
     .hero-main{display:flex;flex-direction:column;align-self:stretch}
-    a.searchbox{color:inherit;text-decoration:none;transition:border-color .15s}
-    a.searchbox:hover{border-color:var(--blue)}
+    
     .stat-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:28px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
     .stat{display:flex;flex-direction:column;gap:2px;padding:16px 20px;min-width:0}
     .stat + .stat{border-left:1px solid var(--grid)}
@@ -101,10 +108,7 @@
     .st-query{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .st-note{color:var(--muted);font-size:13px}
     .hero-source{margin-top:20px !important}
-    .searchbox.empty svg{color:var(--coral)}
-    .searchbox.empty .query{font-size:clamp(19px,2vw,24px);color:var(--ink-2)}
-    .searchbox.empty .result{color:var(--coral);background:var(--coral-soft)}
-    .hero-source{margin:22px 0 0;color:var(--muted);font-size:14px;max-width:62ch}
+        .hero-source{margin:22px 0 0;color:var(--muted);font-size:14px;max-width:62ch}
 
     .toplist{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 20px 4px}
     .toplist h2{margin:0 0 4px;font-size:17px;letter-spacing:-.01em}
@@ -208,7 +212,7 @@
     body.no-data .chart{align-items:center}
     .btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
     a.btn{text-decoration:none}
-    .searchbox.nodata .query{color:var(--muted)} .searchbox.nodata .caret{display:none}
+    body.no-data .searchbox{opacity:.55;pointer-events:none}
     body.no-data .scrubber input[type="range"]{opacity:.4}
     .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;height:32px}
     .seg button{border:0;background:var(--surface);padding:0 12px;font-size:14px;font-weight:600;color:var(--ink-2);cursor:pointer;white-space:nowrap}
@@ -329,7 +333,7 @@
     .share-box .btn{width:100%}
 
     @media (max-width:900px){
-      .hero-grid{grid-template-columns:1fr;gap:36px}
+      .hero-grid{grid-template-columns:minmax(0,1fr);gap:36px}
       .hero-main{padding-right:0}
       .hero h1{max-width:20ch}
     }
@@ -358,8 +362,11 @@
       .site-tabs a{padding:0 10px}
       .icon-link .lbl{display:none}
       .hero{padding:32px 0 32px}
-      .searchbox{min-height:62px;padding:0 16px;gap:12px}
-      .searchbox .result{font-size:13px;padding:4px 10px}
+      .searchbox{min-height:58px;padding:0 8px 0 14px;gap:10px}
+      .searchbox input{font-size:18px}
+      .searchbox .btn{height:40px;padding:0 12px}
+      .hero-suggest button{flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px}
+      .hero-suggest button span:last-child{font-size:13px}
       .data-grid{grid-template-columns:1fr}
       .chart{height:400px}
       .grid-75 #race{height:400px}
@@ -399,7 +406,6 @@
       .filterbar .hint{display:none}
     }
     @media (prefers-reduced-motion: reduce){
-      .caret{animation:none}
       .chart.flip{animation:none}
     }
   </style>
@@ -439,11 +445,14 @@
     <div class="wrap hero-grid">
       <div class="hero-main">
         <h1 id="heroTitle">What people search for on the Atlassian Marketplace</h1>
-        <a class="searchbox" id="heroSearch" href="./keyword-explorer.html" aria-live="off" title="Open this query in Keyword Explorer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
-          <span class="query"><span id="heroQuery">Loading searches…</span><span class="caret" aria-hidden="true"></span></span>
-          <span id="heroShare" class="result" hidden></span>
-        </a>
+        <div class="hero-search">
+          <form class="searchbox" id="heroSearch" role="search" action="./keyword-explorer.html" autocomplete="off">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+            <input id="heroInput" name="q" type="search" placeholder="Search a query, e.g. scriptrunner" aria-label="Search Marketplace queries" aria-autocomplete="list" aria-controls="heroSuggest" spellcheck="false" />
+            <button class="btn" type="submit">Explore</button>
+          </form>
+          <div id="heroSuggest" class="hero-suggest" role="listbox" aria-label="Matching queries" hidden></div>
+        </div>
         <p id="heroMeta" class="hero-meta"></p>
         <div class="stat-row">
           <div class="stat"><span class="st-label" id="heroZeroTotalLabel">Searches that found no apps</span><span class="st-value" id="heroZeroTotal">–</span><span class="st-note" id="heroZeroMeta"></span></div>
@@ -636,15 +645,14 @@
 
     function boot(){
       Promise.all([
-        window.echarts ? Promise.resolve(window.echarts) : loadScriptSeq(ECHARTS_URLS, 'echarts'),
-        window.XLSX ? Promise.resolve(window.XLSX) : loadScriptSeq(XLSX_URLS, 'XLSX')
+        window.echarts ? Promise.resolve(window.echarts) : loadScriptSeq(ECHARTS_URLS, 'echarts')
       ]).then(()=>{
         setBootStatus('libraries ready');
         startApp();
       }).catch(err=>{
         console.error(err);
         setBootStatus('error: '+ err.message);
-        const q = document.getElementById('heroQuery'); if(q) q.textContent = 'Charts could not load';
+        const q = document.getElementById('heroInput'); if(q){ q.placeholder = 'Charts could not load'; q.disabled = true; }
         const al = document.getElementById('loadAlert'); if(al){ al.hidden = false; al.querySelector('strong').textContent = 'The chart library could not load.'; al.querySelector('span').textContent = 'Refresh the page to try again.'; al.querySelector('#btn-retry').addEventListener('click', ()=> location.reload()); }
         document.body.classList.add('no-data'); document.querySelectorAll('.chart .placeholder').forEach(p=> p.textContent = 'Charts could not load');
       });
@@ -743,14 +751,14 @@
         disp.textContent = !n ? 'All queries' : n <= 3 ? state.keywordFilter.join(', ') : `${state.keywordFilter.slice(0,2).join(', ')} and ${n-2} more`;
       }
       function populateKeywordOptions(){
-        const weight = new Map();
-        for(const r of state.sourceRaw){ const k = sanitizeKeyword(r.keyword); if(k) weight.set(k, (weight.get(k)||0) + (asNumber(r.percentage)||0)); }
-        for(const r of state.zeroRaw){ const k = sanitizeKeyword(r.keyword); if(k && !weight.has(k)) weight.set(k, 0); }
         const list = document.getElementById('keywordOptions');
         if(!list) return;
         // Every load assigns new row arrays, so comparing the arrays themselves catches a new workbook even with the same row count.
         if(list._src !== state.sourceRaw || list._zero !== state.zeroRaw){
           list._src = state.sourceRaw; list._zero = state.zeroRaw;
+          const weight = new Map();
+          for(const r of state.sourceRaw){ const k = r.keyword; if(k) weight.set(k, (weight.get(k)||0) + (asNumber(r.percentage)||0)); }
+          for(const r of state.zeroRaw){ const k = r.keyword; if(k && !weight.has(k)) weight.set(k, 0); }
           list.innerHTML = '';
           const search = document.createElement('input');
           search.type = 'text'; search.id = 'keywordSearch'; search.placeholder = 'Search queries…'; search.setAttribute('aria-label','Search queries');
@@ -759,33 +767,50 @@
           foot.innerHTML = '<span id="kwCount"></span><button type="button" id="kwClear">Clear</button>';
           list.append(search, box, foot);
           const keywords = Array.from(weight.keys()).filter(k=> /[\p{L}\p{N}]/u.test(k)).sort((a,b)=> weight.get(b)-weight.get(a) || a.localeCompare(b));
-          const frag = document.createDocumentFragment();
-          for(const k of keywords){
-            const label = document.createElement('label'); label.dataset.k = k; label.title = k;
+          // Only the rows on screen exist as elements (at most 80), so opening and typing stay instant with thousands of queries.
+          const nodes = new Map();
+          const node = (k)=>{
+            let label = nodes.get(k); if(label) return label;
+            label = document.createElement('label'); label.dataset.k = k; label.title = k;
             const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = k;
-            const span = document.createElement('span'); span.textContent = k;
-            label.append(cb, span); frag.appendChild(label);
+            const span = document.createElement('span');
+            label.append(cb, span); nodes.set(k, label);
             cb.addEventListener('change', ()=>{
               if(cb.checked){ if(!state.keywordFilter.includes(k)) state.keywordFilter.push(k); }
               else state.keywordFilter = state.keywordFilter.filter(x=>x!==k);
-              updateKeywordDisplay(); renderAll();
+              updateKeywordDisplay(); scheduleRender();
             });
-          }
-          box.appendChild(frag);
-          const labels = Array.from(box.children);
+            return label;
+          };
+          const lower = keywords;
           const LIMIT = 80;
+          let current = [];
           const apply = ()=>{
             const q = search.value.trim().toLowerCase();
-            let shown = 0;
-            const scored = labels.map((l,i)=>{ const k = l.dataset.k; let sc = !q ? 3 : k===q ? 0 : k.startsWith(q) ? 1 : k.split(/[\s\-_/]+/).some(w=>w.startsWith(q)) ? 2 : k.includes(q) ? 3 : 9; if(l.firstChild.checked) sc = -1; return [sc, i, l]; })
-              .filter(x=> x[0] < 9).sort((a,b)=> a[0]-b[0] || a[1]-b[1]);
-            labels.forEach(l=> l.hidden = true);
-            for(const [, , l] of scored){ if(shown >= LIMIT) break; l.hidden = false; const k = l.dataset.k, sp = l.lastChild; const at = q ? k.indexOf(q) : -1; sp.innerHTML = at >= 0 ? escapeHtml(k.slice(0,at)) + '<b>' + escapeHtml(k.slice(at, at+q.length)) + '</b>' + escapeHtml(k.slice(at+q.length)) : escapeHtml(k); box.appendChild(l); shown++; }
-            if(!scored.length){ box.dataset.empty = 'No matching queries'; } else delete box.dataset.empty;
+            const picked = state.keywordFilter.filter(k=> !q || k.includes(q));
+            const pickedSet = new Set(picked);
+            const buckets = [[],[],[],[]];
+            for(let i=0;i<lower.length;i++){
+              const k = lower[i]; if(pickedSet.has(k)) continue;
+              if(!q){ if(buckets[3].length < LIMIT) buckets[3].push(k); else break; continue; }
+              const at = k.indexOf(q); if(at < 0) continue;
+              const sc = k === q ? 0 : at === 0 ? 1 : /[\s\-_/]/.test(k[at-1]) ? 2 : 3;
+              if(buckets[sc].length < LIMIT) buckets[sc].push(k);
+            }
+            current = picked.concat(...buckets).slice(0, LIMIT);
+            const frag = document.createDocumentFragment();
+            for(const k of current){
+              const l = node(k); const at = q ? k.indexOf(q) : -1;
+              l.lastChild.innerHTML = at >= 0 ? escapeHtml(k.slice(0,at)) + '<b>' + escapeHtml(k.slice(at, at+q.length)) + '</b>' + escapeHtml(k.slice(at+q.length)) : escapeHtml(k);
+              l.firstChild.checked = state.keywordFilter.includes(k);
+              frag.appendChild(l);
+            }
+            box.replaceChildren(frag);
+            if(!current.length){ box.dataset.empty = 'No matching queries'; } else delete box.dataset.empty;
           };
           search.addEventListener('input', apply);
           search.addEventListener('keydown', e=>{
-            if(e.key === 'Enter'){ const first = labels.find(l=>!l.hidden && !l.firstChild.checked); if(first){ first.firstChild.checked = true; first.firstChild.dispatchEvent(new Event('change')); } search.value=''; apply(); e.preventDefault(); }
+            if(e.key === 'Enter'){ const k = current.find(x=> !state.keywordFilter.includes(x)); if(k){ const cb = node(k).firstChild; cb.checked = true; cb.dispatchEvent(new Event('change')); } search.value=''; apply(); e.preventDefault(); }
           });
           foot.querySelector('#kwClear').addEventListener('click', ()=> document.getElementById('keywordFilterReset').click());
           list._apply = apply;
@@ -806,6 +831,7 @@
         });
       }
       const toMonthKey = (v)=>{
+        if(typeof v === 'string' && v.length === 7 && v.charCodeAt(4) === 45) return v;
         try{
           if(typeof v === 'number' && window.XLSX && XLSX.SSF){ const d = XLSX.SSF.parse_date_code(v); const date = new Date(Date.UTC(d.y, d.m-1, d.d)); return date.toISOString().slice(0,7); }
           const d = new Date(v); if(!isNaN(d)) return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString().slice(0,7);
@@ -1041,7 +1067,15 @@
         if(state.charts[id] && !state.charts[id].isDisposed?.()) return state.charts[id];
         try{ const c = echarts.init(el); state.charts[id] = c; attachChartToolbar(el, c, id); return c; }catch(err){ console.error('echarts.init failed', id, err); return null; }
       }
-      function safeSetOption(id, option){ const c = ensureChart(id); if(!c){ setStatus(`error: chart #${id} not ready`); return; } c.setOption(option, true); }
+      function safeSetOption(id, option){
+        const c = ensureChart(id); if(!c){ setStatus(`error: chart #${id} not ready`); return; }
+        // Same picture, same size: leave the chart alone instead of redrawing it.
+        const sig = c.getWidth() + 'x' + c.getHeight() + '|' + JSON.stringify(option);
+        if(c.__sig === sig) return;
+        // The draw-in animation plays once; later updates appear at once instead of replaying it.
+        if(c.__sig) option.animation = false;
+        c.__sig = sig; c.setOption(option, true);
+      }
 
       function setZeroMode(mode){
         state.zeroMode = mode;
@@ -1087,6 +1121,8 @@
           .map(([keyword, x], i)=>({ keyword, value:x.value, rank: field==='percentage' && Number.isFinite(x.rank) ? x.rank : i+1 }));
       }
       function renderHero(){
+        if(state.heroSrc === state.sourceRaw && state.heroZero === state.zeroRaw && state.sourceRaw.length) return;
+        state.heroSrc = state.sourceRaw; state.heroZero = state.zeroRaw;
         const months = Array.from(new Set(state.sourceRaw.map(r=>toMonthKey(r.month)))).sort();
         const list = $('#topList');
         if(!months.length){
@@ -1133,42 +1169,21 @@
         $('#dataRange').textContent = `Reports from ${monthLabel(first)} to ${monthLabel(latest)}`;
         $('#heroSource').textContent = `Built from Atlassian's monthly Marketplace search reports, ${monthLabel(first)} to ${monthLabel(latest)}: the top 500 queries by share of all searches, and the queries that returned no apps.`;
 
-        // Typing loop through the top five queries
-        const key = latest + '|' + top.slice(0,5).map(r=>r.keyword).join('|');
-        if(key === state.hero.key) return;
-        state.hero.key = key;
-        state.hero.queue = top.slice(0,5);
-        state.hero.idx = 0;
-        clearTimeout(state.hero.timer);
-        const qEl = $('#heroQuery'), shareEl = $('#heroShare'), metaEl = $('#heroMeta');
-        const showMeta = (r)=>{
-          $('#heroSearch').href = `./keyword-explorer.html?q=${encodeURIComponent(r.keyword)}`;
-          shareEl.textContent = `${r.value.toFixed(2)}%`;
-          metaEl.innerHTML = `<strong>#${r.rank}</strong> in ${monthLabel(latest)}: ${r.value.toFixed(2)}% of all Marketplace searches.`;
-        };
-        if(reduceMotion.matches || !state.hero.queue.length){
-          if(state.hero.queue[0]){ qEl.textContent = state.hero.queue[0].keyword; showMeta(state.hero.queue[0]); }
-          return;
+        // The search box stays still; the line under it states this month's leader.
+        const lead = top[0];
+        if(lead){
+          $('#heroMeta').innerHTML = `<strong>#1</strong> in ${monthLabel(latest)}: <a href="./keyword-explorer.html?q=${encodeURIComponent(lead.keyword)}">${escapeHtml(lead.keyword)}</a>, ${lead.value.toFixed(2)}% of all Marketplace searches.`;
+          $('#heroInput').placeholder = `Search a query, e.g. ${lead.keyword}`;
         }
-        const typeNext = ()=>{
-          const r = state.hero.queue[state.hero.idx % state.hero.queue.length];
-          let i = 0;
-          shareEl.hidden = true;
-          const typeChar = ()=>{
-            qEl.textContent = r.keyword.slice(0, ++i);
-            if(i < r.keyword.length){ state.hero.timer = setTimeout(typeChar, 55 + Math.random()*45); }
-            else { showMeta(r); state.hero.timer = setTimeout(erase, 2600); }
-          };
-          const erase = ()=>{
-            shareEl.hidden = true;
-            const t = qEl.textContent;
-            if(t.length){ qEl.textContent = t.slice(0,-1); state.hero.timer = setTimeout(erase, 22); }
-            else { state.hero.idx++; state.hero.timer = setTimeout(typeNext, 260); }
-          };
-          typeChar();
-        };
-        qEl.textContent = '';
-        typeNext();
+        // Suggestions: every known query, biggest overall share first, with its share in the latest report.
+        const total = new Map(); for(const r of state.sourceRaw){ total.set(r.keyword, (total.get(r.keyword)||0) + (asNumber(r.percentage)||0)); }
+        for(const r of state.zeroRaw){ if(!total.has(r.keyword)) total.set(r.keyword, 0); }
+        const nowShare = new Map(now.map(r=>[r.keyword, r.value]));
+        const lastTop = new Map(), lastZero = new Map();
+        for(const r of state.sourceRaw){ const m = lastTop.get(r.keyword); if(!m || r.month > m) lastTop.set(r.keyword, r.month); }
+        for(const r of state.zeroRaw){ const m = lastZero.get(r.keyword); if(!m || r.month > m) lastZero.set(r.keyword, r.month); }
+        state.heroIndex = Array.from(total.entries()).sort((a,b)=> b[1]-a[1]).map(([k])=>({ k, now: nowShare.get(k), last: lastTop.get(k), zero: lastZero.get(k) }));
+        state.heroLatest = latest;
       }
 
       // --- Chart options ---
@@ -1204,7 +1219,7 @@
         return { max: +(Math.ceil(max/step - 1e-9)*step).toFixed(6), interval: step, decimals };
       }
       // Bot noise in the reports: queries with no letters or digits, and HTML/URL injection probes.
-      const isJunkQuery = (k)=> { const t = String(k||''); return !/[\p{L}\p{N}]/u.test(t) || /href=|https?:\/\/|script\b.*\/script|\bonerror\b/i.test(t); };
+      const isJunkQuery = (k)=> { const t = String(k||''); return !/[\p{L}\p{N}]/u.test(t) || /href=|https?:\/\/|script.*\/script|\bonerror\b/i.test(t); };
       // One colour per query everywhere: preferred slot = the query's place in the latest report, then the next free slot.
       function queryColors(names){
         const pal = T().series, used = new Set(), out = {};
@@ -1253,7 +1268,7 @@
           xAxis:{ type:'value', min:0, max: ax.max, interval: ax.interval, splitLine:{ show: !playing, lineStyle:{ color:t.grid } }, axisLabel:{ show: !playing, color:t.muted, fontSize:12, hideOverlap:true, formatter: isPercent ? (v)=> v === 0 ? '0%' : `${v.toFixed(ax.decimals)}%` : (v)=> Number(v).toLocaleString('en-US') } },
           yAxis:{ type:'category', inverse:true, max: n-1, data: names, animationDurationUpdate: Math.min(700, state.playInterval*0.6), axisLabel:{ color:t.ink, fontSize: small ? 12 : 13, fontWeight:600, margin:12, width: labelW, overflow: (small || accent) ? 'break' : 'truncate', lineHeight: (small || accent) ? 15 : undefined }, axisTick:{ show:false }, axisLine:{ show:false } },
           tooltip:{ trigger:'item', ...tooltipStyle(t), formatter:p=>`<b>${escapeHtml(p.name)}</b><br/>#${rankOf.get(p.name) ?? '–'}${state.keywordFilter.length ? ' of the picked queries' : ''} in ${monthLabel(m,{month:'short', year:'numeric'})}: ${isPercent ? fmt(p.value)+' of all searches' : fmt(p.value)+' empty searches'}${change(p.name, p.value)}` },
-          series:[{ id:'race', type:'bar', realtimeSort: race, barCategoryGap:'42%', barMaxWidth:24, label:{ show:true, position:'right', distance:8, color:t.ink2, fontSize:12, fontWeight:600, textBorderColor:t.surface, textBorderWidth:3, valueAnimation: playing, formatter:p=> p.value > 0 ? fmt(p.value) : '' }, itemStyle:{ borderRadius:[0,4,4,0], color: barColor }, emphasis:{ itemStyle:{ color: t.ink } },
+          series:[{ id:'race', type:'bar', realtimeSort: race, barCategoryGap:'42%', barMaxWidth:24, label:{ show:true, position:'right', distance:8, color:t.ink2, fontSize:12, fontWeight:600, textBorderColor:t.surface, textBorderWidth:3, valueAnimation: false, formatter:p=> byName.has(p.name) ? fmt(byName.get(p.name)) : '' }, itemStyle:{ borderRadius:[0,4,4,0], color: barColor }, emphasis:{ itemStyle:{ color: t.ink } },
             data: names.map(nm=>({ value: byName.get(nm) ?? 0, name:nm })) }]
         }; };
         return frame;
@@ -1261,9 +1276,33 @@
       function monthLookup(list, field){ const by = new Map(); for(const r of list){ const m = toMonthKey(r.month); const v = asNumber(r[field]); if(!Number.isFinite(v)) continue; if(!by.has(m)) by.set(m, new Map()); const k = String(r.keyword||'').trim(); by.get(m).set(k, (by.get(m).get(k)||0) + v); } return (m, k)=> by.get(m)?.get(k); }
       function buildRaceOption(months, topByMonth, index){ return raceOption(months, topByMonth, {isPercent:true, index, lookup: state.popLookup}); }
       function buildZeroRaceOption(months, topByMonth, index){ return raceOption(months, topByMonth, {isPercent:false, accent:T().coral, index, lookup: state.zeroLookup}); }
-      function drawRace(id, frame, i, mode='static'){ const c = ensureChart(id); if(!c || !frame) return; const o = frame(i, mode);
-        if(id === 'zeros'){ const extra = Math.max(0, document.getElementById('zeros').clientHeight - document.getElementById('race').clientHeight); o.grid.bottom += extra; }
-        c.setOption(o, { notMerge: mode !== 'play' }); }
+      // While playing, each step glides: rows take the new month's order at once, and every bar grows or shrinks
+      // from its own previous value to the new one (new entries grow from zero). Bars never slide past each other,
+      // so a label always sits next to its own bar, and the gridlines come back when the step ends.
+      const tweens = {};
+      function drawRace(id, frame, i, mode='static', prevI=null){
+        const c = ensureChart(id); if(!c || !frame) return;
+        cancelAnimationFrame(tweens[id]);
+        const fit = (o)=>{ if(id === 'zeros'){ const extra = Math.max(0, document.getElementById('zeros').clientHeight - document.getElementById('race').clientHeight); o.grid.bottom += extra; } return o; };
+        const to = fit(frame(i, 'static'));
+        if(mode !== 'play' || prevI == null || prevI < 0 || reduceMotion.matches){ c.setOption(to, { notMerge:true }); return; }
+        const from = frame(prevI, 'static');
+        const before = new Map(from.series[0].data.map(d=>[d.name, d.value]));
+        const target = to.series[0].data;
+        const maxA = from.xAxis.max, maxB = to.xAxis.max;
+        const dur = Math.min(650, state.playInterval*0.55), t0 = performance.now();
+        let first = true;
+        const step = (now)=>{
+          const p = Math.min(1, (now - t0)/dur), e = 1 - Math.pow(1 - p, 3);
+          if(p >= 1){ c.setOption(to, { notMerge:true }); return; }
+          const xAxis = { ...to.xAxis, max: maxA + (maxB - maxA)*e, interval: null, splitLine:{ show:false }, axisLabel:{ show:false } };
+          const series = [{ ...to.series[0], data: target.map(d=>{ const a = before.get(d.name) ?? 0; return { name:d.name, value: a + (d.value - a)*e }; }) }];
+          c.setOption(first ? { ...to, xAxis, series } : { xAxis, series }, { notMerge: first });
+          first = false;
+          tweens[id] = requestAnimationFrame(step);
+        };
+        tweens[id] = requestAnimationFrame(step);
+      }
 
       function buildZerosOption(months, totals, currentMonth, gaps, fill0){
         const t = T();
@@ -1475,10 +1514,10 @@
         $('#raceMonthVal').textContent = when;
         $('#raceDesc').textContent = state.keywordFilter.length ? `Share of all Marketplace searches for the picked queries in ${when}.` : `Share of all Marketplace searches in ${when}.`;
         // Months step without tweening: an animated re-sort leaves labels and bars out of step mid-frame.
-        const mode = 'static';
-        drawRace('race', state.raceFrame, i, mode);
+        const mode = !state.timelinePlaying ? 'static' : fromChart === 'play' ? 'play' : 'prep';
+        drawRace('race', state.raceFrame, i, mode, i-1);
         $('#raceNote').textContent = state.trailsBreak && months[i] < state.trailsBreak ? `Before ${monthLabel(state.trailsBreak)} Atlassian counted searches differently, so these shares are not comparable with later months.` : '';
-        if(state.zeroMode==='keywords' && state.zeroFrame){ const zi = (state.zeroRaceMonths||[]).indexOf(months[i]); if(zi>=0){ drawRace('zeros', state.zeroFrame, zi, mode); $('#zerosDesc').textContent = `Empty searches per query in ${when}.`; } else { $('#zerosDesc').textContent = `No zero-result report for ${when}.`; } }
+        if(state.zeroMode==='keywords' && state.zeroFrame){ const zi = (state.zeroRaceMonths||[]).indexOf(months[i]); if(zi>=0){ drawRace('zeros', state.zeroFrame, zi, mode, zi-1); $('#zerosDesc').textContent = `Empty searches per query in ${when}.`; } else { $('#zerosDesc').textContent = `No zero-result report for ${when}.`; } }
         if(state.zeroMode==='totals' && state.zeroTotalsCache){ safeSetOption('zeros', buildZerosOption(state.months, state.zeroTotalsCache, months[i], state.gapsZero, state.keywordFilter.length > 0)); $('#zerosDesc').textContent = zerosDescText(months[i]); }
       }
       function stopPlay(){ const was = state.timelinePlaying; clearInterval(state.playTimer); state.playTimer = null; state.timelinePlaying = false; const b=$('#btn-play'); b.textContent='▶ Play'; b.setAttribute('aria-label','Play'); if(was) setRaceIndex(state.raceIndex); }
@@ -1491,15 +1530,26 @@
         state.playTimer = setInterval(()=>{ if(state.raceIndex >= state.raceMonths.length-1){ stopPlay(); return; } setRaceIndex(state.raceIndex+1, 'play'); }, state.playInterval);
       }
 
+      // Controls repaint first; the charts follow one frame later, and several quick changes collapse into one render.
+      let renderQueued = false;
+      function scheduleRender(){ if(renderQueued) return; renderQueued = true; requestAnimationFrame(()=> setTimeout(()=>{ renderQueued = false; renderAll(); }, 0)); }
       function renderAll(){
         populateKeywordOptions();
         toggleRangeSelectors();
         renderHero();
         if(!state.sourceRaw.length){ setStatus('waiting for Popular Search Keywords (or demo)'); return; }
-        state.gapsPopular = incompleteMonths(state.sourceRaw);
-        { const ms = Array.from(new Set(state.sourceRaw.map(r=>toMonthKey(r.month)))).sort(); state.colorRank = new Map(latestRanking(state.sourceRaw,'percentage',ms[ms.length-1]).map((r,i)=>[r.keyword,i])); }
-        state.gapsZero = incompleteMonths(state.zeroRaw);
-        if(state.lookupSrc !== state.sourceRaw || state.lookupZero !== state.zeroRaw){ state.lookupSrc = state.sourceRaw; state.lookupZero = state.zeroRaw; state.popLookup = monthLookup(state.sourceRaw, 'percentage'); state.zeroLookup = monthLookup(state.zeroRaw, 'count'); }
+        // Everything that depends only on the loaded files is worked out once per load, not on every click.
+        if(state.lookupSrc !== state.sourceRaw || state.lookupZero !== state.zeroRaw){
+          state.lookupSrc = state.sourceRaw; state.lookupZero = state.zeroRaw;
+          state.gapsPopular = incompleteMonths(state.sourceRaw);
+          state.gapsZero = incompleteMonths(state.zeroRaw);
+          const ms = Array.from(new Set(state.sourceRaw.map(r=>r.month))).sort();
+          state.colorRank = new Map(latestRanking(state.sourceRaw,'percentage',ms[ms.length-1]).map((r,i)=>[r.keyword,i]));
+          state.popLookup = monthLookup(state.sourceRaw, 'percentage'); state.zeroLookup = monthLookup(state.zeroRaw, 'count');
+          let f = 0; while(f < ms.length-1 && state.gapsPopular.has(ms[f])) f++;
+          const full = ms.slice(f);
+          state.trailsBreak = detectBreak(full, computeTrailsSeries(state.sourceRaw, full, 6, [], state.gapsPopular));
+        }
         // With picked queries, the month-by-month charts shrink to fit them instead of keeping room for ten bars.
         { const n = state.keywordFilter.length; document.body.classList.toggle('filtered', n > 0); const h = n ? Math.max(140, Math.min(n, 20)*40 + 60) + 'px' : ''; ['race'].concat(state.zeroMode === 'keywords' ? ['zeros'] : []).forEach(id=>{ const el = document.getElementById(id); if(!fullscreenState.chartEl && el.style.height !== h){ el.style.height = h; state.charts[id]?.resize(); } }); if(state.zeroMode !== 'keywords'){ const z = document.getElementById('zeros'); if(z.style.height){ z.style.height = ''; state.charts.zeros?.resize(); } } }
         const { months: allMonths, topByMonth } = groupByMonthTop(state.sourceRaw, 'percentage', state.topN, state.keywordFilter);
@@ -1514,7 +1564,6 @@
         $('#raceTicks').innerHTML = raceMonths.map((m,i)=> /-01$/.test(m) ? `<span${i===0 ? ' class="first"' : ''} style="left:${(i/(raceMonths.length-1||1)*100).toFixed(2)}%">${m.slice(0,4)}</span>` : '').join('');
         state.raceIndex = Math.min(keepIndex ?? raceMonths.length-1, raceMonths.length-1);
         // 1) Race + zeros overview
-        state.trailsBreak = detectBreak(months, computeTrailsSeries(state.sourceRaw, months, 6, [], state.gapsPopular));
         state.raceFrame = buildRaceOption(raceMonths, topByMonth, state.raceIndex);
         const race = ensureChart('race');
         // Only the zero-result months inside the charted range are worth a note.
@@ -1589,12 +1638,49 @@
         setStatus(`rendered: months=${months.length}, rows=${state.sourceRaw.length}, start date=${months[0]}, end date=${months[months.length-1]}`);
       }
 
+      // Hero search: type, pick a suggestion (or press Enter), and the query opens in Keyword Explorer.
+      (function(){
+        const form = $('#heroSearch'), input = $('#heroInput'), box = $('#heroSuggest');
+        let items = [], active = -1;
+        const close = ()=>{ box.hidden = true; active = -1; input.setAttribute('aria-expanded','false'); };
+        // A picked query opens on its own; free text opens every query that contains all of its words.
+        const go = (q, exact=true)=>{
+          if(exact){ location.href = './keyword-explorer.html?q=' + encodeURIComponent(q); return; }
+          const words = Array.from(new Set(sanitizeKeyword(q).split(' ').filter(Boolean)));
+          location.href = './keyword-explorer.html?' + words.map(w=>'q=' + encodeURIComponent(w)).join('&') + '&mode=contains&logic=all';
+        };
+        const render = ()=>{
+          const q = sanitizeKeyword(input.value);
+          if(!q || !state.heroIndex){ close(); return; }
+          const starts = [], has = [];
+          for(const it of state.heroIndex){ if(it.k.startsWith(q)) starts.push(it); else if(it.k.includes(q)) has.push(it); if(starts.length >= 8) break; }
+          items = starts.concat(has).slice(0, 8);
+          box.innerHTML = items.length ? items.map((it,i)=>{ const at = it.k.indexOf(q); const name = escapeHtml(it.k.slice(0,at)) + '<b>' + escapeHtml(it.k.slice(at, at+q.length)) + '</b>' + escapeHtml(it.k.slice(at+q.length)); return `<button type="button" role="option" data-i="${i}"><span>${name}</span><span>${heroNote(it)}</span></button>`; }).join('') : `<div class="none">No query contains “${escapeHtml(input.value.trim())}”. Press Enter to see every query that contains ${sanitizeKeyword(input.value).includes(' ') ? 'all of these words' : 'it'}.</div>`;
+          active = items.length ? 0 : -1; mark(); box.hidden = false; input.setAttribute('aria-expanded','true');
+        };
+        const short = (m)=> monthLabel(m, {month:'short', year:'numeric'});
+        const heroNote = (it)=> it.now != null ? `${it.now.toFixed(2)}% in ${short(state.heroLatest)}`
+          : it.last ? `top 500 until ${short(it.last)}`
+          : it.zero ? `no apps found, ${short(it.zero)}` : '';
+        const mark = ()=> box.querySelectorAll('button').forEach((b,i)=> b.classList.toggle('active', i === active));
+        input.addEventListener('input', render);
+        input.addEventListener('focus', ()=>{ if(input.value.trim()) render(); });
+        input.addEventListener('keydown', e=>{
+          if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ if(!items.length) return; e.preventDefault(); active = (active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length; mark(); }
+          else if(e.key === 'Escape'){ close(); }
+        });
+        box.addEventListener('mousedown', e=> e.preventDefault());
+        box.addEventListener('click', e=>{ const b = e.target.closest('button'); if(b) go(items[+b.dataset.i].k); });
+        form.addEventListener('submit', e=>{ e.preventDefault(); const q = input.value.trim(); if(!q) { input.focus(); return; } if(active >= 0 && items[active]) go(items[active].k); else go(q, false); });
+        document.addEventListener('click', e=>{ if(!e.target.closest('.hero-search')) close(); });
+      })();
+
       // Inputs wiring
-      $('#topN').addEventListener('change', e=>{ state.topN = +e.target.value; $('#topNVal').textContent = e.target.value; renderAll(); });
+      $('#topN').addEventListener('change', e=>{ state.topN = +e.target.value; $('#topNVal').textContent = e.target.value; scheduleRender(); });
       $('#speed').addEventListener('change', e=>{ state.playInterval = +e.target.value; $('#speedVal').textContent = (state.playInterval/1000).toFixed(1)+"s"; if(state.timelinePlaying) startPlay(); });
-      $('#trailsN').addEventListener('change', e=>{ state.trailsN = +e.target.value; $('#trailsNVal').textContent = e.target.value; renderAll(); });
-      $('#heatTopK').addEventListener('change', e=>{ state.heatTopK = +e.target.value; $('#heatTopKVal').textContent = e.target.value; renderAll(); });
-      document.querySelectorAll('#heatPresets button').forEach(b=> b.addEventListener('click', ()=>{ state.heatPreset = b.dataset.range; renderAll(); }));
+      $('#trailsN').addEventListener('change', e=>{ state.trailsN = +e.target.value; $('#trailsNVal').textContent = e.target.value; scheduleRender(); });
+      $('#heatTopK').addEventListener('change', e=>{ state.heatTopK = +e.target.value; $('#heatTopKVal').textContent = e.target.value; scheduleRender(); });
+      document.querySelectorAll('#heatPresets button').forEach(b=> b.addEventListener('click', ()=>{ state.heatPreset = b.dataset.range; scheduleRender(); }));
       $('#heatTimeStart').addEventListener('change', e=>{ state.heatTimeStartIdx = +e.target.value; if(state.heatTimeStartIdx>state.heatTimeEndIdx) state.heatTimeEndIdx = state.heatTimeStartIdx; renderAll(); });
       $('#heatTimeEnd').addEventListener('change', e=>{ state.heatTimeEndIdx = +e.target.value; if(state.heatTimeEndIdx<state.heatTimeStartIdx) state.heatTimeStartIdx = state.heatTimeEndIdx; renderAll(); });
       const setTrailsRange = (r)=>{ state.trailsRange = r; $('#trailsRecent').setAttribute('aria-pressed', String(r==='recent')); $('#trailsAll').setAttribute('aria-pressed', String(r==='all')); state.charts.trails?.dispose(); state.charts.trails = null; renderAll(); };
@@ -1648,10 +1734,9 @@
         state.manualSource = true; setStatus('reading Popular Search Keywords…');
         updateFileStatus('source-display', `Reading ${f.name}…`);
         try{
-          const buf = await f.arrayBuffer();
-          const wb = XLSX.read(buf,{type:'array'});
-          const rows = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
-          state.sourceRaw = rows.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), percentage: asNumber(r.percentage), rank: asNumber(r.rank) })).filter(r=>!isJunkQuery(r.keyword));
+          const wb = await readWorkbook(await f.arrayBuffer());
+          if(!wb.Raw) throw new Error('no Raw sheet');
+          state.sourceRaw = sourceRows(wb.Raw);
           setNoData(!state.sourceRaw.length);
           setStatus(`loaded Popular: ${state.sourceRaw.length} rows`);
           updateFileStatus('source-display', `${f.name} · ${state.sourceRaw.length.toLocaleString('en-US')} rows`);
@@ -1665,15 +1750,10 @@
         state.manualZero = true; setStatus('reading Zero-Result Keywords…');
         updateFileStatus('zero-display', `Reading ${f.name}…`);
         try{
-          const buf = await f.arrayBuffer();
-          const wb = XLSX.read(buf,{type:'array'});
-          state.zeroTotals = [];
-          if(wb.Sheets['Monthly_Summary']){
-            const sum = XLSX.utils.sheet_to_json(wb.Sheets['Monthly_Summary'], { defval:null });
-            state.zeroTotals = sum.map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) }));
-          }
-          const raw = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
-          state.zeroRaw = raw.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), count: asNumber(r.count||0) })).filter(r=>!isJunkQuery(r.keyword));
+          const wb = await readWorkbook(await f.arrayBuffer());
+          if(!wb.Raw) throw new Error('no Raw sheet');
+          state.zeroTotals = (wb.Monthly_Summary || []).map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) }));
+          state.zeroRaw = zeroRows(wb.Raw);
           setStatus(`loaded Zero: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
           updateFileStatus('zero-display', `${f.name} · ${state.zeroRaw.length.toLocaleString('en-US')} rows`);
           renderAll();
@@ -1691,45 +1771,53 @@
         throw new Error('defaults not found');
       }
 
+      // Reading a workbook takes about a second of CPU, so it happens in a background worker and the page never freezes.
+      // If workers are unavailable it falls back to the page itself.
+      const ensureXLSX = ()=> window.XLSX ? Promise.resolve(window.XLSX) : loadScriptSeq(XLSX_URLS, 'XLSX');
+      const WORKER_SRC = `const URLS=${JSON.stringify(XLSX_URLS)};
+        for(const u of URLS){ try{ importScripts(u); if(self.XLSX) break; }catch(e){} }
+        const key=(v)=>{ if(typeof v==='number'){ const d=XLSX.SSF.parse_date_code(v); return d.y+'-'+String(d.m).padStart(2,'0'); } const t=String(v==null?'':v).trim(); const m=/^(\\d{4})-(\\d{2})/.exec(t); if(m) return m[1]+'-'+m[2]; const d=new Date(t); return isNaN(d)?t.slice(0,7):d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0'); };
+        self.onmessage=(e)=>{ try{ if(!self.XLSX) throw new Error('no xlsx'); const wb=XLSX.read(e.data,{type:'array'}); const out={}; for(const name of ['Raw','Monthly_Summary']){ if(wb.Sheets[name]) out[name]=XLSX.utils.sheet_to_json(wb.Sheets[name],{defval:null}).map(r=>({...r, month:key(r.month)})); } self.postMessage(out); }catch(err){ self.postMessage({error:String(err&&err.message||err)}); } };`;
+      function readWorkbook(buf){
+        return new Promise((resolve, reject)=>{
+          let w; try{ w = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], {type:'text/javascript'}))); }catch(e){ w = null; }
+          const onPage = ()=> ensureXLSX().then(()=>{ const wb = XLSX.read(buf, {type:'array'}); const out = {}; for(const name of ['Raw','Monthly_Summary']) if(wb.Sheets[name]) out[name] = XLSX.utils.sheet_to_json(wb.Sheets[name], {defval:null}).map(r=>({...r, month: toMonthKey(r.month)})); resolve(out); }).catch(reject);
+          if(!w){ onPage(); return; }
+          const copy = buf.slice(0);
+          w.onmessage = (e)=>{ w.terminate(); if(e.data && e.data.error) onPage(); else resolve(e.data); };
+          w.onerror = ()=>{ w.terminate(); onPage(); };
+          w.postMessage(copy, [copy]);
+        });
+      }
+      const sourceRows = (rows)=> rows.map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword), percentage: asNumber(r.percentage), rank: asNumber(r.rank) })).filter(r=>!isJunkQuery(r.keyword));
+      const zeroRows = (rows)=> rows.map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword), count: asNumber(r.count||0) })).filter(r=>!isJunkQuery(r.keyword));
+
       async function tryLoadDefaultSource(){
         setStatus('loading default Popular…');
-        const buf = await fetchFirst(DEFAULT_SOURCE_CANDIDATES);
-        const wb = XLSX.read(buf,{type:'array'});
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
-        state.sourceRaw = rows.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), percentage: asNumber(r.percentage), rank: asNumber(r.rank) })).filter(r=>!isJunkQuery(r.keyword));
+        const wb = await readWorkbook(await fetchFirst(DEFAULT_SOURCE_CANDIDATES));
+        state.sourceRaw = sourceRows(wb.Raw || []);
         setStatus(`default Popular loaded: ${state.sourceRaw.length} rows`);
         updateFileStatus('source-display', `${state.sourceRaw.length.toLocaleString('en-US')} rows loaded`);
-        renderAll();
       }
 
       async function tryLoadDefaultZero(){
         setStatus('loading default Zero…');
-        const buf = await fetchFirst(DEFAULT_ZERO_CANDIDATES);
-        const wb = XLSX.read(buf,{type:'array'});
-        state.zeroTotals = [];
-        if(wb.Sheets['Monthly_Summary']){
-          const sum = XLSX.utils.sheet_to_json(wb.Sheets['Monthly_Summary'], { defval:null });
-          state.zeroTotals = sum.map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) }));
-        }
-        const raw = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
-        state.zeroRaw = raw.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), count: asNumber(r.count||0) })).filter(r=>!isJunkQuery(r.keyword));
+        const wb = await readWorkbook(await fetchFirst(DEFAULT_ZERO_CANDIDATES));
+        state.zeroTotals = (wb.Monthly_Summary || []).map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) }));
+        state.zeroRaw = zeroRows(wb.Raw || []);
         setStatus(`default Zero loaded: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
         updateFileStatus('zero-display', `${state.zeroRaw.length.toLocaleString('en-US')} rows loaded`);
-        renderAll();
       }
 
       async function loadDefaults(forceLoad = false){
         let any = false;
         const shouldLoadSource = forceLoad || (!state.sourceRaw.length && !state.manualSource);
         const shouldLoadZero = forceLoad || (!state.zeroRaw.length && !state.manualZero);
-        if(shouldLoadSource){
-          try{ await tryLoadDefaultSource(); any = true; }
-          catch(e){ console.info('No default Popular found'); updateFileStatus('source-display', forceLoad ? 'Repository file not found' : 'Not loaded'); }
-        }
-        if(shouldLoadZero){
-          try{ await tryLoadDefaultZero(); any = true; }
-          catch(e){ console.info('No default Zero found'); updateFileStatus('zero-display', forceLoad ? 'Repository file not found' : 'Not loaded'); }
-        }
+        // Both reports are fetched and read in parallel, and the page draws once when they are in.
+        const [src, zero] = await Promise.allSettled([shouldLoadSource ? tryLoadDefaultSource() : null, shouldLoadZero ? tryLoadDefaultZero() : null]);
+        if(shouldLoadSource){ if(src.status === 'fulfilled') any = true; else { console.info('No default Popular found'); updateFileStatus('source-display', forceLoad ? 'Repository file not found' : 'Not loaded'); } }
+        if(shouldLoadZero){ if(zero.status === 'fulfilled') any = true; else { console.info('No default Zero found'); updateFileStatus('zero-display', forceLoad ? 'Repository file not found' : 'Not loaded'); } }
+        if(any) renderAll();
         if(forceLoad && !any) {
           setStatus('No default files found in /data/ directory');
         } else if(!forceLoad && !any) {
@@ -1746,8 +1834,13 @@
         $('#btn-play').disabled = on; $('#raceMonth').disabled = on;
         if(on){
           document.querySelectorAll('.chart .placeholder').forEach(p=> p.textContent = 'No data loaded');
-          $('#heroQuery').textContent = 'Reports not loaded'; $('#heroMeta').textContent = ''; $('#heroSearch').classList.add('nodata');
+          $('#heroInput').placeholder = 'Reports not loaded'; $('#heroInput').disabled = true; $('#heroMeta').textContent = '';
           $('#topList').innerHTML = '<li class="empty-note">No report loaded.</li>'; $('#topListTitle').textContent = 'Biggest climbers';
+          state.heroSrc = null;
+        } else if($('#heroInput').disabled){
+          // Data arrived after a failed load (retry or upload): bring the search back. renderHero sets the placeholder from the new data.
+          $('#heroInput').disabled = false;
+          if($('#heroInput').placeholder === 'Reports not loaded') $('#heroInput').placeholder = 'Search a query, e.g. scriptrunner';
         }
       }
       $('#btn-retry').addEventListener('click', async ()=>{ $('#btn-retry').disabled = true; await loadDefaults(true); $('#btn-retry').disabled = false; });
@@ -1805,8 +1898,8 @@
       });
 
       document.getElementById('btn-demo').addEventListener('click', ()=>{
-        state.sourceRaw = demo.sourceRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
-        state.zeroRaw = demo.zeroRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
+        state.sourceRaw = demo.sourceRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
+        state.zeroRaw = demo.zeroRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
         state.zeroTotals = demo.zeroTotals.slice();
         updateFileStatus('source-display', 'Demo data loaded');
         updateFileStatus('zero-display', 'Demo data loaded');
@@ -1826,8 +1919,8 @@
         try{ renderAll(); ok('renderAll without data does not throw', true); }catch(e){ ok('renderAll without data does not throw', false); }
         const wl = wrapLabel('this is a very very long keyword title that should wrap into two lines', 18);
         ok('wrapLabel inserts newline', wl.includes('\n'));
-        state.sourceRaw = demo.sourceRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
-        state.zeroRaw = demo.zeroRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
+        state.sourceRaw = demo.sourceRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
+        state.zeroRaw = demo.zeroRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
         state.zeroTotals = demo.zeroTotals.slice();
         try{ renderAll(); const race = ensureChart('race'); const zeros = ensureChart('zeros'); const trails = ensureChart('trails'); const heat = ensureChart('heatmap'); ok('race chart instance created', !!race); ok('zeros chart instance created', !!zeros); ok('trails chart instance created', !!trails); ok('heatmap chart instance created', !!heat); }catch(e){ ok('render with demo data succeeds', false); }
         ok('hero top list rendered', document.querySelectorAll('#topList li .kw').length > 0);
@@ -1852,7 +1945,7 @@
       const onScheme = ()=>{ if(state.sourceRaw.length) renderAll(); };
       darkQuery.addEventListener ? darkQuery.addEventListener('change', onScheme) : darkQuery.addListener(onScheme);
       // Fonts can arrive after the first render; re-measure labels once they do
-      if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if(state.sourceRaw.length) renderAll(); });
+      if(document.fonts && document.fonts.status !== 'loaded') document.fonts.ready.then(()=>{ if(state.sourceRaw.length){ Object.values(state.charts).forEach(c=>{ if(c) c.__sig = 'stale'; }); renderAll(); } });
 
       // A chart whose box changes width (filter stacks the cards, a column wraps) is re-laid out, ticks included.
       if(window.ResizeObserver){ const widths = new Map(); let t = null; const ro = new ResizeObserver(entries=>{ let changed = false; for(const e of entries){ const w = Math.round(e.contentRect.width); if(widths.get(e.target) !== w){ if(widths.has(e.target)) changed = true; widths.set(e.target, w); } } if(changed){ clearTimeout(t); t = setTimeout(()=>{ Object.values(state.charts).forEach(c=> c?.resize?.()); if(state.sourceRaw.length && !fullscreenState.chartEl) renderAll(); }, 120); } }); ['race','zeros','trails','heatmap'].forEach(id=>{ const el = document.getElementById(id); if(el) ro.observe(el); }); }
