@@ -17,9 +17,10 @@
       --coral:#C9372C; --coral-soft:#FBEAE8;
       --up:#1F845A; --down:#C9372C;
       --tip-bg:#172B4D; --tip-ink:#FFFFFF;
-      --series:#1D5BD8,#1F9D8B,#D9930D,#B8467F,#5D8F2E,#7B4FD6,#6A7896,#8C5A2B;
+      --series:#1D5BD8,#1F9D8B,#D9930D,#B8467F,#5D8F2E,#7B4FD6,#0891B2,#8C5A2B;
       --heat-0:#F7CFC9; --heat-1:#EFA195; --heat-2:#E0675A; --heat-3:#BF3A2E; --heat-4:#8E1F16; --heat-none:#EEF0F3;
       --search-shadow:0 1px 2px rgba(23,43,77,.08),0 12px 32px -12px rgba(23,43,77,.28);
+      --group:#334155; --raised:#FFFFFF; --pop-shadow:0 12px 32px rgba(15,23,42,.18);
       --font:'Schibsted Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
     }
     @media (prefers-color-scheme: dark){
@@ -30,9 +31,10 @@
         --coral:#FF8070; --coral-soft:#3B1E25;
         --up:#4CC38A; --down:#FF8070;
         --tip-bg:#E3E8F0; --tip-ink:#0F1726;
-        --series:#7AA7FF,#3FCFB7,#F2B74A,#E47FB1,#9CCB63,#B99BFF,#9AA7BF,#D3A27A;
+        --series:#7AA7FF,#3FCFB7,#F2B74A,#E47FB1,#9CCB63,#B99BFF,#22D3EE,#D3A27A;
         --heat-0:#55222C; --heat-1:#7E2F35; --heat-2:#A83F3F; --heat-3:#D35B4E; --heat-4:#F59A84; --heat-none:#1E2636;
         --search-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 36px -14px rgba(0,0,0,.7);
+        --group:#CBD5E1; --raised:#1E2A44; --pop-shadow:0 8px 24px rgba(0,0,0,.5);
       }
     }
     :root[data-theme="dark"]{
@@ -42,9 +44,10 @@
       --coral:#FF8070; --coral-soft:#3B1E25;
       --up:#4CC38A; --down:#FF8070;
       --tip-bg:#E3E8F0; --tip-ink:#0F1726;
-      --series:#7AA7FF,#3FCFB7,#F2B74A,#E47FB1,#9CCB63,#B99BFF,#9AA7BF,#D3A27A;
+      --series:#7AA7FF,#3FCFB7,#F2B74A,#E47FB1,#9CCB63,#B99BFF,#22D3EE,#D3A27A;
       --heat-0:#55222C; --heat-1:#7E2F35; --heat-2:#A83F3F; --heat-3:#D35B4E; --heat-4:#F59A84; --heat-none:#1E2636;
       --search-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 36px -14px rgba(0,0,0,.7);
+      --group:#CBD5E1; --raised:#1E2A44; --pop-shadow:0 8px 24px rgba(0,0,0,.5);
     }
 
     *{box-sizing:border-box}
@@ -71,39 +74,41 @@
     .site-tabs a{display:flex;align-items:center;padding:0 12px;color:var(--ink-2);font-weight:600;font-size:15px;text-decoration:none;border-bottom:3px solid transparent;margin-bottom:-1px}
     .site-tabs a:hover{color:var(--ink)}
     .site-tabs a.active{color:var(--ink);border-bottom-color:var(--blue)}
-    .top-links{margin-left:auto;display:flex;align-items:center;gap:6px}
+    .top-links{margin-left:auto;margin-right:-10px;display:flex;align-items:center;gap:6px}
     .icon-link{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 10px;border-radius:8px;color:var(--ink-2);text-decoration:none;font-size:14px;font-weight:600;background:none;border:0;cursor:pointer}
     .icon-link:hover{background:var(--sunken);color:var(--ink)}
     .icon-link svg{width:18px;height:18px}
 
     .page-head{padding:40px 0 24px}
     .page-head h1{margin:0 0 8px;font-size:clamp(30px,3.6vw,44px);line-height:1.08;letter-spacing:-.025em;font-weight:800}
-    .page-head p{margin:0;color:var(--ink-2);max-width:66ch;font-size:17px}
+    .page-head p{margin:0;color:var(--ink-2);max-width:70ch;font-size:17px}
 
     /* Focus panel: the search is the hero of this page */
-    .focus{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+    .focus{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
     .picker{position:relative}
-    .search-field{display:flex;align-items:center;gap:12px;min-height:60px;padding:0 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--search-shadow)}
+    .search-field{display:flex;align-items:center;gap:12px;min-height:60px;padding:0 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+    .search-field:focus-within{box-shadow:0 0 0 3px var(--blue-soft)}
+    .search-field input:disabled{cursor:not-allowed}
     .search-field:focus-within{border-color:var(--blue)}
     .search-field svg{width:22px;height:22px;color:var(--muted);flex:0 0 auto}
     .search-field input{flex:1 1 auto;min-width:0;height:56px;border:0;background:transparent;font-size:20px;font-weight:600;outline:none}
     .search-field input::placeholder{color:var(--muted);font-weight:500}
     .search-field .btn{flex:0 0 auto}
-    .suggestions{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:50;display:none;max-height:320px;overflow:auto;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--search-shadow)}
+    .suggestions{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:50;display:none;max-height:340px;overflow:auto;padding:6px;background:var(--raised);border:1px solid var(--line);border-radius:12px}
     .suggestions.open{display:block}
     .suggestion b{font-weight:800}
     .suggestion.active .badge{background:var(--surface)}
-    .suggestions{box-shadow:0 12px 32px rgba(15,23,42,.18);padding-bottom:8px}
+    .suggestions{box-shadow:var(--pop-shadow);padding-bottom:0}
+    .sug-foot{position:sticky;bottom:0;margin:4px -6px 0;padding:8px 18px;background:var(--raised);border-top:1px solid var(--grid);color:var(--muted);font-size:13px}
     .suggestion{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border:0;border-radius:8px;background:transparent;text-align:left;cursor:pointer;font-size:15px}
-    .suggestion:hover,.suggestion.active{background:var(--blue-soft)}
-    .badges{display:grid;grid-template-columns:62px 112px;gap:6px;flex:0 0 auto;justify-items:start}
+    .suggestion:hover{background:var(--sunken)}
+    .suggestion.active{background:color-mix(in srgb,var(--blue) 16%,transparent);box-shadow:inset 3px 0 0 var(--blue)}
+    .badges{display:grid;grid-template-columns:66px 100px;gap:6px;flex:0 0 auto;justify-items:start}
     .badge.popular{grid-column:1}.badge.zero{grid-column:2}
-    .badge{padding:2px 8px;border-radius:999px;background:var(--sunken);color:var(--ink-2);font-size:12px;font-weight:700;white-space:nowrap}
-    .badge.popular{color:var(--blue);background:var(--blue-soft)}
-    .badge.zero{color:var(--coral);background:var(--coral-soft)}
+    .badge{padding:1px 8px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink-2);font-size:12px;font-weight:600;white-space:nowrap}
     .chip-row{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;margin-top:14px}
     .chip-row:has(.selected-chips:empty){display:none}
-    .selected-chips{display:flex;gap:8px;flex-wrap:wrap}
+    .selected-chips{display:contents}
     .link-btn{border:0;background:none;color:var(--blue);font-weight:700;font-size:14px;cursor:pointer;padding:6px 4px}
     .selected-chip{display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:6px 8px 6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:15px;font-weight:600}
     .selected-chip .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
@@ -120,7 +125,11 @@
     .preset:hover{background:var(--sunken)}
     .preset.active{background:var(--ink);color:var(--surface)}
     @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .preset.active{background:#2B4A8A;color:#FFFFFF;box-shadow:none} }
-    .date-selects{display:flex;gap:8px;align-items:center}
+    .date-selects{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+    .date-selects .select{width:100%}
+    .options{align-items:flex-start}
+    .options .toggle{margin-top:27px}
+    @media(min-width:721px){#matchMode{width:220px} #containsLogic,#compareMode{width:200px}}
     .toggle{display:flex;align-items:center;gap:8px;height:40px;font-size:15px;font-weight:600;color:var(--ink-2);cursor:pointer}
     .options .spacer{flex:1 1 auto}
     .match-info{margin-top:12px;color:var(--ink-2);font-size:14px}
@@ -129,8 +138,15 @@
     .match-details summary::-webkit-details-marker{display:none}
     .match-details summary::before{content:'';width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
     .match-details[open] summary::before{transform:rotate(45deg)}
-    .match-list{max-height:160px;overflow:auto;margin:8px 0 0;padding-left:20px;columns:3}
-    .match-list li{margin:3px 0;break-inside:avoid}
+    .match-list{list-style:none;max-width:640px;max-height:276px;overflow:auto;mask-image:linear-gradient(to bottom,#000 calc(100% - 28px),transparent);-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 28px),transparent);margin:8px 0 0;padding:4px 0;border:1px solid var(--line);border-radius:8px}
+    .match-list li{display:flex;justify-content:space-between;align-items:center;gap:16px;height:32px;padding:0 12px;color:var(--ink)}
+    .match-list li + li{border-top:1px solid var(--grid)}
+    .match-list li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .match-list li span:last-child{color:var(--muted);white-space:nowrap}
+    .match-list li.more{color:var(--muted)}
+    .match-foot{margin:6px 0 0;color:var(--muted);font-size:13px}
+    .match-list li.head{position:sticky;top:-4px;background:var(--surface);color:var(--muted);font-size:13px;font-weight:600}
+    .match-list li.head span:first-child{color:var(--muted)}
 
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid transparent;background:var(--blue);color:var(--blue-ink);font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap}
     .btn:hover{filter:brightness(1.07)}
@@ -143,7 +159,7 @@
     .kpi-grid{display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));margin:20px 0;padding:4px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px}
     .kpi{padding:16px 18px;min-width:0}
     .kpi + .kpi:not([hidden]),.kpi[hidden] + .kpi{border-left:1px solid var(--grid)}
-    @media(max-width:900px) and (min-width:721px){.kpi-grid{grid-template-columns:repeat(var(--n,5),minmax(0,1fr))}.kpi .value{font-size:22px}.kpi{padding-right:10px}.kpi + .kpi{padding-left:12px}}
+    
     .kpi .label{color:var(--ink-2);font-size:14px;font-weight:600}
     .kpi .value{margin-top:4px;font-size:28px;line-height:1.15;font-weight:800;letter-spacing:-.02em;overflow-wrap:anywhere}
     .kpi .note{margin-top:4px;color:var(--muted);font-size:13px;line-height:1.35}
@@ -151,13 +167,26 @@
     .kpi .arrow{font-size:.6em;vertical-align:.25em;margin-right:6px}
 
     .charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
-    .chart-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;position:relative;min-width:0}
+    .chart-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;position:relative;min-width:0;padding-bottom:8px}
     #shareCard{grid-column:1 / -1}
+    .chart-card.collapsed{grid-column:1 / -1}
+    #rankCard.collapsed + #zeroCard{grid-column:1 / -1}
+    .empty-panel{margin:20px 0 0;padding:24px 18px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+    .empty-panel h2{margin:0;font-size:20px;letter-spacing:-.01em}
+    .empty-panel p{margin:4px 0 16px;color:var(--ink-2)}
+    .examples{display:flex;flex-wrap:wrap;gap:8px}
+    .examples button{height:36px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:15px;font-weight:600;cursor:pointer}
+    .examples button:hover{border-color:var(--blue);color:var(--blue)}
+    .alert{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:0 0 20px;padding:14px 16px;border:1px solid color-mix(in srgb,var(--coral) 45%,transparent);background:var(--coral-soft);border-radius:12px}
+    .alert strong{font-weight:700}
+    .alert span{color:var(--ink-2);flex:1 1 240px}
+    .alert .btn{height:34px;font-size:14px}
+    body.empty .kpi-grid,body.empty .charts,body.empty .table-panel{display:none}
     .chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 18px 0}
     .chart-head h3{margin:0;font-size:17px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
     .chart-head h3 .metric-dot{width:10px;height:10px;border-radius:2px;flex:0 0 auto}
-    .chart-head .description{margin:2px 0 0;color:var(--muted);font-size:14px;max-width:62ch}
-    @media(min-width:1101px){#rankCard .description,#zeroCard .description{min-height:42px}}
+    .chart-head .description{margin:2px 0 0;color:var(--muted);font-size:14px;max-width:80ch;text-wrap:pretty}
+    @media(min-width:1101px){#rankCard:not(.collapsed) .description,#zeroCard .description{min-height:42px}}
     .chart-actions{display:flex;gap:4px;flex:0 0 auto}
     .icon-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer}
     .icon-btn:hover{background:var(--sunken);color:var(--ink)}
@@ -170,8 +199,8 @@
     .chart{height:400px;width:100%}
     .chart.rank,.chart.zero{height:360px}
     .chart-placeholder{display:flex;height:260px;align-items:center;justify-content:center;padding:24px;color:var(--muted);font-size:15px;text-align:center}
-    .chart-card.is-fullscreen{position:fixed;inset:12px;z-index:1000;overflow:auto;box-shadow:0 0 0 100vmax rgba(9,15,28,.55)}
-    .chart-card.is-fullscreen .chart{height:calc(100vh - 110px)}
+    .chart-card.is-fullscreen{position:fixed;inset:24px;z-index:1000;overflow:auto;box-shadow:0 0 0 100vmax rgba(9,15,28,.62)}
+    .chart-card.is-fullscreen .chart{height:calc(100vh - 150px)}
 
     .table-panel{margin-top:20px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
     .table-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:16px 18px 12px}
@@ -184,29 +213,38 @@
     th:not(:first-child){width:11%}
     th:last-child,td:last-child{padding-right:18px}
     table.single-only th:nth-child(2),table.single-only td:nth-child(2){display:none}
+    table.no-rank th:nth-child(5),table.no-rank td:nth-child(5),table.no-rank th:nth-child(6),table.no-rank td:nth-child(6){display:none}
     th{position:sticky;top:0;background:var(--surface);color:var(--ink-2);font-size:13px;font-weight:700}
     th:first-child,td:first-child{text-align:left}
     tbody tr:hover{background:var(--sunken)}
-    .keyword-cell{display:flex;align-items:center;gap:10px;max-width:320px;white-space:normal;font-weight:600}
+    .keyword-cell{display:flex;align-items:center;gap:10px;max-width:440px;font-weight:600}
+    .keyword-cell span:last-child{overflow:hidden;text-overflow:ellipsis}
+    .keyword-cell.member{padding-left:20px;font-weight:500}
+    tr.group-row{background:var(--sunken)}
     .keyword-cell .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
     .outside{color:var(--muted)}
     .empty-state{padding:28px;text-align:center !important;color:var(--muted)}
 
     .data-block{margin-top:48px}
-    .data-block h2{margin:0;font-size:28px;line-height:1.15;letter-spacing:-.02em}
+    .data-block h2{margin:0;font-size:20px;line-height:1.2;letter-spacing:-.01em}
     .data-block > p{margin:6px 0 18px;color:var(--ink-2);max-width:68ch}
-    .data-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px}
-    .file-tile{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+    .data-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:16px}
+    .file-tile{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
     .file-tile strong{display:block;font-size:15px}
     .file-tile span{display:block;color:var(--muted);font-size:14px}
     .file-tile input[type="file"]{display:none}
 .file-status{display:block;margin-top:4px;font-style:normal;font-size:13px;font-weight:600;color:var(--ink-2)}
     .file-input-display{max-width:50%;text-align:right;background:none;border:0;padding:0;color:var(--blue);font-weight:700;font-size:14px;cursor:pointer}
     .data-actions{display:flex;gap:10px 16px;flex-wrap:wrap;align-items:center}
+    .data-actions .link-btn{padding:0}
+    .focus.off .options{opacity:.45;pointer-events:none}
+    a.btn{text-decoration:none}
+    body.load-failed .data-actions{display:none}
     .data-file{display:flex;align-items:center;gap:8px;color:var(--ink-2)}
     .data-file input{display:none}
     .data-file button{border:0;background:none;color:var(--blue);cursor:pointer;padding:0;font-weight:700}
     .status{color:var(--muted);font-size:14px}
+    .status.error{color:var(--coral);font-weight:600}
     .status.ready{color:var(--ink-2)}
 
     footer{margin-top:56px;border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:14px}
@@ -217,6 +255,28 @@
     .toast.show{transform:translate(-50%,0);opacity:1}
 
     @media(max-width:1100px){.charts{grid-template-columns:1fr}}
+    @media(max-width:480px){.focus .options .field.half{flex:1 1 100%}}
+    @media(max-width:900px){
+      .kpi-grid{grid-template-columns:repeat(6,minmax(0,1fr));padding:0;gap:1px;background:var(--grid);overflow:hidden}
+      .kpi-grid .kpi,.kpi-grid .kpi + .kpi,.kpi-grid .kpi[hidden] + .kpi{padding:12px 16px;border:0;background:var(--surface);grid-column:span 2}
+      .kpi-grid.k5 .kpi:nth-last-child(-n+2),.kpi-grid.k4 .kpi:not([hidden]){grid-column:span 3}
+    }
+    @media(max-width:720px){
+      .kpi-grid{grid-template-columns:1fr 1fr}
+      .kpi-grid .kpi,.kpi-grid .kpi + .kpi,.kpi-grid .kpi[hidden] + .kpi,.kpi-grid.k5 .kpi:nth-last-child(-n+2),.kpi-grid.k4 .kpi:not([hidden]){grid-column:auto}
+      .kpi-grid .kpi.span{grid-column:1 / -1}
+    }
+    @media(max-width:860px){
+      .table-wrap table,.table-wrap tbody{display:block}
+      .table-wrap thead{display:none}
+      .table-wrap tr{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 32px;padding:14px 18px;border-top:1px solid var(--grid)}
+      .table-wrap td{display:flex;justify-content:space-between;gap:12px;padding:0;border:0;font-size:14px;white-space:nowrap;text-align:right}
+      .table-wrap td::before{content:attr(data-label);color:var(--muted);font-weight:500}
+      .table-wrap td:first-child{grid-column:1 / -1;padding-bottom:4px}
+      .table-wrap td:first-child::before{content:none}
+      .table-wrap td.empty-state{display:block;grid-column:1 / -1}
+      .keyword-cell{max-width:none}
+    }
     @media(max-width:720px){
       .wrap{padding:0 16px}
       .topbar .wrap{gap:12px;flex-wrap:wrap;padding-top:8px}
@@ -225,13 +285,13 @@
       .icon-link .lbl{display:none}
       .page-head{padding:28px 0 18px}
       .page-head p{font-size:16px}
-      .focus{padding:14px}
+      .focus{padding:16px}
+      .chart-head{padding:16px 16px 0}
+      .table-head{padding:16px 16px 12px}
+      .suggestions{max-height:300px}
       .search-field{min-height:52px;padding:0 12px}
       .search-field input{height:48px;font-size:17px}
       .search-field .btn .lbl{display:none}
-      .kpi-grid{grid-template-columns:1fr 1fr;padding:0;gap:1px;background:var(--grid);overflow:hidden}
-      .kpi-grid .kpi,.kpi-grid .kpi + .kpi,.kpi-grid .kpi[hidden] + .kpi{padding:12px 14px;border:0;background:var(--surface)}
-      .kpi-grid .kpi.span{grid-column:1 / -1}
       .kpi .value{font-size:20px}
       .kpi .label,.kpi .note{font-size:12px}
       .options .field,.options .preset-row{width:100%}
@@ -240,17 +300,16 @@
       .chart{height:340px}.chart.rank,.chart.zero{height:320px}
       .chart-head > div:first-child{flex:1 1 auto;min-width:0}
       .match-list{columns:1}
-      .table-wrap table,.table-wrap tbody{display:block}
-      .table-wrap thead{display:none}
-      .table-wrap tr{display:grid;grid-template-columns:1fr;gap:6px;padding:14px 16px;border-top:1px solid var(--grid)}
-      .table-wrap td{display:flex;justify-content:space-between;gap:12px;padding:0;border:0;font-size:14px;white-space:nowrap;text-align:right}
-      .table-wrap td::before{content:attr(data-label);color:var(--muted);font-weight:500}
-      .table-wrap td:first-child{grid-column:1 / -1;padding-bottom:4px}
-      .table-wrap td:first-child::before{content:none}
-      .table-wrap td.empty-state{display:block;grid-column:1 / -1}
-      .keyword-cell{max-width:none}
+      .file-tile{gap:16px}
+      .options .field.half{flex:1 1 calc(50% - 10px);width:auto}
+      .options .toggle{margin-top:0}
+      .options .field.half .select{width:100%}
+      .date-selects{width:100%}
+      .icon-btn[data-chart-action="fullscreen"]{display:none}
+      .suggestion{flex-direction:column;align-items:flex-start;gap:4px}
+      .badges{display:flex}
       .data-grid{grid-template-columns:1fr}
-      .data-block h2{font-size:24px}
+      .data-block h2{font-size:20px}
       .status{width:100%;margin-left:0}
     }
   </style>
@@ -285,39 +344,41 @@
       <p>Follow one search query, or compare a few, month by month: how much of all Marketplace search it gets, where it ranks in the top 500, and how often it finds no apps.</p>
     </div>
 
+    <div id="loadAlert" class="alert" role="alert" hidden><strong>Couldn’t load the Marketplace reports.</strong><span>Check your connection and try again, or open your own exports below.</span><button id="retryLoad" class="btn small" type="button">Retry</button><a class="btn ghost small" href="#dataTitle">Open your own files</a></div>
+
     <section class="focus" aria-labelledby="focusTitle">
-      <h2 id="focusTitle" class="visually-hidden">Choose keywords</h2>
+      <h2 id="focusTitle" class="visually-hidden">Choose queries</h2>
       <div class="picker">
-        <label for="keywordInput" class="visually-hidden">Keywords or phrases</label>
+        <label for="keywordInput" class="visually-hidden">Search queries</label>
         <div class="search-field">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
           <input id="keywordInput" type="text" autocomplete="off" placeholder="Search queries, then press Enter…" />
         </div>
-        <div id="suggestions" class="suggestions" role="listbox" aria-label="Keyword suggestions"></div>
+        <div id="suggestions" class="suggestions" role="listbox" aria-label="Query suggestions"></div>
       </div>
       <div class="chip-row"><div id="selectedChips" class="selected-chips" aria-live="polite"></div><button id="clearSelection" class="link-btn" type="button">Clear all</button></div>
-      <div id="matchInfo" class="match-info">Select at least one keyword.</div>
+      <div id="matchInfo" class="match-info" hidden></div>
       <details id="matchDetails" class="match-details" hidden>
         <summary id="matchSummary">Matched queries</summary>
         <ul id="matchList" class="match-list"></ul>
       </details>
 
       <div class="options">
-        <div class="field">
+        <div class="field half">
           <label for="matchMode">Match</label>
           <select id="matchMode" class="select">
-            <option value="exact">Exact queries</option>
-            <option value="contains">Queries containing words</option>
+            <option value="exact">Exact query</option>
+            <option value="contains">Containing words</option>
           </select>
         </div>
-        <div id="containsLogicField" class="field" style="display:none">
+        <div id="containsLogicField" class="field half" style="display:none">
           <label for="containsLogic">Words must match</label>
           <select id="containsLogic" class="select">
-            <option value="any">Any selected word</option>
-            <option value="all">All selected words</option>
+            <option value="any">Any word</option>
+            <option value="all">All words</option>
           </select>
         </div>
-        <div id="compareModeField" class="field">
+        <div id="compareModeField" class="field half">
           <label for="compareMode">Show as</label>
           <select id="compareMode" class="select">
             <option value="separate">Separate lines</option>
@@ -333,46 +394,52 @@
             <button class="preset" data-months="all" type="button">All</button>
             <button class="preset" data-months="custom" type="button">Custom</button>
           </div>
-        </div>
-        <div class="date-selects">
-          <div class="field"><label for="fromMonth">From</label><select id="fromMonth" class="select"></select></div>
-          <div class="field"><label for="toMonth">To</label><select id="toMonth" class="select"></select></div>
+          <div class="date-selects" hidden>
+            <div class="field"><label for="fromMonth">From</label><select id="fromMonth" class="select"></select></div>
+            <div class="field"><label for="toMonth">To</label><select id="toMonth" class="select"></select></div>
+          </div>
         </div>
         <label class="toggle"><input id="smoothSeries" type="checkbox" /> 3-month average</label>
       </div>
     </section>
 
-    <section id="kpis" class="kpi-grid" aria-label="Keyword summary">
+    <section id="emptyPanel" class="empty-panel" aria-labelledby="emptyTitle" hidden>
+      <h2 id="emptyTitle">Pick a query to start</h2>
+      <p>Search above, or start from one of this month’s most searched queries.</p>
+      <div id="examples" class="examples"></div>
+    </section>
+
+    <section id="kpis" class="kpi-grid" aria-label="Query summary">
       <div class="kpi"><div class="label" id="kpiShareLabel">Latest search share</div><div id="kpiShare" class="value">—</div><div id="kpiShareNote" class="note">Percentage of all searches</div></div>
-      <div class="kpi"><div class="label">Share change</div><div id="kpiDelta" class="value">—</div><div class="note">vs previous month</div></div>
-      <div class="kpi"><div class="label">Best current rank</div><div id="kpiRank" class="value">—</div><div id="kpiRankNote" class="note">Direct top-500 rank</div></div>
-      <div class="kpi"><div class="label">Zero results</div><div id="kpiZero" class="value">—</div><div class="note">In selected period</div></div>
+      <div class="kpi"><div class="label">Share change</div><div id="kpiDelta" class="value">—</div><div id="kpiDeltaNote" class="note">vs previous month</div></div>
+      <div class="kpi"><div class="label" id="kpiRankLabel">Current rank</div><div id="kpiRank" class="value">—</div><div id="kpiRankNote" class="note">Direct top-500 rank</div></div>
+      <div class="kpi"><div class="label">Empty searches</div><div id="kpiZero" class="value">—</div><div id="kpiZeroNote" class="note">In selected period</div></div>
       <div class="kpi"><div class="label" id="kpiPeakLabel">Peak search share</div><div id="kpiPeak" class="value">—</div><div id="kpiPeakNote" class="note">Within selected period</div></div>
     </section>
 
     <div class="charts">
       <section id="shareCard" class="chart-card" aria-labelledby="shareTitle">
         <div class="chart-head"><div><h3 id="shareTitle">Share of all searches</h3><p class="description">Percentage of all Marketplace searches. Gaps mean the query was outside the top 500 that month.</p></div><div class="chart-actions"><button class="icon-btn" type="button" data-chart-action="fullscreen" data-chart="shareChart" aria-label="Open chart full screen" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button><button class="icon-btn" type="button" data-chart-action="download" data-chart="shareChart" aria-label="Download chart as PNG" title="Download PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
-        <div id="shareChart" class="chart"><div class="chart-placeholder">Pick a keyword above to see its share of searches.</div></div>
+        <div id="shareChart" class="chart"><div class="chart-placeholder">Loading…</div></div>
       </section>
 
       <section id="rankCard" class="chart-card" aria-labelledby="rankTitle">
         <div class="chart-head"><div><h3 id="rankTitle">Top-500 rank</h3><p class="description">Rank from the monthly report on a log scale, so moves near the top stay visible. Gaps mean the query was outside the top 500.</p></div><div class="chart-actions"><button class="icon-btn" type="button" data-chart-action="fullscreen" data-chart="rankChart" aria-label="Open chart full screen" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button><button class="icon-btn" type="button" data-chart-action="download" data-chart="rankChart" aria-label="Download chart as PNG" title="Download PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
-        <div id="rankChart" class="chart rank"><div class="chart-placeholder">Exact queries show their monthly rank here.</div></div>
+        <div id="rankChart" class="chart rank"><div class="chart-placeholder">Loading…</div></div>
       </section>
 
       <section id="zeroCard" class="chart-card" aria-labelledby="zeroTitle">
-        <div class="chart-head"><div><h3 id="zeroTitle">Searches with no results</h3><p class="description">How many times the query returned no apps. This is a count, not a rate.</p></div><div class="chart-actions"><button class="icon-btn" type="button" data-chart-action="fullscreen" data-chart="zeroChart" aria-label="Open chart full screen" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button><button class="icon-btn" type="button" data-chart-action="download" data-chart="zeroChart" aria-label="Download chart as PNG" title="Download PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
-        <div id="zeroChart" class="chart zero"><div class="chart-placeholder">Pick a keyword above to see its zero-result searches.</div></div>
+        <div class="chart-head"><div><h3 id="zeroTitle">Searches that found no apps</h3><p class="description">How many times the query found no apps: a count of searches, not a rate.</p></div><div class="chart-actions"><button class="icon-btn" type="button" data-chart-action="fullscreen" data-chart="zeroChart" aria-label="Open chart full screen" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button><button class="icon-btn" type="button" data-chart-action="download" data-chart="zeroChart" aria-label="Download chart as PNG" title="Download PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
+        <div id="zeroChart" class="chart zero"><div class="chart-placeholder">Loading…</div></div>
       </section>
     </div>
 
     <section class="table-panel" aria-labelledby="comparisonTitle">
-      <div class="table-head"><div><h3 id="comparisonTitle">Comparison</h3><p>Rank is shown per exact query and never combined across a group.</p></div><button id="exportCsv" class="btn ghost small" type="button">Export CSV</button></div>
+      <div class="table-head"><div><h3 id="comparisonTitle">Comparison</h3><p id="tableNote">Rank is shown per exact query and never combined across a group.</p></div><button id="exportCsv" class="btn ghost small" type="button">Export CSV</button></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Keyword or group</th><th>Queries</th><th>Latest share</th><th>Share change</th><th>Current rank</th><th>Best rank</th><th>Peak share</th><th>Zero results</th></tr></thead>
-          <tbody id="summaryBody"><tr><td colspan="8" class="empty-state">Pick keywords above to compare them here.</td></tr></tbody>
+          <thead><tr><th id="thName">Query</th><th>Queries</th><th>Latest share</th><th id="thDelta">Share change</th><th>Current rank</th><th>Best rank</th><th>Peak share</th><th>Empty searches</th></tr></thead>
+          <tbody id="summaryBody"><tr><td colspan="8" class="empty-state">Pick queries above to compare them here.</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -381,10 +448,10 @@
       <h2 id="dataTitle">Use your own data</h2>
       <p>The page loads the latest reports from this repository. You can open your own exports instead; files are read in your browser and never uploaded.</p>
       <div class="data-grid">
-        <div class="file-tile"><div><strong>Popular search keywords</strong><span>Raw sheet with month, keyword, percentage, rank</span><em id="popularFileStatus" class="file-status">Not loaded</em></div><input id="popularFile" type="file" accept=".xlsx,.xls" /><button id="popularFileButton" class="btn ghost small" type="button">Open .xlsx…</button></div>
-        <div class="file-tile"><div><strong>Zero-result keywords</strong><span>Raw sheet with month, keyword, count</span><em id="zeroFileStatus" class="file-status">Not loaded</em></div><input id="zeroFile" type="file" accept=".xlsx,.xls" /><button id="zeroFileButton" class="btn ghost small" type="button">Open .xlsx…</button></div>
+        <div class="file-tile"><div><strong>Popular search keywords</strong><span>Raw sheet with month, keyword, percentage, rank</span><em id="popularFileStatus" class="file-status">Not loaded</em></div><input id="popularFile" type="file" accept=".xlsx,.xls" /><button id="popularFileButton" class="btn ghost small" type="button">Choose file</button></div>
+        <div class="file-tile"><div><strong>Zero-result keywords</strong><span>Raw sheet with month, keyword, count</span><em id="zeroFileStatus" class="file-status">Not loaded</em></div><input id="zeroFile" type="file" accept=".xlsx,.xls" /><button id="zeroFileButton" class="btn ghost small" type="button">Choose file</button></div>
       </div>
-      <div class="data-actions"><button id="reloadDefaults" class="btn ghost" type="button">Reload repository data</button><span id="status" class="status" role="status">Loading libraries…</span></div>
+      <div class="data-actions"><span id="status" class="status" role="status">Loading libraries…</span><button id="reloadDefaults" class="link-btn" type="button">Reload repository data</button></div>
     </section>
   </main>
 
@@ -414,7 +481,7 @@
     const FONT = "'Schibsted Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif";
     function T(){
       const s=getComputedStyle(document.documentElement),v=(n)=>s.getPropertyValue(n).trim();
-      return {ink:v('--ink'),ink2:v('--ink-2'),muted:v('--muted'),line:v('--line'),grid:v('--grid'),surface:v('--surface'),blue:v('--blue'),blueSoft:v('--blue-soft'),coral:v('--coral'),tipBg:v('--tip-bg'),tipInk:v('--tip-ink'),series:v('--series').split(',').map(x=>x.trim()).filter(Boolean)};
+      return {ink:v('--ink'),ink2:v('--ink-2'),muted:v('--muted'),line:v('--line'),grid:v('--grid'),surface:v('--surface'),blue:v('--blue'),blueSoft:v('--blue-soft'),coral:v('--coral'),group:v('--group'),tipBg:v('--tip-bg'),tipInk:v('--tip-ink'),series:v('--series').split(',').map(x=>x.trim()).filter(Boolean)};
     }
     let COLORS = T().series;
     // Same rule as the Overview: a query's colour comes from its place in the latest report, then the next free slot.
@@ -488,6 +555,12 @@
       } else if(state.matchMode==='exact'){
         state.selections=state.selections.map(item=>names.get(normalize(item))||item).filter((item,index,array)=>array.findIndex(x=>normalize(x)===normalize(item))===index);
       }
+      state.loadFailed=false; $('#loadAlert').hidden=true; $('#keywordInput').disabled=false; $('#status').classList.remove('error'); document.body.classList.remove('load-failed');
+      { // The month when the shares of the biggest queries collapse at once: a change in the report, not in demand.
+        const tot=new Map(); state.popular.forEach(r=>tot.set(normalize(r.keyword),(tot.get(normalize(r.keyword))||0)+r.percentage));
+        const big=new Set([...tot.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k])=>k)); const by=state.months.map(m=>0); const idx=new Map(state.months.map((m,i)=>[m,i]));
+        state.popular.forEach(r=>{ if(big.has(normalize(r.keyword))&&idx.has(r.month)) by[idx.get(r.month)]+=r.percentage; });
+        state.reportBreak=null; for(let i=1;i<by.length;i++){ if(by[i-1]>0&&by[i]<by[i-1]*0.4){ state.reportBreak=state.months[i]; break; } } }
       state.colorRank=null; populateDateControls(); state.dataReady=true; renderControls(); renderAll(); setStatus(`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}`,true);
     }
     function populateDateControls(){
@@ -497,12 +570,17 @@
       state.to=toUrl>=0?toUrl:Math.max(0,state.months.length-1); state.from=fromUrl>=0?fromUrl:Math.max(0,state.to-11);
       from.value=String(state.from);to.value=String(state.to); syncPresetButtons();
     }
+    function showLoadError(error){
+      state.loadFailed=true; $('#loadAlert').hidden=false; $('#keywordInput').disabled=true; renderControls(); $('.focus').classList.add('off'); document.body.classList.add('load-failed');
+      document.body.classList.add('empty'); $('#emptyPanel').hidden=true;
+      setStatus(`Error: ${error.message}.`); $('#status').classList.add('error');
+    }
     async function loadDefaults(){
       setStatus('Loading default Marketplace reports…');
       const [popularResult,zeroResult]=await Promise.allSettled([fetchFirst(DEFAULT_SOURCE),fetchFirst(DEFAULT_ZERO)]);
       if(popularResult.status==='fulfilled'){ state.popular=parsePopular(popularResult.value); $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`; }
       if(zeroResult.status==='fulfilled'){ state.zero=parseZero(zeroResult.value); $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`; }
-      if(!state.popular.length) throw new Error('Popular report could not be loaded'); finalizeData();
+      if(!state.popular.length) throw new Error(zeroResult.status==='fulfilled'?'The popular-searches report could not be loaded':'Neither report could be loaded'); finalizeData();
     }
     async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); if(type==='popular'){state.popular=parsePopular(buffer);$('#popularFileStatus').textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zero=parseZero(buffer);$('#zeroFileStatus').textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
     function canonicalKeyword(input){ return state.allKeywords.find(item=>normalize(item)===normalize(input)); }
@@ -521,8 +599,8 @@
     }
     function seriesDefinitions(){
       const matches=selectedMatches(); if(!matches.length) return [];
-      if(state.matchMode==='contains') return [{label:`Contains ${state.containsLogic}: ${state.selections.join(', ')}`,keywords:matches,color:COLORS[0],group:true}];
-      if(state.compareMode==='group') return [{label:'Selected group',keywords:matches,color:COLORS[0],group:true}];
+      if(state.matchMode==='contains') return [{label:`Contains ${state.containsLogic}: ${state.selections.join(', ')}`,keywords:matches,color:T().group,group:true}];
+      if(state.compareMode==='group') return [{label:`${matches.length} queries combined`,keywords:matches,color:T().group,group:true}];
       return matches.map((keyword,index)=>({label:keyword,keywords:[keyword],color:colorOf(keyword),group:false}));
     }
     function rankDefinitions(){ if(state.matchMode!=='exact') return []; return selectedMatches().map((keyword,index)=>({label:keyword,keywords:[keyword],color:colorOf(keyword)})); }
@@ -537,78 +615,155 @@
     }
     function renderControls(){
       $('#matchMode').value=state.matchMode;$('#containsLogic').value=state.containsLogic;$('#compareMode').value=state.compareMode;$('#smoothSeries').checked=state.smooth;
-      $('#containsLogicField').style.display=state.matchMode==='contains'?'flex':'none';$('#compareModeField').style.display=state.matchMode==='exact'?'flex':'none';
-      const tiny=window.innerWidth<520;$('#keywordInput').placeholder=state.matchMode==='exact'?(tiny?'Add a query…':'Search exact Marketplace queries…'):(tiny?'Add a word…':'Enter words or phrases, then press Enter…');$('#clearSelection').hidden=!state.selections.length;
-      const chips=$('#selectedChips');chips.textContent='';state.selections.forEach((item,index)=>{ const chip=document.createElement('span');chip.className='selected-chip'; const dot=document.createElement('span');dot.className='dot';if(state.matchMode==='exact'&&state.compareMode==='separate'){dot.style.background=colorOf(item);}else{dot.hidden=true;} const text=document.createElement('span');text.className='text';text.textContent=item; const remove=document.createElement('button');remove.type='button';remove.setAttribute('aria-label',`Remove ${item}`);remove.textContent='×';remove.addEventListener('click',()=>removeSelection(index));chip.append(dot,text,remove);chips.appendChild(chip); });
-      const matches=selectedMatches(); const exact=state.matchMode==='exact'; $('#matchInfo').textContent=!state.selections.length?'Type a query above and pick it from the list.':'';$('#matchInfo').hidden=!!state.selections.length;
-      const details=$('#matchDetails'); details.hidden=exact||!matches.length; $('#matchSummary').textContent=`Show ${matches.length.toLocaleString('en-US')} matching ${matches.length===1?'query':'queries'}`; const list=$('#matchList'); list.textContent=''; matches.slice(0,200).forEach(keyword=>{const li=document.createElement('li');li.textContent=keyword;list.appendChild(li);}); if(matches.length>200){const li=document.createElement('li');li.textContent=`…and ${(matches.length-200).toLocaleString('en-US')} more`;list.appendChild(li);}
+      $('#containsLogicField').style.display=state.matchMode==='contains'&&state.selections.length>1?'flex':'none';$('#compareModeField').style.display=state.matchMode==='exact'?'flex':'none';
+      const tiny=window.innerWidth<520;$('#keywordInput').placeholder=state.loadFailed?'No data loaded':state.matchMode==='exact'?'Search queries…':'Add words, then press Enter…';$('#clearSelection').hidden=!state.selections.length;
+      const chips=$('#selectedChips');chips.textContent='';state.selections.forEach((item,index)=>{ const chip=document.createElement('span');chip.className='selected-chip'; const dot=document.createElement('span');dot.className='dot';if(state.matchMode==='exact'){dot.style.background=colorOf(item);}else{dot.hidden=true;} const text=document.createElement('span');text.className='text';text.textContent=item; const remove=document.createElement('button');remove.type='button';remove.setAttribute('aria-label',`Remove ${item}`);remove.textContent='×';remove.addEventListener('click',()=>removeSelection(index));chip.append(dot,text,remove);chips.appendChild(chip); });
+      const matches=selectedMatches(); const exact=state.matchMode==='exact';
+      const details=$('#matchDetails'); details.hidden=exact||!matches.length;
+      const label=`${matches.length.toLocaleString('en-US')} matching ${matches.length===1?'query':'queries'}`;
+      const setSummary=()=>{ $('#matchSummary').textContent=details.open?`Hide ${label}`:`Show ${label}`; }; setSummary(); details.ontoggle=setSummary;
+      const list=$('#matchList'); list.textContent='';
+      if(!exact&&matches.length){
+        // Biggest first: share in the latest month, then share over all reports.
+        const latest=state.months.at(-1), now=new Map(), all=new Map();
+        for(const r of state.popular){ const k=normalize(r.keyword); all.set(k,(all.get(k)||0)+r.percentage); if(r.month===latest) now.set(k,(now.get(k)||0)+r.percentage); }
+        const sorted=matches.slice().sort((a,b)=>(now.get(normalize(b))||0)-(now.get(normalize(a))||0)||(all.get(normalize(b))||0)-(all.get(normalize(a))||0)||a.localeCompare(b));
+        { const li=document.createElement('li'); li.className='head'; li.innerHTML=`<span>Query</span><span>Share, ${monthShort(latest)}</span>`; list.appendChild(li); }
+        sorted.slice(0,200).forEach(keyword=>{const li=document.createElement('li');const a=document.createElement('span');a.textContent=keyword;a.title=keyword;const b=document.createElement('span');const v=now.get(normalize(keyword));b.textContent=v?formatShare(v):'–';li.append(a,b);list.appendChild(li);});
+        if(sorted.length>200){const li=document.createElement('li');li.className='more';li.textContent=`…and ${(sorted.length-200).toLocaleString('en-US')} more, mostly from older reports or the zero-result list`;list.appendChild(li);}
+        let foot=$('#matchFoot'); if(!foot){foot=document.createElement('p');foot.id='matchFoot';foot.className='match-foot';list.after(foot);} foot.textContent=sorted.length>200?`Top 200 of ${sorted.length.toLocaleString('en-US')}, biggest first.`:`${sorted.length.toLocaleString('en-US')} queries, biggest first.`;
+      }
       updateUrl();
     }
     function renderSuggestions(){
       const box=$('#suggestions'),term=normalize($('#keywordInput').value); box.textContent=''; if(!term||!state.dataReady){closeSuggestions();return;}
       const popularSet=new Set(state.popular.map(row=>normalize(row.keyword))),zeroSet=new Set(state.zero.map(row=>normalize(row.keyword)));
-      const results=state.allKeywords.filter(keyword=>normalize(keyword).includes(term)).sort((a,b)=>Number(!normalize(a).startsWith(term))-Number(!normalize(b).startsWith(term))||a.localeCompare(b)).slice(0,60);
-      results.forEach(keyword=>{ const button=document.createElement('button');button.type='button';button.className='suggestion';button.setAttribute('role','option'); const text=document.createElement('span');{const k=keyword,lk=normalize(k),at=lk.indexOf(term);text.innerHTML=at>=0?escapeHtml(k.slice(0,at))+'<b>'+escapeHtml(k.slice(at,at+term.length))+'</b>'+escapeHtml(k.slice(at+term.length)):escapeHtml(k);} const badges=document.createElement('span');badges.className='badges'; const key=normalize(keyword); if(popularSet.has(key)){const badge=document.createElement('span');badge.className='badge popular';badge.textContent='Top 500';badges.appendChild(badge);} if(zeroSet.has(key)){const badge=document.createElement('span');badge.className='badge zero';badge.textContent='Empty searches';badges.appendChild(badge);} button.append(text,badges);button.addEventListener('click',()=>addSelection(state.matchMode==='exact'?keyword:$('#keywordInput').value));box.appendChild(button); });
+      const found=state.allKeywords.filter(keyword=>normalize(keyword).includes(term)).sort((a,b)=>Number(!normalize(a).startsWith(term))-Number(!normalize(b).startsWith(term))||a.localeCompare(b)); const results=found.slice(0,60);
+      results.forEach(keyword=>{ const button=document.createElement('button');button.type='button';button.className='suggestion';button.setAttribute('role','option'); const text=document.createElement('span');{const k=keyword,lk=normalize(k),at=lk.indexOf(term);text.innerHTML=at>=0?escapeHtml(k.slice(0,at))+'<b>'+escapeHtml(k.slice(at,at+term.length))+'</b>'+escapeHtml(k.slice(at+term.length)):escapeHtml(k);} const badges=document.createElement('span');badges.className='badges'; const key=normalize(keyword); if(popularSet.has(key)){const badge=document.createElement('span');badge.className='badge popular';badge.textContent='Top 500';badges.appendChild(badge);} if(zeroSet.has(key)){const badge=document.createElement('span');badge.className='badge zero';badge.textContent='Found no apps';badges.appendChild(badge);} button.append(text,badges);button.addEventListener('click',()=>addSelection(state.matchMode==='exact'?keyword:$('#keywordInput').value));box.appendChild(button); });
       if(!results.length&&state.matchMode==='contains'){const button=document.createElement('button');button.type='button';button.className='suggestion';button.textContent=`Add “${$('#keywordInput').value.trim()}” as a contains filter`;button.addEventListener('click',()=>addSelection($('#keywordInput').value));box.appendChild(button);}
+      if(results.length){const foot=document.createElement('div');foot.className='sug-foot';foot.textContent=found.length>results.length?`Showing ${results.length} of ${found.length.toLocaleString('en-US')} matches. Keep typing to narrow down.`:`${found.length} ${found.length===1?'match':'matches'}`;box.appendChild(foot);}
       box.classList.toggle('open',box.childElementCount>0);box.querySelector('.suggestion')?.classList.add('active');
     }
     function closeSuggestions(){ $('#suggestions').classList.remove('open'); }
     function ensureChart(id){ const el=document.getElementById(id); el.querySelector('.chart-placeholder')?.remove(); if(!state.charts[id]||state.charts[id].isDisposed?.()){state.charts[id]=echarts.init(el);state.charts[id].group='keywordExplorer';} return state.charts[id]; }
-    function disposeChart(id,message){ if(state.charts[id]){state.charts[id].dispose();state.charts[id]=null;} const el=document.getElementById(id);el.textContent='';const placeholder=document.createElement('div');placeholder.className='chart-placeholder';placeholder.textContent=message;el.appendChild(placeholder); }
-    function commonOption(months){ const t=T(); const chipKey=state.matchMode==='exact'&&state.compareMode==='separate'; return {backgroundColor:'transparent',animationDuration:350,textStyle:{fontFamily:FONT},legend:{show:true,type:'scroll',top:12,left:18,right:18,icon:'circle',itemWidth:9,itemHeight:9,itemGap:16,textStyle:{color:t.ink2,fontSize:13},pageTextStyle:{color:t.ink2},pageIconColor:t.blue,pageIconInactiveColor:t.line,inactiveColor:t.line},grid:{left:18,right:44,top:52,bottom:28,containLabel:true},tooltip:{trigger:'axis',backgroundColor:t.tipBg,borderWidth:0,padding:[8,10],textStyle:{color:t.tipInk,fontFamily:FONT,fontSize:13},extraCssText:'border-radius:8px;box-shadow:none;',axisPointer:{lineStyle:{color:t.line}}},xAxis:{type:'category',boundaryGap:false,data:months,axisLabel:{color:t.muted,fontSize:12,margin:12,formatter:value=>monthShort(value)},axisTick:{show:false},axisLine:{lineStyle:{color:t.line}}}}; }
+    function disposeChart(id,message){ if(state.charts[id]){state.charts[id].dispose();state.charts[id]=null;} const el=document.getElementById(id);el.textContent='';if(!message)return;const placeholder=document.createElement('div');placeholder.className='chart-placeholder';placeholder.textContent=message;el.appendChild(placeholder); }
+    function commonOption(months,id,series){
+      const t=T(), el=document.getElementById(id), W=el?.clientWidth||800;
+      const names=(series||[]).map(x=>x.name).filter(n=>n!=='_break');
+      // One line needs no key; in the half-width cards a long list is left to the chips and the share chart's legend.
+      const many=names.length>1;
+      // The legend wraps instead of paging; its height decides where the plot starts.
+      let rows=0; if(many){ const avail=W-48; let x=0; rows=1; for(const n of names){ const w=9+6+measure(n)+16; if(x+w>avail&&x>0){rows++;x=0;} x+=w; } }
+      const left=56,right=24, px=Math.max(60,W-left-right)/Math.max(1,months.length-1);
+      return {backgroundColor:'transparent',animationDuration:350,textStyle:{fontFamily:FONT},
+        legend:{show:many,data:names,type:'plain',top:14,left:18,width:Math.max(120,W-48),icon:'circle',itemWidth:9,itemHeight:9,itemGap:16,textStyle:{color:t.ink2,fontSize:13,fontFamily:FONT},inactiveColor:t.line},
+        grid:{left,right,top:many?14+rows*22+22:24,bottom:34,containLabel:false},
+        tooltip:{trigger:'axis',confine:true,position:tipAt(many?14+rows*22+10:8,left),backgroundColor:t.tipBg,borderWidth:0,padding:innerWidth<560?[6,8]:[8,10],textStyle:{color:t.tipInk,fontFamily:FONT,fontSize:innerWidth<560?12:13},extraCssText:'border-radius:8px;box-shadow:none;',axisPointer:{lineStyle:{color:t.line}}},
+        xAxis:{type:'category',boundaryGap:false,data:months,axisLabel:{color:t.muted,fontSize:12,margin:12,interval:0,hideOverlap:true,formatter:smartTicks(months,px)},axisTick:{show:false},axisLine:{lineStyle:{color:t.line}}}};
+    }
+    const measure=(()=>{ const c=document.createElement('canvas').getContext('2d'); return (s)=>{ c.font=`13px ${FONT}`; return c.measureText(String(s||'')).width; }; })();
     function monthShort(key){ const m=/^(\d{4})-(\d{2})/.exec(String(key||'')); return m?`${new Date(Date.UTC(+m[1],+m[2]-1,1)).toLocaleString('en-US',{month:'short',timeZone:'UTC'})} ’${m[1].slice(2)}`:String(key||''); }
+    function smartTicks(months, pxPerMonth){
+      // One fixed stride (yearly strides sit on Januaries, shorter ones start at the first month shown).
+      // A label carries its year when it is the first one or the year has changed since the previous label.
+      const step=[1,2,3,6,12,24].find(k=>k*pxPerMonth>=58)||24;
+      const last=months.length-1;
+      const mi=(m)=>(+m.slice(0,4))*12+(+m.slice(5,7))-1;
+      const mon=(m)=>new Date(Date.UTC(+m.slice(0,4),+m.slice(5,7)-1,1)).toLocaleString('en-US',{month:'short',timeZone:'UTC'});
+      const text=months.map(()=>''); let prevYear=null;
+      months.forEach((m,i)=>{ const on=step>=12?mi(m)%step===0:i%step===0; if(!on) return; const y=m.slice(0,4); text[i]=step>=12?y:(y!==prevYear?monthShort(m):mon(m)); prevYear=y; });
+      return (v,i)=>text[i]||'';
+    }
+    function niceAxis(max,n=4){ if(!(max>0)) max=1; const raw=max/n,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p; const k=[1,2,5,10].find(x=>x>=f-1e-9),step=k*p; const decimals=Math.max(0,-Math.floor(Math.log10(step)+1e-9)); return {max:+(Math.ceil(max/step-1e-9)*step).toFixed(6),interval:step,decimals}; }
+    // Beside the pointer, never on top of it: right if it fits, else left (over the axis labels if it must).
+    const tipAt=(top=8,minLeft=4)=>(point,params,dom,rect,size)=>{ const x=point[0],w=size.contentSize[0],W=size.viewSize[0]; if(x+14+w<=W-4) return [x+14,top]; if(x-14-w>=2) return [x-14-w,top]; return [Math.max(2,Math.min(W-w-2,x+14)),top]; };
     function monthLong(key){ const m=/^(\d{4})-(\d{2})/.exec(String(key||'')); return m?new Date(Date.UTC(+m[1],+m[2]-1,1)).toLocaleString('en-US',{month:'long',year:'numeric',timeZone:'UTC'}):String(key||''); }
+    const lineSeries=(def,values,n,months)=>({name:def.label,type:'line',data:values,smooth:false,connectNulls:false,showSymbol:months.length<=24&&n<=4,symbol:'circle',symbolSize:7,itemStyle:{color:def.color,borderColor:T().surface,borderWidth:2},lineStyle:{width:def.group?3:2.5,color:def.color},emphasis:{focus:'series'},blur:{lineStyle:{opacity:.2},itemStyle:{opacity:.2}}});
+    function breakSeries(months,inverse=false){ const bi=state.reportBreak?months.indexOf(state.reportBreak):-1; return bi>0?[{name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:inverse?'start':'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,formatter:'Report change'},data:[{xAxis:bi}]}}]:[]; }
     function renderShareChart(definitions,months){
-      if(!definitions.length){disposeChart('shareChart','Pick a keyword above to see its share of searches.');return;}
-      const option=commonOption(months); option.yAxis={type:'value',min:0,axisLabel:{color:T().muted,formatter:value=>`${value}%`},splitLine:{lineStyle:{color:T().grid}}};
-      option.tooltip.formatter=params=>{const rows=params.map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${param.value==null?'not in top 500':formatShare(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
-      $('#shareCard .description').textContent=definitions.some(d=>d.group)?'Combined share of all Marketplace searches for the matching queries.':'Percentage of all Marketplace searches. Gaps mean the query was outside the top 500 that month.';
-      option.series=definitions.map(def=>{let values=aggregate(state.popular,'percentage',def,months);if(!def.group){const r=ranksFor(def.keywords[0],months);values=values.map((v,i)=>r[i]==null&&!v?null:v);}if(state.smooth)values=movingAverage(values);return{name:state.smooth?`${def.label} · 3M average`:def.label,type:'line',data:values,smooth:state.smooth,showSymbol:months.length<=24,symbol:'circle',symbolSize:7,itemStyle:{color:def.color,borderColor:T().surface,borderWidth:2},lineStyle:{width:2.5,color:def.color},emphasis:{focus:'series'}};}); ensureChart('shareChart').setOption(option,true);
+      if(!definitions.length){disposeChart('shareChart','');return;}
+      const series=definitions.map(def=>{let values=aggregate(state.popular,'percentage',def,months);if(!def.group){const r=ranksFor(def.keywords[0],months);values=values.map((v,i)=>r[i]==null&&!v?null:v);}if(state.smooth)values=movingAverage(values);return lineSeries(def,values,definitions.length,months);});
+      const option=commonOption(months,'shareChart',series);
+      const ymax=Math.max(0,...series.flatMap(x=>x.data.filter(v=>v!=null))), ax=niceAxis(ymax*1.05,4);
+      option.yAxis={type:'value',min:0,max:ax.max,interval:ax.interval,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>value===0?'0%':`${value.toFixed(ax.decimals)}%`},splitLine:{lineStyle:{color:T().grid}}};
+      option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${param.value==null?'not in top 500':formatShare(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
+      const smoothNote=state.smooth?' Lines show a 3-month average; the summary and table use monthly values.':'';
+      $('#shareCard .description').textContent=(definitions.some(d=>d.group)?(state.matchMode==='contains'?'Combined share of all Marketplace searches for the matching queries.':'Combined share of all Marketplace searches for the picked queries.'):'Percentage of all Marketplace searches. Gaps mean the query was outside the top 500 that month.')+smoothNote;
+      // Atlassian changed how the report counts searches; mark it so the drop is not read as lost interest.
+      const bi=state.reportBreak?months.indexOf(state.reportBreak):-1;
+      if(bi>0) $('#shareCard .description').textContent+=` The dashed line marks ${monthShort(state.reportBreak)}, when Atlassian changed how searches are counted.`;
+      if(bi>0) series.push({name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,formatter:'Report change'},data:[{xAxis:bi}]}});
+      option.legend.data=definitions.map(d=>d.label);
+      option.series=series; ensureChart('shareChart').setOption(option,true);
     }
     function renderRankChart(definitions,months){
       const card=$('#rankCard');
       if(state.matchMode!=='exact'){card.classList.add('collapsed');disposeChart('rankChart','The report ranks single queries, so a group of matched queries has no rank.');const b=document.createElement('button');b.type='button';b.className='link-btn';b.textContent='Switch to exact queries';b.addEventListener('click',()=>{$('#matchMode').value='exact';$('#matchMode').dispatchEvent(new Event('change'));});$('#rankChart .chart-placeholder').append(' ',b);return;}
-      if(!definitions.length){card.classList.add('collapsed');disposeChart('rankChart','Pick exact queries above to see their monthly rank.');return;}
+      if(!definitions.length){card.classList.add('collapsed');disposeChart('rankChart','');return;}
       card.classList.remove('collapsed');
+      $('#rankCard .description').textContent=(state.compareMode==='group'?'Per query, as rank can’t be combined. Log scale; gaps mean outside the top 500.':'Monthly rank on a log scale; gaps mean the query was outside the top 500.')+(state.smooth?' Not averaged.':'');
       const series=definitions.map(def=>({def,ranks:ranksFor(def.keywords[0],months)}));
-      const seen=series.flatMap(x=>x.ranks).filter(Number.isFinite); const worst=seen.length?Math.max(...seen):10;
-      const nice=Math.min(512,Math.pow(2,Math.ceil(Math.log2(Math.max(4,worst)))));
-      const option=commonOption(months);
-      option.yAxis={type:'log',logBase:2,inverse:true,min:1,max:nice,axisLabel:{color:T().muted,fontSize:12,formatter:value=>`#${Math.round(value)}`},axisTick:{show:false},splitLine:{lineStyle:{color:T().grid}}};
-      option.tooltip.formatter=params=>{const rows=params.map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${param.value==null?'outside top 500':'#'+param.value}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
-      option.series=series.map(({def,ranks},i)=>({name:def.label,type:'line',z:10-i,data:ranks,connectNulls:false,showSymbol:months.length<=24,symbol:'circle',symbolSize:7,itemStyle:{color:def.color,borderColor:T().surface,borderWidth:2},lineStyle:{width:2.5,color:def.color},emphasis:{focus:'series'}}));
-      option.series.forEach(x=>{x.clip=false;});
+      const seen=series.flatMap(x=>x.ranks).filter(Number.isFinite);
+      // Fit the log scale to the ranks on show: from the power of two at or above the best rank to the one at or below the worst.
+      let lo=seen.length?Math.pow(2,Math.floor(Math.log2(Math.min(...seen)))):1, hi=seen.length?Math.min(512,Math.pow(2,Math.ceil(Math.log2(Math.max(...seen))))):16;
+      if(hi<=lo) hi=lo*2; if(hi/lo<4) lo=Math.max(1,lo/2);
+      const option=commonOption(months,'rankChart',series.map(x=>({name:x.def.label})));
+      option.yAxis={type:'log',logBase:2,inverse:true,min:lo,max:hi,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>`#${Math.round(value)}`},axisTick:{show:false},splitLine:{lineStyle:{color:T().grid}}};
+      option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${param.value==null?'outside top 500':'#'+param.value}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
+      option.series=series.map(({def,ranks},i)=>({...lineSeries(def,ranks,series.length,months),z:10-i,clip:false})).concat(breakSeries(months,true));
       ensureChart('rankChart').setOption(option,true);
     }
     function renderZeroChart(definitions,months){
-      if(!definitions.length){disposeChart('zeroChart','Pick a keyword above to see its zero-result searches.');return;}
-      const option=commonOption(months);option.yAxis={type:'value',min:0,minInterval:1,axisLabel:{color:T().muted,formatter:value=>Number(value).toLocaleString('en-US')},splitLine:{lineStyle:{color:T().grid}}};
-      option.tooltip.formatter=params=>{const rows=params.map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${formatCount(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
-      option.series=definitions.map(def=>{let values=aggregate(state.zero,'count',def,months);if(state.smooth)values=movingAverage(values);return{name:state.smooth?`${def.label} · 3M average`:def.label,type:'line',data:values,smooth:state.smooth,showSymbol:months.length<=24,symbol:'circle',symbolSize:7,itemStyle:{color:def.color,borderColor:T().surface,borderWidth:2},lineStyle:{width:2.5,color:def.color},emphasis:{focus:'series'}};});ensureChart('zeroChart').setOption(option,true);
+      if(!definitions.length){disposeChart('zeroChart','');return;}
+      const plural=definitions.length>1||definitions.some(d=>d.keywords.length>1);
+      const avgNote=state.smooth?' Lines show a 3-month average.':'';
+      $('#zeroCard .description').textContent=(plural?'How many times the matching queries found no apps: a count of searches, not a rate.':'How many times the query found no apps: a count of searches, not a rate.')+avgNote;
+      const series=definitions.map(def=>{let values=aggregate(state.zero,'count',def,months);if(state.smooth)values=movingAverage(values);return lineSeries(def,values,definitions.length,months);});
+      const option=commonOption(months,'zeroChart',series);
+      option.yAxis={type:'value',min:0,minInterval:1,splitNumber:4,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>Number(value).toLocaleString('en-US')},splitLine:{lineStyle:{color:T().grid}}};
+      option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${formatCount(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
+      option.series=series.concat(breakSeries(months)); ensureChart('zeroChart').setOption(option,true);
     }
     function renderKpis(definitions,months){
       const matches=selectedMatches(),aggregateDefinition=matches.length?{label:'Combined selection',keywords:matches}:null,summary=aggregateDefinition?summaryFor(aggregateDefinition,months):null;
-      
-      $('#kpiShare').textContent=summary?formatShare(summary.latest):'—';$('#kpiShareNote').textContent=matches.length>1?`${matches.length.toLocaleString('en-US')} queries together`:'Of all searches';$('#kpiShareLabel').textContent=matches.length>1?'Combined share':'Latest search share';$('#kpiPeakLabel').textContent=matches.length>1?'Combined peak':'Peak search share';
+      const last=months.at(-1), prev=months.at(-2);
+      const inLatest=matches.length>1?new Set(state.popular.filter(r=>r.month===last).map(r=>normalize(r.keyword))):null;
+      const liveCount=inLatest?matches.filter(k=>inLatest.has(normalize(k))).length:0;
+      $('#kpiShare').textContent=summary?formatShare(summary.latest):'—';
+      $('#kpiShareNote').textContent=matches.length<2?`of all searches, ${monthShort(last)}`:state.matchMode==='contains'?`${liveCount.toLocaleString('en-US')} queries in the ${monthShort(last)} top 500`:`${matches.length} queries · ${monthShort(last)}`;
+      $('#kpiShareLabel').textContent=matches.length>1?'Combined share':'Latest search share';$('#kpiPeakLabel').textContent=matches.length>1?'Combined peak':'Peak search share';
       $('#kpiDelta').innerHTML=summary?`<span class="${summary.delta>0?'positive':summary.delta<0?'negative':''}">${summary.delta>0?'+':summary.delta<0?'−':''}${Math.abs(summary.delta).toFixed(2)} pp</span>`:'—';$('#kpiDelta').className='value';
-      if(state.matchMode==='exact'&&matches.length){const ranked=matches.map(k=>({k,r:ranksFor(k,months).at(-1)})).filter(x=>Number.isFinite(x.r)).sort((a,b)=>a.r-b.r);const best=ranked[0];$('#kpiRank').textContent=best?formatRank(best.r):'Outside 500';$('#kpiRankNote').textContent=matches.length===1?monthLong(months.at(-1)):best?best.k:'None in the top 500';}else{$('#kpiRank').textContent='—';$('#kpiRankNote').textContent=matches.length?'Not ranked as a group':'Pick a query';}
+      $('#kpiDeltaNote').textContent=prev?`vs ${monthShort(prev)}`:'vs previous month';
+      $('#kpiRankLabel').textContent=matches.length>1?'Top rank now':'Current rank';
+      if(state.matchMode==='exact'&&matches.length){const ranked=matches.map(k=>({k,r:ranksFor(k,months).at(-1)})).filter(x=>Number.isFinite(x.r)).sort((a,b)=>a.r-b.r);const best=ranked[0];$('#kpiRank').textContent=best?formatRank(best.r):'Outside 500';$('#kpiRankNote').textContent=matches.length===1?monthShort(last):best?best.k:'None in the top 500';}else{$('#kpiRank').textContent='—';$('#kpiRankNote').textContent=matches.length?'Not ranked as a group':'Pick a query';}
       $('#kpiRank').closest('.kpi').hidden=state.matchMode!=='exact'&&matches.length>0;
-      {const tiles=[...document.querySelectorAll('#kpis .kpi')].filter(k=>!k.hidden);$('#kpis').style.setProperty('--n',tiles.length);document.querySelectorAll('#kpis .kpi').forEach(k=>k.classList.remove('span'));if(tiles.length%2)tiles[tiles.length-1].classList.add('span');}
-      $('#kpiZero').textContent=summary?formatCount(summary.zeroTotal):'—';$('#kpiPeak').textContent=summary?formatShare(summary.peak):'—';$('#kpiPeakNote').textContent=summary&&summary.peak>0?summary.peakMonth:summary?'No share in selected period':'Within selected period';
+      {const tiles=[...document.querySelectorAll('#kpis .kpi')].filter(k=>!k.hidden);$('#kpis').style.setProperty('--n',tiles.length);$('#kpis').classList.toggle('k5',tiles.length===5);$('#kpis').classList.toggle('k4',tiles.length===4);document.querySelectorAll('#kpis .kpi').forEach(k=>k.classList.remove('span'));if(tiles.length%2)tiles[0].classList.add('span');}
+      $('#kpiZero').textContent=summary?formatCount(summary.zeroTotal):'—';$('#kpiZeroNote').innerHTML=`<span style="white-space:nowrap">${monthShort(months[0])} – ${monthShort(last)}</span>`;
+      $('#kpiPeak').textContent=summary?formatShare(summary.peak):'—';$('#kpiPeakNote').textContent=summary&&summary.peak>0?summary.peakMonth:summary?'No share in selected period':'Within selected period';
     }
     function tableDefinitions(){
       const matches=selectedMatches();if(!matches.length)return[];
-      if(state.matchMode==='contains')return[{label:`Contains ${state.containsLogic}: ${state.selections.join(', ')}`,keywords:matches,color:COLORS[0],group:true}];
+      if(state.matchMode==='contains')return[{label:`Contains ${state.containsLogic}: ${state.selections.join(', ')}`,keywords:matches,color:T().group,group:true}];
       const individual=matches.map((keyword,index)=>({label:keyword,keywords:[keyword],color:colorOf(keyword),group:false}));
-      return state.compareMode==='group'&&matches.length>1?[{label:'Selected group',keywords:matches,color:COLORS[0],group:true},...individual]:individual;
+      return state.compareMode==='group'&&matches.length>1?[{label:`${matches.length} queries combined`,keywords:matches,color:T().group,group:true},...individual.map(d=>({...d,member:true}))]:individual;
     }
     function renderTable(months){
-      const body=$('#summaryBody');body.textContent='';const definitions=tableDefinitions();if(!definitions.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=8;cell.className='empty-state';cell.textContent='Pick keywords above to compare them here.';row.appendChild(cell);body.appendChild(row);return;}
-      body.closest('table').classList.toggle('single-only',definitions.every(d=>d.keywords.length===1));
+      const body=$('#summaryBody');body.textContent='';const definitions=tableDefinitions();if(!definitions.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=8;cell.className='empty-state';cell.textContent='Pick queries above to compare them here.';row.appendChild(cell);body.appendChild(row);return;}
+      const table=body.closest('table'), contains=state.matchMode==='contains', hasGroup=definitions.some(d=>d.group);
+      table.classList.toggle('single-only',!hasGroup); table.classList.toggle('no-rank',contains);
+      $('#thName').textContent=contains?'Matching queries':hasGroup?'Query or group':'Query'; table.querySelector('th:nth-child(2)').textContent=contains?'Queries (all reports)':'Queries';
+      const prev=months.at(-2); $('#thDelta').textContent=prev?`Change vs ${monthShort(prev)}`:'Share change';
+      $('#tableNote').textContent=contains?'All queries that match your words, counted together.':hasGroup?'Rank is shown per query and never combined across a group.':`Latest values are for ${monthLong(months.at(-1))}; empty searches are summed over the period.`;
       $('.table-panel').classList.toggle('single-row',definitions.length<2);
-      definitions.forEach(def=>{const summary=summaryFor(def,months),row=document.createElement('tr');const values=[def.keywords.length.toLocaleString('en-US'),formatShare(summary.latest),`${summary.delta>=0?'+':'−'}${Math.abs(summary.delta).toFixed(2)} pp`,def.group?'—':formatRank(summary.currentRank),def.group?'—':formatRank(summary.bestRank),`${formatShare(summary.peak)} · ${summary.peakMonth}`,formatCount(summary.zeroTotal)];const first=document.createElement('td');const cell=document.createElement('div');cell.className='keyword-cell';const dot=document.createElement('span');dot.className='dot';dot.style.background=def.color;const text=document.createElement('span');text.textContent=def.label;cell.append(dot,text);first.appendChild(cell);row.appendChild(first);const HEAD=['Queries','Latest share','Share change','Current rank','Best rank','Peak share','Zero results'];values.forEach((value,index)=>{const td=document.createElement('td');td.dataset.label=HEAD[index];td.textContent=String(value);if((index===3||index===4)&&String(value).includes('Outside'))td.className='outside';if(index===2&&summary.delta>0)td.className='positive';if(index===2&&summary.delta<0)td.className='negative';row.appendChild(td);});body.appendChild(row);});
+      const HEAD=[contains?'Queries (all reports)':'Queries','Latest share',$('#thDelta').textContent,'Current rank','Best rank','Peak share','Empty searches'];
+      definitions.forEach(def=>{const summary=summaryFor(def,months),row=document.createElement('tr');const d=summary.delta;const values=[def.group?def.keywords.length.toLocaleString('en-US'):'',formatShare(summary.latest),`${d>0?'+':d<0?'−':''}${Math.abs(d).toFixed(2)} pp`,def.group?'—':formatRank(summary.currentRank),def.group?'—':formatRank(summary.bestRank),`${formatShare(summary.peak)} · ${summary.peakMonth}`,formatCount(summary.zeroTotal)];const first=document.createElement('td');const cell=document.createElement('div');cell.className='keyword-cell'+(def.member?' member':'');if(def.group&&hasGroup&&!contains)row.className='group-row';const dot=document.createElement('span');dot.className='dot';dot.style.background=def.color;const text=document.createElement('span');text.textContent=def.label;text.title=def.label;cell.append(dot,text);first.appendChild(cell);row.appendChild(first);values.forEach((value,index)=>{const td=document.createElement('td');td.dataset.label=HEAD[index];td.textContent=String(value);if((index===3||index===4)&&String(value).includes('Outside'))td.className='outside';if(index===2&&d>0)td.className='positive';if(index===2&&d<0)td.className='negative';row.appendChild(td);});body.appendChild(row);});
     }
-    function renderAll(){ if(!state.dataReady)return; if(state.from>state.to)state.from=state.to;const months=visibleMonths(),definitions=seriesDefinitions(),rankDefs=rankDefinitions();renderKpis(definitions,months);renderShareChart(definitions,months);renderRankChart(rankDefs,months);renderZeroChart(definitions,months);renderTable(months);echarts.connect('keywordExplorer');updateUrl(); }
+    function renderEmpty(){
+      const empty=state.dataReady&&!state.selections.length; document.body.classList.toggle('empty',empty); $('#emptyPanel').hidden=!empty;
+      if(empty&&!$('#examples').childElementCount){ const latest=state.months.at(-1); const top=state.popular.filter(r=>r.month===latest&&r.rank>=1).sort((a,b)=>a.rank-b.rank).slice(0,8);
+        top.forEach(r=>{ const b=document.createElement('button'); b.type='button'; b.textContent=r.keyword; b.addEventListener('click',()=>{ if(state.matchMode!=='exact'){state.matchMode='exact';} addSelection(r.keyword); }); $('#examples').appendChild(b); }); }
+    }
+    function renderAll(){ if(!state.dataReady)return; renderEmpty(); if(state.from>state.to)state.from=state.to;const months=visibleMonths(),definitions=seriesDefinitions(),rankDefs=rankDefinitions();renderKpis(definitions,months);renderShareChart(definitions,months);renderRankChart(rankDefs,months);renderZeroChart(definitions,months);renderTable(months);echarts.connect('keywordExplorer');updateUrl(); }
     function syncPresetButtons(){ const length=state.to-state.from+1;let any=false;document.querySelectorAll('.preset').forEach(button=>{const value=button.dataset.months;if(value==='custom')return;const on=!state.customRange&&(value==='all'?state.from===0&&state.to===state.months.length-1:Number(value)===length&&state.to===state.months.length-1);button.classList.toggle('active',on);any=any||on;});if(!any)state.customRange=true;document.querySelector('.preset[data-months="custom"]').classList.toggle('active',!!state.customRange);document.querySelector('.date-selects').hidden=!state.customRange; }
     function setPreset(value){ if(value==='custom'){state.customRange=true;syncPresetButtons();return;} state.customRange=false; state.to=Math.max(0,state.months.length-1);state.from=value==='all'?0:Math.max(0,state.to-Number(value)+1);$('#fromMonth').value=String(state.from);$('#toMonth').value=String(state.to);syncPresetButtons();renderAll(); }
     function csvEscape(value){const text=String(value??'');return /[",\n]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;}
@@ -618,7 +773,11 @@
       const csv=rows.map(row=>row.map(csvEscape).join(',')).join('\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='keyword-explorer.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('CSV export started.');
     }
     function downloadChart(id){const chart=state.charts[id];if(!chart){toast('This chart has no data to download.');return;}const link=document.createElement('a');link.href=chart.getDataURL({type:'png',pixelRatio:2,backgroundColor:T().surface});link.download=`${id}.png`;document.body.appendChild(link);link.click();link.remove();toast('PNG export started.');}
-    function toggleFullscreen(id,button){const card=document.getElementById(id).closest('.chart-card'),active=card.classList.toggle('is-fullscreen');document.body.style.overflow=active?'hidden':'';button.setAttribute('aria-label',active?'Exit full screen':'Open chart full screen');setTimeout(()=>state.charts[id]?.resize(),50);}
+    const ICON_EXPAND='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+    const ICON_COLLAPSE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="14" y1="10" x2="21" y2="3"/></svg>';
+    function setFullscreen(card,on){ card.classList.toggle('is-fullscreen',on); document.body.style.overflow=on?'hidden':''; const b=card.querySelector('[data-chart-action="fullscreen"]'); if(b){b.innerHTML=on?ICON_COLLAPSE:ICON_EXPAND;b.setAttribute('aria-label',on?'Exit full screen':'Open chart full screen');b.title=on?'Exit full screen':'Full screen';} const chart=card.querySelector('.chart'); setTimeout(()=>state.charts[chart.id]?.resize(),50); }
+    function closeFullscreen(){ document.querySelectorAll('.chart-card.is-fullscreen').forEach(card=>setFullscreen(card,false)); }
+    function toggleFullscreen(id){ const card=document.getElementById(id).closest('.chart-card'); const on=!card.classList.contains('is-fullscreen'); closeFullscreen(); if(on) setFullscreen(card,true); }
     async function copyShareLink(){updateUrl();try{await navigator.clipboard.writeText(location.href);toast('Link to this view copied');}catch(error){toast('Copy the URL from the address bar.');}}
     function bindEvents(){
       $('#keywordInput').addEventListener('input',renderSuggestions);$('#keywordInput').addEventListener('keydown',event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){const items=[...document.querySelectorAll('#suggestions .suggestion')];if(items.length){event.preventDefault();let i=items.findIndex(x=>x.classList.contains('active'));items[i]?.classList.remove('active');i=(i+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items[i].classList.add('active');items[i].scrollIntoView({block:'nearest'});}}if(event.key==='Enter'){event.preventDefault();const first=$('#suggestions .suggestion.active')||$('#suggestions .suggestion');if(state.matchMode==='exact'&&first)first.click();else addSelection(event.currentTarget.value);}if(event.key==='Escape')closeSuggestions();});
@@ -635,8 +794,10 @@
       $('#popularFileButton').addEventListener('click',()=>$('#popularFile').click());$('#zeroFileButton').addEventListener('click',()=>$('#zeroFile').click());
       $('#popularFile').addEventListener('change',event=>{const file=event.target.files[0];if(file)loadUploaded(file,'popular').catch(error=>setStatus(`Error: ${error.message}`));});
       $('#zeroFile').addEventListener('change',event=>{const file=event.target.files[0];if(file)loadUploaded(file,'zero').catch(error=>setStatus(`Error: ${error.message}`));});
-      document.querySelectorAll('[data-chart-action]').forEach(button=>button.addEventListener('click',()=>button.dataset.chartAction==='download'?downloadChart(button.dataset.chart):toggleFullscreen(button.dataset.chart,button)));
-      document.addEventListener('keydown',event=>{if(event.key==='Escape'){document.querySelectorAll('.chart-card.is-fullscreen').forEach(card=>{card.classList.remove('is-fullscreen');document.body.style.overflow='';const chart=card.querySelector('.chart');setTimeout(()=>state.charts[chart.id]?.resize(),50);});}});
+      document.querySelectorAll('[data-chart-action]').forEach(button=>button.addEventListener('click',()=>button.dataset.chartAction==='download'?downloadChart(button.dataset.chart):toggleFullscreen(button.dataset.chart)));
+      document.addEventListener('keydown',event=>{if(event.key==='Escape')closeFullscreen();});
+      document.addEventListener('mousedown',event=>{const card=document.querySelector('.chart-card.is-fullscreen');if(card&&!card.contains(event.target))closeFullscreen();});
+      $('#retryLoad').addEventListener('click',async()=>{ $('#retryLoad').disabled=true; try{ await loadDefaults(); }catch(error){ showLoadError(error); } $('#retryLoad').disabled=false; });
       window.addEventListener('resize',()=>Object.values(state.charts).forEach(chart=>chart?.resize?.()));
       const dq=window.matchMedia('(prefers-color-scheme: dark)'),onScheme=()=>{COLORS=T().series;renderControls();renderAll();};dq.addEventListener?dq.addEventListener('change',onScheme):dq.addListener(onScheme);
       if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>renderAll());
@@ -644,7 +805,7 @@
     function exposeDiagnostics(){window.KeywordExplorer={getState:()=>({popularRows:state.popular.length,zeroRows:state.zero.length,months:state.months.slice(),selections:state.selections.slice(),matchMode:state.matchMode,compareMode:state.compareMode,matchedQueries:selectedMatches().length,chartIds:Object.entries(state.charts).filter(([,chart])=>chart&&!chart.isDisposed?.()).map(([id])=>id)}),runSmokeTests:()=>({dataLoaded:state.popular.length>0,rankFieldPresent:state.popular.some(row=>row.rank>=1&&row.rank<=500),monthsLoaded:state.months.length>0,selectionPresent:state.selections.length>0,chartsRendered:['shareChart','rankChart','zeroChart'].every(id=>state.charts[id]&&!state.charts[id].isDisposed?.())})};}
     async function boot(){
       hydrateUrl();bindEvents();renderControls();
-      try{setStatus('Loading chart and spreadsheet libraries…');await Promise.all([window.echarts?Promise.resolve():loadScriptSeq(ECHARTS_URLS,'echarts'),window.XLSX?Promise.resolve():loadScriptSeq(XLSX_URLS,'XLSX')]);await loadDefaults();exposeDiagnostics();}catch(error){console.error(error);setStatus(`Error: ${error.message}`);}
+      try{setStatus('Loading chart and spreadsheet libraries…');await Promise.all([window.echarts?Promise.resolve():loadScriptSeq(ECHARTS_URLS,'echarts'),window.XLSX?Promise.resolve():loadScriptSeq(XLSX_URLS,'XLSX')]);await loadDefaults();exposeDiagnostics();}catch(error){console.warn(error);showLoadError(error);}
     }
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
   })();
