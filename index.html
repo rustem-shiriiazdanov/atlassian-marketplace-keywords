@@ -1234,6 +1234,12 @@
         return out;
       }
 
+      // Race gridlines: one colour per tick. ECharts adds a tick at an unrounded right edge while the scale
+      // eases between months; that one is transparent, so only the labelled gridlines show and slide.
+      function raceGridColors(iv, max){
+        const n = Math.floor(max/iv + 1e-9) + 1, aligned = Math.abs(max/iv - Math.round(max/iv)) < 1e-9;
+        const out = Array(n).fill(T().grid); if(!aligned) out.push('rgba(0,0,0,0)'); return out;
+      }
       function raceOption(months, topByMonth, {isPercent, accent, index=0, lookup=null}){
         const t = T();
         const barColor = accent || t.blue;
@@ -1265,7 +1271,7 @@
           backgroundColor:'transparent', animation: playing && !reduceMotion.matches, animationDuration:0, animationDurationUpdate: Math.min(700, state.playInterval*0.6), animationEasing:'cubicInOut', animationEasingUpdate:'cubicInOut', textStyle:{ fontFamily:FONT },
           grid:{ left: labelW + 12, right:56, top:24, bottom:28, containLabel:false },
           // While playing, the scale changes every step; gridlines and ticks come back when the race stops.
-          xAxis:{ type:'value', min:0, max: ax.max, interval: ax.interval, splitLine:{ show: !playing, lineStyle:{ color:t.grid } }, axisLabel:{ show: !playing, color:t.muted, fontSize:12, hideOverlap:true, formatter: isPercent ? (v)=> v === 0 ? '0%' : `${v.toFixed(ax.decimals)}%` : (v)=> Number(v).toLocaleString('en-US') } },
+          xAxis:{ type:'value', min:0, max: ax.max, interval: ax.interval, splitLine:{ show:true, lineStyle:{ color: raceGridColors(ax.interval, ax.max) } }, axisLabel:{ show: true, color:t.muted, fontSize:12, hideOverlap:true, formatter: isPercent ? (v)=> v === 0 ? '0%' : `${v.toFixed(ax.decimals)}%` : (v)=> Number(v).toLocaleString('en-US') } },
           yAxis:{ type:'category', inverse:true, max: n-1, data: names, animationDurationUpdate: Math.min(700, state.playInterval*0.6), axisLabel:{ color:t.ink, fontSize: small ? 12 : 13, fontWeight:600, margin:12, width: labelW, overflow: (small || accent) ? 'break' : 'truncate', lineHeight: (small || accent) ? 15 : undefined }, axisTick:{ show:false }, axisLine:{ show:false } },
           tooltip:{ trigger:'item', ...tooltipStyle(t), formatter:p=>`<b>${escapeHtml(p.name)}</b><br/>#${rankOf.get(p.name) ?? '–'}${state.keywordFilter.length ? ' of the picked queries' : ''} in ${monthLabel(m,{month:'short', year:'numeric'})}: ${isPercent ? fmt(p.value)+' of all searches' : fmt(p.value)+' empty searches'}${change(p.name, p.value)}` },
           series:[{ id:'race', type:'bar', realtimeSort: race, barCategoryGap:'42%', barMaxWidth:24, label:{ show:true, position:'right', distance:8, color:t.ink2, fontSize:12, fontWeight:600, textBorderColor:t.surface, textBorderWidth:3, valueAnimation: false, formatter:p=> byName.has(p.name) ? fmt(byName.get(p.name)) : '' }, itemStyle:{ borderRadius:[0,4,4,0], color: barColor }, emphasis:{ itemStyle:{ color: t.ink } },
@@ -1291,12 +1297,18 @@
         const target = to.series[0].data;
         const maxA = from.xAxis.max, maxB = to.xAxis.max;
         const dur = Math.min(650, state.playInterval*0.55), t0 = performance.now();
+        const iv = to.xAxis.interval, tickFmt = to.xAxis.axisLabel.formatter;
+        const onTick = (v)=> Math.abs(v/iv - Math.round(v/iv)) < 1e-6 ? tickFmt(v) : '';
+        const num = id === 'race' ? (v)=> `${v.toFixed(2)}%` : (v)=> Math.round(v).toLocaleString('en-US');
         let first = true;
         const step = (now)=>{
           const p = Math.min(1, (now - t0)/dur), e = 1 - Math.pow(1 - p, 3);
           if(p >= 1){ c.setOption(to, { notMerge:true }); return; }
-          const xAxis = { ...to.xAxis, max: maxA + (maxB - maxA)*e, interval: null, splitLine:{ show:false }, axisLabel:{ show:false } };
-          const series = [{ ...to.series[0], data: target.map(d=>{ const a = before.get(d.name) ?? 0; return { name:d.name, value: a + (d.value - a)*e }; }) }];
+          // Gridlines and tick labels stay on screen: ticks keep the new month's step and slide while the scale
+          // eases to its new maximum, and the unlabeled right edge never gets a label of its own.
+          const mx = maxA + (maxB - maxA)*e;
+          const xAxis = { ...to.xAxis, max: mx, splitLine:{ show:true, lineStyle:{ color: raceGridColors(iv, mx) } }, axisLabel:{ ...to.xAxis.axisLabel, formatter: onTick } };
+          const series = [{ ...to.series[0], label:{ ...to.series[0].label, formatter: (q)=> num(q.value) }, data: target.map(d=>{ const a = before.get(d.name) ?? 0; return { name:d.name, value: a + (d.value - a)*e }; }) }];
           c.setOption(first ? { ...to, xAxis, series } : { xAxis, series }, { notMerge: first });
           first = false;
           tweens[id] = requestAnimationFrame(step);
