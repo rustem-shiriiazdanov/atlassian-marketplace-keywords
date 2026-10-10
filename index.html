@@ -748,9 +748,9 @@
         for(const r of state.zeroRaw){ const k = sanitizeKeyword(r.keyword); if(k && !weight.has(k)) weight.set(k, 0); }
         const list = document.getElementById('keywordOptions');
         if(!list) return;
-        const key = state.sourceRaw.length + ':' + state.zeroRaw.length;
-        if(list.dataset.key !== key){
-          list.dataset.key = key;
+        // Every load assigns new row arrays, so comparing the arrays themselves catches a new workbook even with the same row count.
+        if(list._src !== state.sourceRaw || list._zero !== state.zeroRaw){
+          list._src = state.sourceRaw; list._zero = state.zeroRaw;
           list.innerHTML = '';
           const search = document.createElement('input');
           search.type = 'text'; search.id = 'keywordSearch'; search.placeholder = 'Search queries…'; search.setAttribute('aria-label','Search queries');
@@ -1375,6 +1375,7 @@
           data.push([xi, yi, row.value]); if(row.value > 0) vals.push(row.value);
         }
         const labW = small ? 128 : Math.min(250, Math.max(80, Math.ceil(Math.max(0, ...yCats.map(k=>measureTextWidth(k)))) + 8));
+        // Fixed round classes, so the key never shifts with the period, the filter or the loaded file.
         const br = [4, 9, 19, 49];
         const ramp = t.heat;
         const pieces = [{ value:0, label:'0 / not listed', color:t.heatNone }];
@@ -1498,21 +1499,9 @@
         state.gapsPopular = incompleteMonths(state.sourceRaw);
         { const ms = Array.from(new Set(state.sourceRaw.map(r=>toMonthKey(r.month)))).sort(); state.colorRank = new Map(latestRanking(state.sourceRaw,'percentage',ms[ms.length-1]).map((r,i)=>[r.keyword,i])); }
         state.gapsZero = incompleteMonths(state.zeroRaw);
-        if(state.lookupKey !== state.sourceRaw.length + ':' + state.zeroRaw.length){ state.lookupKey = state.sourceRaw.length + ':' + state.zeroRaw.length; state.popLookup = monthLookup(state.sourceRaw, 'percentage'); state.zeroLookup = monthLookup(state.zeroRaw, 'count'); }
+        if(state.lookupSrc !== state.sourceRaw || state.lookupZero !== state.zeroRaw){ state.lookupSrc = state.sourceRaw; state.lookupZero = state.zeroRaw; state.popLookup = monthLookup(state.sourceRaw, 'percentage'); state.zeroLookup = monthLookup(state.zeroRaw, 'count'); }
         // With picked queries, the month-by-month charts shrink to fit them instead of keeping room for ten bars.
         { const n = state.keywordFilter.length; document.body.classList.toggle('filtered', n > 0); const h = n ? Math.max(140, Math.min(n, 20)*40 + 60) + 'px' : ''; ['race'].concat(state.zeroMode === 'keywords' ? ['zeros'] : []).forEach(id=>{ const el = document.getElementById(id); if(!fullscreenState.chartEl && el.style.height !== h){ el.style.height = h; state.charts[id]?.resize(); } }); if(state.zeroMode !== 'keywords'){ const z = document.getElementById('zeros'); if(z.style.height){ z.style.height = ''; state.charts.zeros?.resize(); } } }
-        if(state.heatBreaksKey !== state.zeroRaw.length){
-          // Colour classes from the whole report (every query, every month), so the key never changes with the range or screen size.
-          const cell = new Map(), tot = new Map();
-          for(const r of state.zeroRaw){ if(isJunkQuery(r.keyword)) continue; const c = asNumber(r.count)||0; const k = toMonthKey(r.month)+'|'+r.keyword; cell.set(k, (cell.get(k)||0) + c); tot.set(r.keyword, (tot.get(r.keyword)||0) + c); }
-          const heavy = new Set(Array.from(tot.entries()).sort((a,b)=>b[1]-a[1]).slice(0, 40).map(([k])=>k));
-          const v = Array.from(cell.entries()).filter(([k,x])=> x>0 && heavy.has(k.slice(8))).map(([,x])=>x).sort((a,b)=>a-b);
-          const NICE = [1,2,3,4,5,6,8,10,12,15,20,25,30,40,50,60,75,100,150,200,300,500];
-          const q = (p)=> v.length ? v[Math.min(v.length-1, Math.floor(v.length*p))] : 1;
-          let br = [.2,.4,.6,.8,.93].map(p=> NICE.find(n=> n >= q(p)) || q(p));
-          br = br.map((x,i)=> i && x <= br[i-1] ? NICE.find(n=> n > br[i-1]) : x);
-          state.heatBreaks = br; state.heatBreaksKey = state.zeroRaw.length;
-        }
         const { months: allMonths, topByMonth } = groupByMonthTop(state.sourceRaw, 'percentage', state.topN, state.keywordFilter);
         // Drop leading partial reports so every chart starts at the first full month.
         let first = 0; while(first < allMonths.length-1 && state.gapsPopular.has(allMonths[first])) first++;
@@ -1639,7 +1628,7 @@
           updateKeywordDisplay();
           keywordDropdown?.querySelectorAll('input[type="checkbox"]').forEach(cb=> cb.checked=false);
           const s = keywordDropdown?.querySelector('#keywordSearch');
-          if(s){ s.value=''; keywordDropdown.querySelectorAll('label').forEach(l=> l.style.display=''); }
+          if(s){ s.value=''; keywordDropdown._apply?.(); }
           renderAll();
         });
       }
