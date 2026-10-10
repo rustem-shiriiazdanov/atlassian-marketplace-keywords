@@ -4,280 +4,419 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Atlassian Marketplace Keywords</title>
+  <meta name="description" content="What people search for on the Atlassian Marketplace: monthly top queries, searches that found no apps, trends and heatmaps from Atlassian's Marketplace search reports." />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    :root{ --bg:#0B1021; --card:#121835; --ink:#E6E9F2; --muted:#A9B0C6; --accent:#4C9AFF; --danger:#FF5630; --chip:#1B2348; --radius:16px; --shadow:0 20px 40px rgba(0,0,0,.35);}  
-    html,body{height:100%}
-    body{margin:0;background:#0B1021;color:var(--ink);font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
-    .wrap{max-width:1280px;margin:24px auto 64px;padding:0 20px}
-    .layout{position:relative}
-    .main{}
-    .author-column{position:fixed;top:24px;right:24px;width:260px;overflow:visible;transition:right .3s}
-    .author-column.collapsed{right:-260px}
-    .author-toggle{position:absolute;left:-24px;top:16px;width:24px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--card);border:1px solid rgba(255,255,255,.08);border-right:0;border-radius:8px 0 0 8px;color:var(--ink);cursor:pointer;z-index:1}
-    header{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
-    .author-card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;font-size:13px;max-width:260px;text-align:left}
-    .author-card img{width:96px;height:96px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 12px}
-    .author-card h2{margin:0 0 4px;font-size:20px;text-align:center}
-    .author-card p{margin:8px 0;color:var(--muted);line-height:1.4}
-    .author-card ul{margin:8px 0 0;padding-left:20px}
-    .author-card li{margin:4px 0}
-    .author-card a{color:var(--accent);text-decoration:none}
-    .author-card a:hover{text-decoration:underline}
-    h1{margin:0 0 6px;font-size:28px;font-weight:700}
-    .sub{color:var(--muted);font-size:13px}
-    .links{display:flex;gap:12px;align-items:center;font-size:13px}
-    .links a{display:flex;align-items:center;gap:6px;color:var(--ink);text-decoration:none;white-space:nowrap}
-    .links a:hover{color:var(--accent)}
-    .links img,.links svg{height:16px;width:16px}
-    .links button{font-size:13px;white-space:nowrap}
-    .site-tabs{display:flex;gap:6px;margin:22px 0 0;border-bottom:1px solid rgba(255,255,255,.09)}
-    .site-tabs a{position:relative;padding:10px 14px;color:var(--muted);font-size:14px;font-weight:700;text-decoration:none}
+    :root{
+      --paper:#F4F5F7; --surface:#FFFFFF; --sunken:#EEF0F3;
+      --ink:#172B4D; --ink-2:#44546F; --muted:#626F86; --line:#DCDFE4; --grid:#E9ECF0;
+      --blue:#1D5BD8; --blue-ink:#FFFFFF; --blue-soft:#E8EFFC;
+      --coral:#C9372C; --coral-soft:#FBEAE8;
+      --up:#1F845A; --down:#C9372C;
+      --tip-bg:#172B4D; --tip-ink:#FFFFFF;
+      --series:#1D5BD8,#1F9D8B,#7B4FD6,#D9930D,#C9372C,#2F86C8,#B8467F,#5D8F2E,#6A7896,#0FA3B1;
+      --heat-0:#F1F3F6; --heat-1:#F6C9C3; --heat-2:#E2695D; --heat-3:#A9271D;
+      --search-shadow:0 1px 2px rgba(23,43,77,.08),0 12px 32px -12px rgba(23,43,77,.28);
+      --font:'Schibsted Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+    }
+    @media (prefers-color-scheme: dark){
+      :root:not([data-theme="light"]){
+        --paper:#0F1726; --surface:#162133; --sunken:#121C2C;
+        --ink:#E3E8F0; --ink-2:#B6C0D0; --muted:#8C9BB0; --line:#27354C; --grid:#223047;
+        --blue:#7AA7FF; --blue-ink:#0F1726; --blue-soft:#1B2B49;
+        --coral:#FF8070; --coral-soft:#3A2329;
+        --up:#4CC38A; --down:#FF8070;
+        --tip-bg:#E3E8F0; --tip-ink:#0F1726;
+        --series:#7AA7FF,#3FCFB7,#A98BFF,#F2B74A,#FF8070,#62B6F2,#E47FB1,#9CCB63,#9AA7BF,#4FD3DF;
+        --heat-0:#1F2C43; --heat-1:#5C2F3C; --heat-2:#D0544A; --heat-3:#FFB3A6;
+        --search-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 36px -14px rgba(0,0,0,.7);
+      }
+    }
+    :root[data-theme="dark"]{
+      --paper:#0F1726; --surface:#162133; --sunken:#121C2C;
+      --ink:#E3E8F0; --ink-2:#B6C0D0; --muted:#8C9BB0; --line:#27354C; --grid:#223047;
+      --blue:#7AA7FF; --blue-ink:#0F1726; --blue-soft:#1B2B49;
+      --coral:#FF8070; --coral-soft:#3A2329;
+      --up:#4CC38A; --down:#FF8070;
+      --tip-bg:#E3E8F0; --tip-ink:#0F1726;
+      --series:#7AA7FF,#3FCFB7,#A98BFF,#F2B74A,#FF8070,#62B6F2,#E47FB1,#9CCB63,#9AA7BF,#4FD3DF;
+      --heat-0:#1F2C43; --heat-1:#5C2F3C; --heat-2:#D0544A; --heat-3:#FFB3A6;
+      --search-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 36px -14px rgba(0,0,0,.7);
+    }
+
+    *{box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%}
+    body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.5;font-feature-settings:"tnum" 1}
+    a{color:var(--blue)}
+    button,input,select{font:inherit;color:inherit}
+    :focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+    .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+
+    /* Top bar */
+    .topbar{border-bottom:1px solid var(--line);background:var(--surface)}
+    .topbar .wrap{display:flex;align-items:center;gap:24px;min-height:60px}
+    .brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:800;font-size:17px;letter-spacing:-.01em;white-space:nowrap}
+    .brand svg{width:22px;height:22px;color:var(--blue)}
+    .site-tabs{display:flex;gap:4px;align-self:stretch}
+    .site-tabs a{display:flex;align-items:center;padding:0 12px;color:var(--ink-2);font-weight:600;font-size:15px;text-decoration:none;border-bottom:3px solid transparent;margin-bottom:-1px}
     .site-tabs a:hover{color:var(--ink)}
-    .site-tabs a.active{color:var(--ink)}
-    .site-tabs a.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--accent)}
-    .panel{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.00));border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow)}
-    .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px;background:var(--card);border-radius:var(--radius)}
-    .controls.soft{padding:10px;margin-top:8px}
-    label{font-size:12px;color:var(--muted)}
-    .chip{background:var(--chip);border:1px solid rgba(255,255,255,.06);border-radius:999px;padding:8px 12px;display:flex;gap:8px;align-items:center}
-    .file-input-wrapper{position:relative;display:inline-block}
-    .file-input-wrapper input[type="file"]{display:none}
-    .file-input-display{cursor:pointer;padding:4px 8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:var(--ink);font-size:11px;display:inline-block;min-width:150px}
-    .keyword-select-wrapper{position:relative;display:inline-block}
-    .keyword-select-display{cursor:pointer;padding:4px 8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:var(--ink);font-size:11px;display:inline-block;min-width:150px}
-    .keyword-select-dropdown{position:absolute;top:100%;left:0;background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:6px;margin-top:4px;box-shadow:var(--shadow);max-height:200px;overflow:auto;display:none;z-index:20}
+    .site-tabs a.active{color:var(--ink);border-bottom-color:var(--blue)}
+    .top-links{margin-left:auto;display:flex;align-items:center;gap:6px}
+    .icon-link{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 10px;border-radius:8px;color:var(--ink-2);text-decoration:none;font-size:14px;font-weight:600;background:none;border:0;cursor:pointer}
+    .icon-link:hover{background:var(--sunken);color:var(--ink)}
+    .icon-link svg{width:18px;height:18px}
+
+    /* Hero */
+    .hero{padding:56px 0 48px}
+    .hero-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:56px;align-items:start}
+    .hero h1{margin:0 0 28px;font-size:clamp(34px,4.6vw,56px);line-height:1.04;letter-spacing:-.03em;font-weight:800;max-width:15ch}
+    .searchbox{display:flex;align-items:center;gap:16px;min-height:76px;padding:0 24px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--search-shadow)}
+    .searchbox svg{flex:0 0 auto;width:26px;height:26px;color:var(--muted)}
+    .searchbox .query{flex:1 1 auto;min-width:0;font-size:clamp(22px,2.6vw,32px);font-weight:600;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .caret{display:inline-block;width:2px;height:1.05em;margin-left:2px;vertical-align:-.15em;background:var(--blue);animation:blink 1s steps(1) infinite}
+    @keyframes blink{50%{opacity:0}}
+    .searchbox .result{flex:0 0 auto;font-size:15px;font-weight:700;color:var(--blue);background:var(--blue-soft);padding:6px 12px;border-radius:999px;white-space:nowrap}
+    .hero-meta{margin:14px 4px 0;color:var(--ink-2);font-size:15px;min-height:24px}
+    .hero-meta strong{color:var(--ink)}
+    .searchbox.empty{margin-top:28px;min-height:64px;background:transparent;box-shadow:none;border:1.5px dashed var(--coral)}
+    .searchbox.empty svg{color:var(--coral)}
+    .searchbox.empty .query{font-size:clamp(19px,2vw,24px);color:var(--ink-2)}
+    .searchbox.empty .result{color:var(--coral);background:var(--coral-soft)}
+    .hero-source{margin:22px 4px 0;color:var(--muted);font-size:14px;max-width:62ch}
+
+    .toplist{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 20px 8px}
+    .toplist h2{margin:0 0 4px;font-size:17px;letter-spacing:-.01em}
+    .toplist p{margin:0 0 12px;color:var(--muted);font-size:14px}
+    .toplist ol{list-style:none;margin:0;padding:0}
+    .toplist li{display:grid;grid-template-columns:28px minmax(0,1fr) 64px 44px;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--grid);font-size:15px}
+    .toplist .rk{color:var(--muted);font-weight:700}
+    .toplist .kw{min-width:0}
+    .toplist .kw span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+    .toplist .bar{display:block;height:4px;margin-top:5px;border-radius:2px;background:var(--blue);opacity:.85}
+    .toplist .pct{text-align:right;font-weight:700}
+    .toplist .chg{text-align:right;font-size:13px;font-weight:700;color:var(--muted)}
+    .toplist .chg.up{color:var(--up)} .toplist .chg.down{color:var(--down)}
+    .toplist .empty-note{padding:20px 0;color:var(--muted);font-size:14px;border-top:1px solid var(--grid)}
+
+    /* Filter bar */
+    .filterbar{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .filterbar .wrap{display:flex;align-items:center;gap:12px;min-height:58px;flex-wrap:wrap}
+    .filterbar .label{font-weight:700;font-size:15px}
+    .filterbar .hint{color:var(--muted);font-size:14px}
+
+    /* Sections */
+    main{padding-bottom:40px}
+    .section{padding:48px 0 0}
+    .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px 24px;flex-wrap:wrap;margin-bottom:18px}
+    .section-head h2{margin:0;font-size:28px;line-height:1.15;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+    .section-head p{margin:6px 0 0;color:var(--ink-2);max-width:68ch}
+    .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}
+    .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 18px 0}
+    .card-head h3{margin:0;font-size:17px;letter-spacing:-.01em}
+    .card-head p{margin:2px 0 0;color:var(--muted);font-size:14px;max-width:60ch}
+    .card-body{padding:8px 10px 10px}
+    .card-controls{display:flex;gap:10px 18px;align-items:center;flex-wrap:wrap;padding:14px 18px 0}
+
+    /* Controls */
+    .ctrl{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;font-size:14px;color:var(--ink-2);min-width:0}
+    .ctrl label{font-weight:600;white-space:nowrap}
+    .ctrl output,.ctrl .val{min-width:3.2em;font-weight:700;color:var(--ink)}
+    .ctrl.disabled{opacity:.45}
+    input[type="range"]{accent-color:var(--blue);width:140px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:38px;padding:0 16px;border-radius:8px;border:1px solid transparent;background:var(--blue);color:var(--blue-ink);font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap}
+    .btn:hover{filter:brightness(1.07)}
+    .btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+    .btn.ghost:hover{background:var(--sunken);filter:none}
+    .btn.icon{width:34px;height:34px;padding:0;border-radius:8px}
+    .btn svg{width:17px;height:17px}
+    .chart-toolbar{display:flex;gap:4px;flex:0 0 auto}
+    .chart-toolbar .btn{width:32px;height:32px;padding:0;background:transparent;border-color:transparent;color:var(--muted)}
+    .chart-toolbar .btn:hover{background:var(--sunken);color:var(--ink)}
+    .chart-toolbar .btn svg{width:17px;height:17px}
+
+    .help{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--muted);color:var(--muted);font-size:12px;font-weight:800;cursor:help;flex:0 0 auto;font-style:normal}
+    .tooltip{position:absolute;z-index:1000;max-width:260px;background:var(--tip-bg);color:var(--tip-ink);padding:8px 10px;font-size:13px;line-height:1.4;border-radius:8px;display:none;white-space:pre-wrap}
+
+    /* Keyword filter */
+    .keyword-select-wrapper{position:relative}
+    .keyword-select-display{display:inline-flex;align-items:center;gap:8px;height:38px;max-width:min(520px,70vw);padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);cursor:pointer;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .keyword-select-display::after{content:"";width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-2px) rotate(45deg);flex:0 0 auto}
+    .keyword-select-dropdown{position:absolute;top:calc(100% + 6px);left:0;width:min(340px,86vw);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:var(--search-shadow);max-height:340px;overflow:auto;display:none;z-index:40}
     .keyword-select-dropdown.open{display:block}
-    .keyword-select-dropdown label{display:flex;align-items:center;gap:4px;font-size:12px;padding:2px 4px}
-    .keyword-select-dropdown label:hover{background:rgba(255,255,255,.05)}
-    .keyword-select-dropdown input[type="text"]{width:100%;padding:2px 4px;margin-bottom:4px;border:1px solid rgba(255,255,255,.2);border-radius:4px;background:var(--card);color:var(--ink);font-size:12px}
-    .btn{cursor:pointer;border:0;border-radius:10px;padding:8px 12px;font-weight:600;color:#0B1021;background:var(--accent)}
-    .btn.ghost{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,.12)}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
-    .card{padding:12px}
-    .card h3{margin:4px 6px 10px;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.2px}
-    .card h3.has-toolbar{display:flex;align-items:center}
-    .card h3.has-toolbar .chart-toolbar{position:static;margin-left:auto}
-    .chart{height:520px;width:100%;display:flex;align-items:center;justify-content:center;position:relative}
-    .chart-toolbar{position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:10}
-    .chart-toolbar .btn{padding:4px 6px;font-size:11px}
-    .chart-toolbar .btn svg{width:16px;height:16px}
-    .chart-fullscreen-overlay{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:stretch;padding:20px;box-sizing:border-box;z-index:1000;overflow:auto}
-    .chart-fullscreen-overlay.active{display:flex}
-    .chart-fullscreen-overlay .chart{flex:1 1 auto;height:70vh;width:100%}
-    .chart-fullscreen-overlay .data-table{overflow:auto;margin-top:16px}
-    .chart-resizer{height:8px;cursor:row-resize;background:rgba(255,255,255,.12);margin:4px 0}
-    .chart-resizer:hover{background:rgba(255,255,255,.25)}
-    .chart-fullscreen-overlay table{width:100%;border-collapse:collapse;font-size:12px}
-    .chart-fullscreen-overlay th,.chart-fullscreen-overlay td{border:1px solid rgba(255,255,255,.12);padding:4px 6px;text-align:left}
+    .keyword-select-dropdown input[type="text"]{width:100%;height:38px;padding:0 12px;margin-bottom:6px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+    .keyword-select-dropdown label{display:flex;align-items:center;gap:8px;font-size:14px;padding:6px 8px;border-radius:6px;cursor:pointer}
+    .keyword-select-dropdown label:hover{background:var(--sunken)}
+    input[type="checkbox"]{accent-color:var(--blue);width:16px;height:16px}
+
+    /* Charts */
+    .chart{height:520px;width:100%;position:relative;display:flex;align-items:center;justify-content:center}
+    .chart.tall{height:560px}
+    .chart .placeholder{color:var(--muted);font-size:14px}
     .chart.flip{animation:flipY .6s}
     @keyframes flipY{0%{transform:rotateY(0)}50%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
-    .short{height:420px}
-    .tall{height:580px}
-    .chart .placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#8EA2E3;font-size:12px;letter-spacing:.2px}
-    .status{font-size:12px;color:var(--muted);margin-top:6px;white-space:pre-line}
-    input[type="range"]{accent-color:var(--accent)}
-    input[type="file"]{color:var(--ink);font-size:12px}
-    code.bad{color:var(--danger)}
-    .chip.disabled{opacity:.5}
-    .chip.disabled input{accent-color:var(--muted);cursor:not-allowed}
-    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .mini{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px}
-    .help{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:4px;border-radius:50%;background:var(--muted);color:#0B1021;font-size:11px;font-weight:700;cursor:pointer}
-    .tooltip{position:absolute;z-index:1000;max-width:220px;background:var(--card);color:var(--ink);border:1px solid rgba(255,255,255,.12);padding:6px 8px;font-size:11px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.35);display:none;white-space:pre-wrap}
-    @media (max-width:980px){
-      .author-column{position:static;margin-top:24px;width:auto}
-      .grid{grid-template-columns:1fr}
-      .chart{height:460px}
-      .short{height:380px}
-      .tall{height:520px}
-      .two-col{grid-template-columns:1fr}
-      .mini-grid{grid-template-columns:1fr}
+    .chart-fullscreen-overlay{position:fixed;inset:0;background:var(--paper);display:none;flex-direction:column;align-items:stretch;padding:20px 24px;z-index:1000;overflow:auto}
+    .chart-fullscreen-overlay.active{display:flex}
+    .chart-fullscreen-overlay > .chart-toolbar{align-self:flex-end;margin-bottom:8px}
+    .chart-fullscreen-overlay .chart{flex:0 0 auto;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+    .chart-resizer{height:10px;cursor:row-resize;margin:6px 0;border-radius:5px;background:var(--grid)}
+    .chart-resizer:hover{background:var(--line)}
+    .chart-fullscreen-overlay .data-table{overflow:auto;margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+    .chart-fullscreen-overlay table{width:100%;border-collapse:collapse;font-size:14px}
+    .chart-fullscreen-overlay th,.chart-fullscreen-overlay td{border-bottom:1px solid var(--grid);padding:8px 12px;text-align:left;white-space:nowrap}
+    .chart-fullscreen-overlay th{position:sticky;top:0;background:var(--surface)}
+
+    /* Data & about */
+    .data-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px}
+    .file-tile{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+    .file-tile strong{display:block;font-size:15px}
+    .file-tile span{display:block;color:var(--muted);font-size:14px}
+    .file-input-display{max-width:50%;text-align:right;background:none;border:0;padding:0;color:var(--blue);font-weight:700;font-size:14px;cursor:pointer}
+    .file-tile input[type="file"]{display:none}
+    .data-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .status{margin-top:14px;padding:12px 14px;background:var(--sunken);border-radius:8px;color:var(--ink-2);font-size:14px;white-space:pre-line}
+    .about{display:grid;grid-template-columns:96px minmax(0,1fr);gap:24px;align-items:start;padding:24px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+    .about img{width:96px;height:96px;border-radius:50%;object-fit:cover;background:var(--sunken)}
+    .about h3{margin:0 0 6px;font-size:20px}
+    .about p{margin:0 0 10px;color:var(--ink-2);max-width:68ch}
+    .about .links{display:flex;gap:16px;flex-wrap:wrap;font-weight:700}
+    footer{margin-top:56px;border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:14px}
+    footer .wrap{display:flex;gap:12px 24px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+    footer a{color:var(--ink-2);text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+    footer a:hover{color:var(--ink)}
+    footer img{height:18px;width:18px}
+
+    /* Share chooser */
+    .share-overlay{position:fixed;inset:0;background:rgba(9,15,28,.55);display:flex;align-items:center;justify-content:center;z-index:10000;padding:16px}
+    .share-box{background:var(--surface);color:var(--ink);padding:20px;border-radius:12px;width:min(360px,100%);border:1px solid var(--line)}
+    .share-box h3{margin:0 0 12px;font-size:18px}
+    .share-box ul{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .share-box li a{display:block;padding:8px 10px;border-radius:8px;background:var(--sunken);color:var(--ink);text-decoration:none;font-weight:600;font-size:14px}
+    .share-box li a:hover{background:var(--blue-soft)}
+    .share-box input{width:100%;height:38px;padding:0 10px;margin-bottom:12px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+    .share-box .btn{width:100%}
+
+    @media (max-width:1040px){
+      .hero-grid{grid-template-columns:1fr;gap:36px}
+      .grid-2{grid-template-columns:1fr}
     }
-    html.mobile .wrap{max-width:100%;margin:12px auto;padding:0 10px}
-    html.mobile header{flex-direction:column;align-items:flex-start}
-    html.mobile .author-column{position:static;margin-top:24px;width:auto}
-    html.mobile .controls{flex-direction:column;align-items:stretch}
-    html.mobile .grid{grid-template-columns:1fr}
-    html.mobile .mini-grid{grid-template-columns:1fr}
-    html.mobile .chart,html.mobile .short,html.mobile .tall{height:100vh}
-    </style>
-    <script>
-      if(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
-        document.documentElement.classList.add('mobile');
-      }
-    </script>
-    <script>
-      // Disable native alert-style dialogs that can interrupt workflow
-      window.alert = () => {};
-      window.confirm = () => true;
-      window.prompt = () => null;
-    </script>
-  </head>
+    @media (max-width:720px){
+      .wrap{padding:0 16px}
+      .topbar .wrap{gap:12px;flex-wrap:wrap;padding-top:8px}
+      .brand{font-size:16px}
+      .site-tabs{order:3;width:100%;min-height:44px}
+      .site-tabs a{padding:0 10px}
+      .icon-link .lbl{display:none}
+      .hero{padding:32px 0 32px}
+      .searchbox{min-height:62px;padding:0 16px;gap:12px}
+      .searchbox .result{font-size:13px;padding:4px 10px}
+      .data-grid{grid-template-columns:1fr}
+      .chart{height:440px}
+      .chart.tall{height:460px}
+      .section{padding-top:36px}
+      .section-head h2{font-size:24px}
+      .about{grid-template-columns:1fr}
+      input[type="range"]{width:110px}
+      .filterbar .hint{display:none}
+    }
+    @media (prefers-reduced-motion: reduce){
+      .caret{animation:none}
+      .chart.flip{animation:none}
+    }
+  </style>
+  <script>
+    // Native dialogs would block the page; the app never needs them.
+    window.alert = () => {};
+    window.confirm = () => true;
+    window.prompt = () => null;
+  </script>
+</head>
 <body>
-  <div class="wrap">
-    <div class="layout">
-      <div class="main">
-        <header>
-          <div>
-            <h1>Atlassian Marketplace Keywords Charts (excel-sourced)</h1>
-            <div class="sub">What’s inside:<br>
-            • <strong>Bar Chart Race</strong>: monthly race of top search keywords.<br>
-            • <strong>Zero-Result Overview</strong>: trend of searches that returned no results.<br>
-            • <strong>Keyword Trails</strong>: top keywords’ percentage trajectories by month.<br>
-            • <strong>Zero-Result Heatmap</strong>: where empty (zero-result) searches cluster across months.</div>
-            <div id="status" class="status">Status: bootstrapping…</div>
-          </div>
-          <div class="links">
-            <a href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12z"/></svg>
-              GitHub
-            </a>
-            <a href="https://actonic.de/en/" target="_blank" rel="noopener noreferrer">
-              <img src="img/actonic.svg" alt="Actonic logo">
-              Powered by Actonic
-            </a>
-            <button id="btn-share-page" class="btn ghost" aria-label="Share page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
-          </div>
-        </header>
-
-        <nav class="site-tabs" aria-label="Primary navigation">
-          <a class="active" href="./index.html" aria-current="page">Overview</a>
-          <a href="./keyword-explorer.html">Keyword Explorer</a>
-        </nav>
-
-        <section class="grid">
-      <!-- PANEL 1: Data inputs & diagnostics -->
-      <div class="panel card" style="grid-column:1 / -1;">
-        <h3>Data Inputs & Diagnostics <span class="help" data-help="Upload monthly keyword spreadsheets to drive the charts and check for missing data." data-testid="help-inputs">?</span></h3>
-        <div class="controls">
-          <div class="chip">
-            <label>Popular Search Keywords</label><span class="help" data-help="Spreadsheet exported from the Popular Search Keywords API." data-testid="help-source">?</span>
-            <div class="file-input-wrapper">
-              <input id="file-source" type="file" accept=".xlsx,.xls" />
-              <div id="source-display" class="file-input-display">No file chosen</div>
-            </div>
-          </div>
-          <div class="chip">
-            <label>Zero‑Result Keywords</label><span class="help" data-help="Spreadsheet of searches that returned no apps." data-testid="help-zero">?</span>
-            <div class="file-input-wrapper">
-              <input id="file-zero" type="file" accept=".xlsx,.xls" />
-              <div id="zero-display" class="file-input-display">No file chosen</div>
-            </div>
-          </div>
-          <div class="chip">
-            <label>Keyword Filter</label>
-            <div class="keyword-select-wrapper">
-              <div id="keywordFilterInput" class="keyword-select-display">All keywords</div>
-              <div id="keywordOptions" class="keyword-select-dropdown"></div>
-            </div>
-            <button id="keywordFilterReset" class="btn ghost" style="padding:4px 6px" aria-label="Reset keyword filter">✕</button>
-          </div>
-          <button id="btn-load-defaults" class="btn ghost">Load default files</button>
-          <button id="btn-demo" class="btn ghost">Load demo</button>
-          <button id="btn-test" class="btn ghost">Run smoke tests</button>
-        </div>
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="./index.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+        Marketplace Keywords
+      </a>
+      <nav class="site-tabs" aria-label="Primary navigation">
+        <a class="active" href="./index.html" aria-current="page">Overview</a>
+        <a href="./keyword-explorer.html">Keyword Explorer</a>
+      </nav>
+      <div class="top-links">
+        <a class="icon-link" href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12z"/></svg>
+          <span class="lbl">GitHub</span>
+        </a>
+        <button id="btn-share-page" class="icon-link" type="button" aria-label="Share this page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span class="lbl">Share</span>
+        </button>
       </div>
+    </div>
+  </header>
 
-      <!-- PANEL 2: United Race + Zeros with local controls -->
-      <div class="panel card" style="grid-column:1 / -1;">
-        <h3>Search Dynamics — Bar Chart Race & Zero‑Result Overview <span class="help" data-help="Track how popular search terms and zero-result totals change to guide product and marketing focus." data-testid="help-dynamics">?</span></h3>
-        <div class="mini-grid">
-          <!-- mini: shared controls -->
-          <div class="mini" style="grid-column:1 / -1;">
-            <div class="controls soft">
-              <div class="chip">
-                <label>Top&nbsp;N</label><span class="help" data-help="Number of top keywords per month shown in the race." data-testid="help-topn">?</span>
-                <input id="topN" type="range" min="5" max="20" value="10" />
-                <span id="topNVal">10</span>
-              </div>
-              <div class="chip">
-                <label>Speed</label><span class="help" data-help="Animation speed of the race in milliseconds." data-testid="help-speed">?</span>
-                <input id="speed" type="range" min="300" max="3000" value="1200" step="100" />
-                <span id="speedVal">1.2s</span>
-              </div>
-              <button id="btn-play" class="btn">▶ Play</button>
-            </div>
-          </div>
-          <!-- mini: bar race -->
-          <div class="mini">
-            <div id="race" class="chart" data-testid="race"><div class="placeholder">Loading ECharts…</div></div>
-            <div class="status">The chart plays the appearances of top popular keywords each month.</div>
-          </div>
-          <!-- mini: zero totals -->
-          <div class="mini">
-            <div id="zeros" class="chart" data-testid="zeros"><div class="placeholder">Loading ECharts…</div></div>
-            <div class="status">The number of times people were seeking some keywords but ended up with zero search results (they found nothing!).</div>
-          </div>
+  <section class="hero" aria-labelledby="heroTitle">
+    <div class="wrap hero-grid">
+      <div>
+        <h1 id="heroTitle">What people search for on the Atlassian Marketplace</h1>
+        <div class="searchbox" aria-live="off">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+          <span class="query"><span id="heroQuery">Loading searches…</span><span class="caret" aria-hidden="true"></span></span>
+          <span id="heroShare" class="result" hidden></span>
         </div>
-      </div>
-
-      <!-- PANEL 3: Trails with local control -->
-      <div class="panel card" style="grid-row: span 2;">
-        <h3>Keyword Trails — Popular Keywords Over Time <span class="help" data-help="Follow individual keyword popularity to monitor long‑term trends." data-testid="help-trails">?</span></h3>
-        <div class="controls soft">
-          <div class="chip">
-            <label>Trails</label><span class="help" data-help="Number of keyword lines to plot." data-testid="help-trailsN">?</span>
-              <input id="trailsN" type="range" min="3" max="12" value="6" />
-              <span id="trailsNVal">6</span>
-            </div>
-            <div class="chip">
-              <span class="help" data-help="Cycle through legend pages (two rows per page)." data-testid="help-trailsLegend">?</span>
-              <button id="trailsPrev" class="btn ghost" style="padding:6px 8px">◀</button>
-              <span id="trailsPageInfo">1/1</span>
-            <button id="trailsNext" class="btn ghost" style="padding:6px 8px">▶</button>
-          </div>
+        <p id="heroMeta" class="hero-meta"></p>
+        <div class="searchbox empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+          <span class="query" id="heroZeroQuery">&nbsp;</span>
+          <span class="result">0 apps</span>
         </div>
-        <div id="trails" class="chart tall" data-testid="trails"><div class="placeholder">Awaiting data…</div></div>
-        <div class="status">This chart shows the top N keywords overall with their <code>percentage</code> trajectory by month.</div>
+        <p id="heroZeroMeta" class="hero-meta"></p>
+        <p id="heroSource" class="hero-source">Built from Atlassian's monthly Marketplace search reports: the top 500 queries by share of all searches, and the queries that returned no apps.</p>
       </div>
-
-      <!-- PANEL 4: Heatmap with local controls -->
-      <div class="panel card" style="grid-row: span 2;">
-        <h3>Zero‑Result Heatmap — Where Users Find Nothing <span class="help" data-help="Locate content gaps by spotting keywords that consistently return no apps." data-testid="help-heatmap">?</span></h3>
-        <div class="controls soft">
-          <div class="chip">
-            <label>Heatmap&nbsp;TopK</label><span class="help" data-help="Number of zero-result keywords to show." data-testid="help-heatTopK">?</span>
-              <input id="heatTopK" type="range" min="8" max="30" value="15" />
-              <span id="heatTopKVal">15</span>
-            </div>
-            <div class="chip" id="heatTimeRangeChip">
-              <label>Time&nbsp;Range</label><span class="help" data-help="Select month range to rank zero-result keywords." data-testid="help-heatRange">?</span>
-              <input id="heatTimeStart" type="range" min="1" max="1" value="1" />
-              <span id="heatTimeStartVal">1</span>
-            <input id="heatTimeEnd" type="range" min="1" max="1" value="1" />
-            <span id="heatTimeEndVal">1</span>
-          </div>
-        </div>
-        <div id="heatmap" class="chart" data-testid="heatmap"><div class="placeholder">Awaiting data…</div></div>
-        <div class="status">This chart shows the top K zero-result keywords by total count across months, where darker means more empty (zero-result) searches.</div>
-      </div>
-        </section>
-      </div>
-      <aside class="author-column">
-        <button id="author-toggle" class="author-toggle" aria-label="Toggle author card">&rsaquo;</button>
-        <div class="author-card">
-          <img src="https://seibert.group/products/wp-content/uploads/elementor/thumbs/Rustem-Shiriiazdanov_rund_600px-r64m2m9otgwnhlnqpqjdt2ifqy9b0z5if53y46imiw.png" alt="Rustem Shiriiazdanov">
-          <h2>Rustem Shiriiazdanov</h2>
-          <p>Product Owner @ <a href="https://marketplace.atlassian.com/apps/1216997/report-builder-custom-reports-and-dashboards-for-jira" target="_blank" rel="noopener noreferrer">Report Builder for Jira</a></p>
-          <p>Hi all! This is my pet project, built to explore the vibe of coding with Codex.</p>
-          <p>Data is updated monthly.</p>
-          <p>Normally, I work at Actonic Products as a Team Lead and Product Owner for Report Builder for Jira.</p>
-          <p>Interested in discussing data, visualizations, or Jira? Contact me here:</p>
-          <ul class="author-links">
-            <li><a href="https://www.linkedin.com/in/rustem-shiriiazdanov/" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
-            <li><a href="https://calendly.com/rustem-shiriiazdanov-actonic" target="_blank" rel="noopener noreferrer">Calendly</a></li>
-          </ul>
-        </div>
+      <aside class="toplist" aria-labelledby="topListTitle">
+        <h2 id="topListTitle">Top searches</h2>
+        <p id="topListSub">Share of all Marketplace searches, with rank change from the previous month.</p>
+        <ol id="topList"><li class="empty-note">Loading the latest report…</li></ol>
       </aside>
+    </div>
+  </section>
+
+  <div class="filterbar">
+    <div class="wrap">
+      <span class="label" id="filterLabel">Charts show</span>
+      <div class="keyword-select-wrapper">
+        <button id="keywordFilterInput" class="keyword-select-display" type="button" aria-haspopup="true" aria-labelledby="filterLabel keywordFilterInput">All keywords</button>
+        <div id="keywordOptions" class="keyword-select-dropdown"></div>
+      </div>
+      <button id="keywordFilterReset" class="btn ghost icon" type="button" aria-label="Show all keywords">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+      <span class="hint">Pick keywords to focus every chart below on them.</span>
     </div>
   </div>
 
+  <main class="wrap">
+    <section class="section" id="dynamics" aria-labelledby="dynamicsTitle">
+      <div class="section-head">
+        <div>
+          <h2 id="dynamicsTitle">Search dynamics <span class="help" tabindex="0" data-help="Track how popular search terms and zero-result totals change to guide product and marketing focus." data-testid="help-dynamics">?</span></h2>
+          <p>Press play to watch the most-searched queries change month by month. Alongside it, the count of searches that returned no apps follows the same month.</p>
+        </div>
+        <div class="card-controls" style="padding:0">
+          <div class="ctrl"><label for="topN">Top</label><input id="topN" type="range" min="5" max="20" value="10" /><span id="topNVal" class="val">10</span></div>
+          <div class="ctrl"><label for="speed">Speed</label><input id="speed" type="range" min="300" max="3000" value="1200" step="100" /><span id="speedVal" class="val">1.2s</span></div>
+          <button id="btn-play" class="btn" type="button">▶ Play</button>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card" id="race-card">
+          <div class="card-head">
+            <div><h3>Top queries by share of searches</h3><p>Each month's top keywords, as a percentage of all Marketplace searches.</p></div>
+            <div data-toolbar-for="race"></div>
+          </div>
+          <div class="card-body"><div id="race" class="chart" data-testid="race"><div class="placeholder">Loading charts…</div></div></div>
+        </div>
+        <div class="card" id="zeros-card">
+          <div class="card-head">
+            <div><h3 id="zerosTitle">Searches that found nothing</h3><p id="zerosDesc">Monthly count of searches that returned no apps. The marker follows the race month.</p></div>
+            <div data-toolbar-for="zeros"></div>
+          </div>
+          <div class="card-body"><div id="zeros" class="chart" data-testid="zeros"><div class="placeholder">Loading charts…</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section grid-2" aria-label="Trends and gaps">
+      <div class="card" id="trails-card">
+        <div class="card-head">
+          <div><h3 style="display:flex;gap:8px;align-items:center">Keyword trails <span class="help" tabindex="0" data-help="Follow individual keyword popularity to monitor long-term trends." data-testid="help-trails">?</span></h3><p>Share of all searches over time for the queries with the highest total share.</p></div>
+          <div data-toolbar-for="trails"></div>
+        </div>
+        <div class="card-controls">
+          <div class="ctrl"><label for="trailsN">Lines</label><input id="trailsN" type="range" min="3" max="12" value="6" /><span id="trailsNVal" class="val">6</span></div>
+          <div class="ctrl" aria-label="Legend pages">
+            <button id="trailsPrev" class="btn ghost icon" type="button" aria-label="Previous legend page">◀</button>
+            <span id="trailsPageInfo" class="val" style="text-align:center">1/1</span>
+            <button id="trailsNext" class="btn ghost icon" type="button" aria-label="Next legend page">▶</button>
+          </div>
+        </div>
+        <div class="card-body"><div id="trails" class="chart tall" data-testid="trails"><div class="placeholder">Waiting for data…</div></div></div>
+      </div>
+      <div class="card" id="heatmap-card">
+        <div class="card-head">
+          <div><h3 style="display:flex;gap:8px;align-items:center">Where searches come back empty <span class="help" tabindex="0" data-help="Locate content gaps by spotting keywords that consistently return no apps." data-testid="help-heatmap">?</span></h3><p>Zero-result queries with the most searches in the selected months. Darker cells mean more searches that found nothing.</p></div>
+          <div data-toolbar-for="heatmap"></div>
+        </div>
+        <div class="card-controls">
+          <div class="ctrl"><label for="heatTopK">Rows</label><input id="heatTopK" type="range" min="8" max="30" value="15" /><span id="heatTopKVal" class="val">15</span></div>
+          <div class="ctrl" id="heatTimeRangeChip">
+            <label for="heatTimeStart">From</label><input id="heatTimeStart" type="range" min="1" max="1" value="1" /><span id="heatTimeStartVal" class="val">–</span>
+            <label for="heatTimeEnd">to</label><input id="heatTimeEnd" type="range" min="1" max="1" value="1" /><span id="heatTimeEndVal" class="val">–</span>
+          </div>
+        </div>
+        <div class="card-body"><div id="heatmap" class="chart tall" data-testid="heatmap"><div class="placeholder">Waiting for data…</div></div></div>
+      </div>
+    </section>
+
+    <section class="section" id="data" aria-labelledby="dataTitle">
+      <div class="section-head">
+        <div>
+          <h2 id="dataTitle">Use your own data <span class="help" tabindex="0" data-help="Upload monthly keyword spreadsheets to drive the charts and check for missing data." data-testid="help-inputs">?</span></h2>
+          <p>The page loads the latest reports from this repository. You can open your own exports instead; files are read in your browser and never uploaded.</p>
+        </div>
+      </div>
+      <div class="data-grid">
+        <div class="file-tile">
+          <div><strong>Popular search keywords</strong><span>.xlsx with a Raw sheet: month, keyword, percentage</span></div>
+          <input id="file-source" type="file" accept=".xlsx,.xls" />
+          <button id="source-display" class="file-input-display" type="button">Choose file</button>
+        </div>
+        <div class="file-tile">
+          <div><strong>Zero-result keywords</strong><span>.xlsx with a Raw sheet: month, keyword, count</span></div>
+          <input id="file-zero" type="file" accept=".xlsx,.xls" />
+          <button id="zero-display" class="file-input-display" type="button">Choose file</button>
+        </div>
+      </div>
+      <div class="data-actions">
+        <button id="btn-load-defaults" class="btn ghost" type="button">Reload repository data</button>
+        <button id="btn-demo" class="btn ghost" type="button">Load demo data</button>
+        <button id="btn-test" class="btn ghost" type="button">Run smoke tests</button>
+      </div>
+      <div id="status" class="status" role="status">Status: starting…</div>
+    </section>
+
+    <section class="section" aria-labelledby="aboutTitle">
+      <div class="section-head"><div><h2 id="aboutTitle">About this project</h2></div></div>
+      <div class="about">
+        <img src="https://seibert.group/products/wp-content/uploads/elementor/thumbs/Rustem-Shiriiazdanov_rund_600px-r64m2m9otgwnhlnqpqjdt2ifqy9b0z5if53y46imiw.png" alt="Rustem Shiriiazdanov" loading="lazy" width="96" height="96">
+        <div>
+          <h3>Rustem Shiriiazdanov</h3>
+          <p>Team Lead and Product Owner of <a href="https://marketplace.atlassian.com/apps/1216997/report-builder-custom-reports-and-dashboards-for-jira" target="_blank" rel="noopener noreferrer">Report Builder for Jira</a> at Actonic. This is my pet project for exploring Marketplace search data. The data is updated monthly.</p>
+          <p>Want to talk about data, visualizations or Jira?</p>
+          <div class="links">
+            <a href="https://www.linkedin.com/in/rustem-shiriiazdanov/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+            <a href="https://calendly.com/rustem-shiriiazdanov-actonic" target="_blank" rel="noopener noreferrer">Book a call</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>Data: Atlassian Marketplace search reports. Not affiliated with Atlassian.</span>
+      <a href="https://actonic.de/en/" target="_blank" rel="noopener noreferrer"><img src="img/actonic.svg" alt="" aria-hidden="true">Powered by Actonic</a>
+    </div>
+  </footer>
+
   <script>
-  // --- Robust sequential loader with fallbacks ---
   (function(){
     const statusEl = document.getElementById('status');
-    const setStatus = (t)=>{ if(statusEl) statusEl.textContent = 'Status: ' + t; };
+    const setBootStatus = (t)=>{ if(statusEl) statusEl.textContent = 'Status: ' + t; };
 
     function loadScriptSeq(urls, globalName){
       return new Promise((resolve, reject)=>{
@@ -285,11 +424,11 @@
         const tryNext = ()=>{
           if(i >= urls.length){ reject(new Error('All CDNs failed for '+globalName)); return; }
           const url = urls[i++];
-          setStatus(`loading ${globalName} from ${new URL(url).hostname}…`);
+          setBootStatus(`loading ${globalName} from ${new URL(url).hostname}…`);
           const s = document.createElement('script');
           s.src = url; s.async = true; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
-          s.onload = ()=>{ setTimeout(()=>{ if(window[globalName]){ setStatus(`${globalName} loaded from ${new URL(url).hostname}`); resolve(window[globalName]); } else { tryNext(); } }, 0); };
-          s.onerror = ()=>{ setStatus(`${globalName} failed from ${new URL(url).hostname}, trying next…`); tryNext(); };
+          s.onload = ()=>{ setTimeout(()=>{ if(window[globalName]){ resolve(window[globalName]); } else { tryNext(); } }, 0); };
+          s.onerror = ()=>{ setBootStatus(`${globalName} failed from ${new URL(url).hostname}, trying next…`); tryNext(); };
           document.head.appendChild(s);
         };
         tryNext();
@@ -313,11 +452,12 @@
         window.echarts ? Promise.resolve(window.echarts) : loadScriptSeq(ECHARTS_URLS, 'echarts'),
         window.XLSX ? Promise.resolve(window.XLSX) : loadScriptSeq(XLSX_URLS, 'XLSX')
       ]).then(()=>{
-        setStatus('libraries ready');
+        setBootStatus('libraries ready');
         startApp();
       }).catch(err=>{
         console.error(err);
-        setStatus('error: '+ err.message);
+        setBootStatus('error: '+ err.message);
+        const q = document.getElementById('heroQuery'); if(q) q.textContent = 'Charts could not load. Refresh to try again.';
       });
     }
 
@@ -325,50 +465,57 @@
       document.addEventListener('DOMContentLoaded', boot);
     } else { boot(); }
 
-    // --- App starts only after libs are ready ---
     function startApp(){
       const $ = (sel)=>document.querySelector(sel);
       const setStatus = (t)=> $('#status').textContent = `Status: ${t}`;
+      const FONT = "'Schibsted Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif";
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
       const fullscreenOverlay = document.createElement('div');
       fullscreenOverlay.id = 'chartFullscreen';
       fullscreenOverlay.className = 'chart-fullscreen-overlay';
       document.body.appendChild(fullscreenOverlay);
       const fullscreenState = { chartEl: null, chart: null, placeholder: null, btn: null, toolbar: null, toolbarPlaceholder: null };
 
+      // Theme colours come from CSS custom properties so charts follow light/dark mode.
+      function T(){
+        const s = getComputedStyle(document.documentElement);
+        const v = (n)=> s.getPropertyValue(n).trim();
+        return {
+          ink:v('--ink'), ink2:v('--ink-2'), muted:v('--muted'), line:v('--line'), grid:v('--grid'), surface:v('--surface'),
+          blue:v('--blue'), blueSoft:v('--blue-soft'), coral:v('--coral'), tipBg:v('--tip-bg'), tipInk:v('--tip-ink'),
+          heat:[v('--heat-0'),v('--heat-1'),v('--heat-2'),v('--heat-3')],
+          series:v('--series').split(',').map(x=>x.trim()).filter(Boolean)
+        };
+      }
+      const tooltipStyle = (t)=>({ backgroundColor:t.tipBg, borderWidth:0, padding:[8,10], textStyle:{ color:t.tipInk, fontFamily:FONT, fontSize:13 }, extraCssText:'border-radius:8px;box-shadow:none;' });
+      const sliderZoom = (t, extra={})=>({ type:'slider', xAxisIndex:0, height:16, bottom:8, borderColor:t.line, backgroundColor:'transparent', fillerColor:t.blueSoft, handleStyle:{ color:t.surface, borderColor:t.muted }, moveHandleStyle:{ color:t.line }, dataBackground:{ lineStyle:{ color:t.line }, areaStyle:{ color:t.grid } }, selectedDataBackground:{ lineStyle:{ color:t.blue }, areaStyle:{ color:t.blueSoft } }, textStyle:{ color:t.muted, fontFamily:FONT }, ...extra });
+
       function initHelp(){
         const tip = document.createElement('div');
         tip.className = 'tooltip';
+        tip.setAttribute('role','tooltip');
         document.body.appendChild(tip);
         const show = (e)=>{
           const msg = e.currentTarget.getAttribute('data-help') || e.currentTarget.getAttribute('title');
           if(!msg) return;
           tip.textContent = msg;
           const r = e.currentTarget.getBoundingClientRect();
-          tip.style.left = (r.left + window.scrollX) + 'px';
-          tip.style.top = (r.bottom + window.scrollY + 6) + 'px';
+          tip.style.left = Math.min(r.left + window.scrollX, window.scrollX + document.documentElement.clientWidth - 276) + 'px';
+          tip.style.top = (r.bottom + window.scrollY + 8) + 'px';
           tip.style.display = 'block';
         };
         const hide = ()=>{ tip.style.display = 'none'; };
         document.querySelectorAll('.help').forEach(el=>{
           el.addEventListener('mouseenter', show);
           el.addEventListener('mouseleave', hide);
-          el.addEventListener('touchstart', show);
+          el.addEventListener('focus', show);
+          el.addEventListener('blur', hide);
+          el.addEventListener('touchstart', show, {passive:true});
           el.addEventListener('touchend', hide);
         });
       }
 
-      function initAuthorToggle(){
-        const column = document.querySelector('.author-column');
-        const btn = document.getElementById('author-toggle');
-        if(column && btn){
-          btn.addEventListener('click', ()=>{
-            column.classList.toggle('collapsed');
-            btn.innerHTML = column.classList.contains('collapsed') ? '&lsaquo;' : '&rsaquo;';
-          });
-        }
-      }
-
-    const state = {
+      const state = {
         charts: { race: null, zeros: null, trails: null, heatmap: null },
         sourceRaw: [], zeroRaw: [], zeroTotals: [],
         months: [],
@@ -377,8 +524,8 @@
         trailsN: 6, heatTopK: 15,
         keywordFilter: [],
         heatTimeStartIdx: 0, heatTimeEndIdx: 0, heatTimeRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
-        // default data autoload flags
-        manualSource: false, manualZero: false, defaultsTried: false
+        manualSource: false, manualZero: false, defaultsTried: false,
+        hero: { queue: [], idx: 0, timer: null, key: '' }
       };
 
       const ICON_DOWNLOAD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
@@ -391,9 +538,17 @@
       function sanitizeKeyword(k){
         return String(k||'').replace(/[<>]/g,'').trim();
       }
+      function escapeHtml(v){ return String(v).replace(/[&<>"']/g,(ch)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+      function monthLabel(key, opts={month:'long', year:'numeric'}){
+        const m = /^(\d{4})-(\d{2})/.exec(String(key||''));
+        if(!m) return String(key||'');
+        return new Date(Date.UTC(+m[1], +m[2]-1, 1)).toLocaleString('en-US', {...opts, timeZone:'UTC'});
+      }
       function updateKeywordDisplay(){
         const disp = document.getElementById('keywordFilterInput');
-        if(disp) disp.textContent = state.keywordFilter.length ? state.keywordFilter.join(', ') : 'All keywords';
+        if(!disp) return;
+        const n = state.keywordFilter.length;
+        disp.textContent = !n ? 'All keywords' : n <= 3 ? state.keywordFilter.join(', ') : `${state.keywordFilter.slice(0,2).join(', ')} and ${n-2} more`;
       }
       function populateKeywordOptions(){
         const set = new Set();
@@ -408,19 +563,21 @@
           search.type = 'text';
           search.id = 'keywordSearch';
           search.placeholder = 'Search keywords…';
+          search.setAttribute('aria-label','Search keywords');
           search.value = prevSearch;
           list.appendChild(search);
           const box = document.createElement('div');
           box.id = 'keywordCheckboxes';
           list.appendChild(box);
           const keywords = Array.from(set).sort();
+          const frag = document.createDocumentFragment();
           for(const k of keywords){
             const label = document.createElement('label');
             const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = k;
             cb.checked = state.keywordFilter.includes(k);
             label.appendChild(cb);
-            label.appendChild(document.createTextNode(' '+k));
-            box.appendChild(label);
+            label.appendChild(document.createTextNode(k));
+            frag.appendChild(label);
             cb.addEventListener('change', ()=>{
               if(cb.checked){
                 if(!state.keywordFilter.includes(cb.value)) state.keywordFilter.push(cb.value);
@@ -431,6 +588,7 @@
               renderAll();
             });
           }
+          box.appendChild(frag);
           const applyFilter = (q)=>{
             for(const label of box.querySelectorAll('label')){
               const txt = label.textContent.toLowerCase();
@@ -469,8 +627,8 @@
           const el = document.getElementById(id);
           if(el){
             el.disabled = disabled;
-            const chip = el.closest('.chip');
-            if(chip) chip.classList.toggle('disabled', disabled);
+            const ctrl = el.closest('.ctrl');
+            if(ctrl) ctrl.classList.toggle('disabled', disabled);
           }
         });
       }
@@ -503,7 +661,7 @@
       const measureTextWidth = (() => {
         const c = document.createElement('canvas');
         const ctx = c.getContext('2d');
-        ctx.font = '12px Inter';
+        ctx.font = `13px ${FONT}`;
         return (s)=> ctx.measureText(String(s||'')).width;
       })();
 
@@ -572,10 +730,12 @@
         if(!overlay){
           overlay = document.createElement('div');
           overlay.id = 'shareOverlay';
-          overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10000;';
+          overlay.className = 'share-overlay';
           const box = document.createElement('div');
-          box.style.cssText = 'background:var(--card);padding:16px;border-radius:8px;color:var(--ink);max-width:320px;width:90%;';
-          box.innerHTML = `<h3 style="margin-top:0;">Share</h3><ul style="line-height:1.9;padding-left:20px;margin:0 0 12px;"></ul><input style="width:100%;margin-bottom:12px;" readonly><button class="btn" style="width:100%">Close</button>`;
+          box.className = 'share-box';
+          box.setAttribute('role','dialog');
+          box.setAttribute('aria-label','Share');
+          box.innerHTML = `<h3>Share</h3><ul></ul><input readonly aria-label="Link"><button class="btn" type="button">Close</button>`;
           overlay.appendChild(box);
           box.querySelector('button').addEventListener('click', ()=> overlay.style.display='none');
           overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.style.display='none'; });
@@ -590,14 +750,13 @@
       function sharePage(){
         const permalink = location.href;
         const title = document.title;
-        const text = 'Atlassian Marketplace Keywords — interactive charts';
+        const text = 'What people search for on the Atlassian Marketplace';
         if(navigator.share){
           navigator.share({title, text, url:permalink}).catch(()=>{});
         }else{
           openShareChooser({url:permalink, text});
         }
       }
-
 
       function makeDataTable(chart){
         const opt = chart.getOption();
@@ -612,7 +771,7 @@
             const row = [categories[i]];
             for(const s of opt.series){
               const val = Array.isArray(s.data?.[i]) ? s.data[i][1] : s.data?.[i];
-              row.push(val);
+              row.push(val && typeof val === 'object' ? val.value : val);
             }
             dataRows.push(row);
           }
@@ -626,7 +785,7 @@
           table.appendChild(trHead);
           body.forEach(r=>{
             const tr=document.createElement('tr');
-            r.forEach(c=>{ const td=document.createElement('td'); td.textContent=c; tr.appendChild(td); });
+            r.forEach(c=>{ const td=document.createElement('td'); td.textContent=c ?? ''; tr.appendChild(td); });
             table.appendChild(tr);
           });
         }else{
@@ -643,6 +802,7 @@
         const overlay = fullscreenOverlay;
         if(fullscreenState.chartEl){
           overlay.classList.remove('active');
+          document.body.style.overflow = '';
           overlay.innerHTML='';
           fullscreenState.placeholder.replaceWith(fullscreenState.chartEl);
           if(fullscreenState.toolbar){
@@ -650,6 +810,7 @@
           }
           fullscreenState.btn.innerHTML = ICON_FULLSCREEN;
           fullscreenState.btn.dataset.action='fullscreen';
+          fullscreenState.btn.setAttribute('aria-label','Open chart full screen');
           fullscreenState.chartEl.style.height = '';
           fullscreenState.chartEl.style.flex = '';
           fullscreenState.chart.resize();
@@ -682,9 +843,12 @@
           chartEl.style.flex = '0 0 auto';
           btn.innerHTML = ICON_FULLSCREEN_EXIT;
           btn.dataset.action='exitfullscreen';
+          btn.setAttribute('aria-label','Exit full screen');
           overlay.classList.add('active');
+          document.body.style.overflow = 'hidden';
           const resizer = document.createElement('div');
           resizer.className = 'chart-resizer';
+          resizer.setAttribute('aria-hidden','true');
           overlay.appendChild(resizer);
           const tableWrap = document.createElement('div');
           tableWrap.className='data-table';
@@ -720,43 +884,30 @@
       }
 
       function attachChartToolbar(chartEl, chart, name){
-        const makeToolbar = () => {
-          const tb = document.createElement('div');
-          tb.className = 'chart-toolbar';
-          const btns = [`<button class="btn ghost" data-action="fullscreen" aria-label="Fullscreen chart">${ICON_FULLSCREEN}</button>`];
-          if(name === 'zeros') btns.push(`<button class="btn ghost" data-action="flip" aria-label="Flip chart">${ICON_FLIP}</button>`);
-          btns.push(`<button class="btn ghost" data-action="download" aria-label="Download chart">${ICON_DOWNLOAD}</button>`);
-          btns.push(`<button class="btn ghost" data-action="share" aria-label="Share chart">${ICON_SHARE}</button>`);
-          tb.innerHTML = btns.join('');
-          tb.addEventListener('click', (e)=>{
-            const btn = e.target.closest('button'); if(!btn) return;
-            const action = btn.dataset.action;
-            const permalink = location.href.split('#')[0] + '#' + name;
-            if(action === 'download'){
-              downloadChartPng(chart, name + '.png');
-            } else if(action === 'share'){
-              shareChart(chart, {title: `${document.title} — ${name}`, text: `View the ${name} chart`, permalink, filename: name + '.png'});
-            } else if(action === 'flip'){
-              flipZeros();
-            } else if(action === 'fullscreen' || action === 'exitfullscreen'){
-              toggleFullscreen(chartEl, chart, btn);
-            }
-          });
-          return tb;
-        };
-
-        if(name === 'trails' || name === 'heatmap'){
-          const panel = chartEl.closest('.panel');
-          const title = panel?.querySelector('h3');
-          if(title){
-            if(title.querySelector('.chart-toolbar')) return;
-            title.classList.add('has-toolbar');
-            title.appendChild(makeToolbar());
-            return;
+        const slot = document.querySelector(`[data-toolbar-for="${name}"]`);
+        if((slot || chartEl).querySelector('.chart-toolbar')) return;
+        const tb = document.createElement('div');
+        tb.className = 'chart-toolbar';
+        const btns = [`<button class="btn" type="button" data-action="fullscreen" aria-label="Open chart full screen" title="Full screen">${ICON_FULLSCREEN}</button>`];
+        if(name === 'zeros') btns.push(`<button class="btn" type="button" data-action="flip" aria-label="Switch between totals and top zero-result queries" title="Switch view">${ICON_FLIP}</button>`);
+        btns.push(`<button class="btn" type="button" data-action="download" aria-label="Download chart as PNG" title="Download PNG">${ICON_DOWNLOAD}</button>`);
+        btns.push(`<button class="btn" type="button" data-action="share" aria-label="Share chart" title="Share">${ICON_SHARE}</button>`);
+        tb.innerHTML = btns.join('');
+        tb.addEventListener('click', (e)=>{
+          const btn = e.target.closest('button'); if(!btn) return;
+          const action = btn.dataset.action;
+          const permalink = location.href.split('#')[0] + '#' + name;
+          if(action === 'download'){
+            downloadChartPng(chart, name + '.png');
+          } else if(action === 'share'){
+            shareChart(chart, {title: `${document.title} — ${name}`, text: `View the ${name} chart`, permalink, filename: name + '.png'});
+          } else if(action === 'flip'){
+            flipZeros();
+          } else if(action === 'fullscreen' || action === 'exitfullscreen'){
+            toggleFullscreen(chartEl, chart, btn);
           }
-        }
-        if(chartEl.querySelector('.chart-toolbar')) return;
-        chartEl.appendChild(makeToolbar());
+        });
+        (slot || chartEl).appendChild(tb);
       }
 
       function ensureChart(id){
@@ -771,8 +922,8 @@
       function flipZeros(){
         const el = document.getElementById('zeros');
         if(!el) return;
-        el.classList.add('flip');
-        setTimeout(()=>{ state.zeroMode = state.zeroMode === 'totals' ? 'keywords' : 'totals'; renderAll(); },300);
+        if(!reduceMotion.matches) el.classList.add('flip');
+        setTimeout(()=>{ state.zeroMode = state.zeroMode === 'totals' ? 'keywords' : 'totals'; renderAll(); }, reduceMotion.matches ? 0 : 300);
         setTimeout(()=>{ el.classList.remove('flip'); },600);
       }
 
@@ -797,55 +948,141 @@
         return Array.from(acc.entries()).sort((a,b)=>a[0].localeCompare(b[0])).map(([m,v])=>({month:m,value:v}));
       }
 
-      // --- Chart options ---
-      function buildRaceOption(months, topByMonth){
-        const palette = ['#4C9AFF','#36B37E','#6554C0','#FFAB00','#FF5630','#5E5CE6','#00C7E6','#36B37E','#C0B6F2','#79F2C0'];
-        const colors = {};
-        let idx = 0;
-        for(const m of months){
-          for(const item of (topByMonth[m]||[])){
-            if(!colors[item.name]){
-              colors[item.name] = palette[idx % palette.length];
-              idx++;
-            }
-          }
+      // --- Hero: latest month at a glance ---
+      function latestRanking(list, field, month){
+        return list.filter(r=>toMonthKey(r.month)===month && Number.isFinite(asNumber(r[field])))
+          .sort((a,b)=>asNumber(b[field])-asNumber(a[field]))
+          .map((r,i)=>({ keyword:String(r.keyword||'').trim(), value:asNumber(r[field]), rank:i+1 }));
+      }
+      function renderHero(){
+        const months = Array.from(new Set(state.sourceRaw.map(r=>toMonthKey(r.month)))).sort();
+        const list = $('#topList');
+        if(!months.length){
+          list.innerHTML = '<li class="empty-note">No report loaded yet. Load the repository data or open your own file below.</li>';
+          return;
         }
-        return { backgroundColor:'transparent', animationDurationUpdate: state.playInterval*0.9, animationEasing:'quarticOut',
-          timeline:{ axisType:'category', autoPlay: state.timelinePlaying, playInterval: state.playInterval, data: months, label:{ color:'#C8D1EA' }, lineStyle:{ color:'rgba(255,255,255,.35)' }, controlStyle:{ color:'#fff', borderColor:'rgba(255,255,255,.2)' }, bottom: 0 },
-          baseOption:{ grid:{ left:8, right:36, top:40, bottom:90, containLabel:true }, xAxis:{ type:'value', splitLine:{ lineStyle:{ color:'rgba(255,255,255,.08)'} }, axisLabel:{ color:'#BFC7E5', formatter:'{value}%'} }, yAxis:{ type:'category', inverse:true, axisLabel:{ color:'#E6E9F2', margin:6, formatter:(val)=>labelTrim(val, 18) }, axisTick:{ show:false }, axisLine:{ show:false } }, tooltip:{ trigger:'item', borderColor:'rgba(255,255,255,.15)', backgroundColor:'rgba(9,13,31,.96)', textStyle:{ color:'#E6E9F2' }, formatter:p=>`<div><b>${p.name}</b><br/>${p.value} %</div>` }, series:[{ type:'bar', realtimeSort:true, barCategoryGap:'20%', label:{ show:true, position:'right', color:'#E6E9F2', formatter:p=>`${p.value.toFixed(2)}%` }, itemStyle:{ borderRadius:[4,12,12,4], color:(p)=> colors[p.name] || palette[p.dataIndex%palette.length] } }], graphic:[{ type:'text', left:10, top:6, style:{ text:'Popular Keywords', fill:'#C8D1EA', font:'600 12px Inter'} }] },
-          options: months.map(m=>({ title:{ text:m, left:'center', top:6, textStyle:{ color:'#E6E9F2', fontSize:14, fontWeight:700 } }, yAxis:{ data:(topByMonth[m]||[]).map(d=>d.name) }, series:[{ data:(topByMonth[m]||[]).map(d=>({ value:d.value, name:d.name })) }] })) };
+        const latest = months[months.length-1], prev = months[months.length-2];
+        const now = latestRanking(state.sourceRaw, 'percentage', latest);
+        const prevRank = new Map(prev ? latestRanking(state.sourceRaw, 'percentage', prev).map(r=>[r.keyword, r.rank]) : []);
+        const top = now.slice(0, 10);
+        const maxV = top[0]?.value || 1;
+        $('#topListTitle').textContent = `Top searches in ${monthLabel(latest)}`;
+        list.innerHTML = top.map(r=>{
+          const p = prevRank.get(r.keyword);
+          let chg = '<span class="chg" title="Same rank as last month">–</span>';
+          if(!prev) chg = '<span class="chg"></span>';
+          else if(p == null) chg = '<span class="chg up" title="Not in last month\'s report">new</span>';
+          else if(p > r.rank) chg = `<span class="chg up" title="Up from #${p}">▲${p-r.rank}</span>`;
+          else if(p < r.rank) chg = `<span class="chg down" title="Down from #${p}">▼${r.rank-p}</span>`;
+          return `<li><span class="rk">${r.rank}</span><span class="kw"><span>${escapeHtml(r.keyword)}</span><i class="bar" style="width:${Math.max(4, r.value/maxV*100).toFixed(1)}%"></i></span><span class="pct">${r.value.toFixed(2)}%</span>${chg}</li>`;
+        }).join('');
+
+        // Zero-result line
+        const zMonths = Array.from(new Set(state.zeroRaw.map(r=>toMonthKey(r.month)))).sort();
+        if(zMonths.length){
+          const zl = zMonths[zMonths.length-1], zp = zMonths[zMonths.length-2];
+          const zTop = latestRanking(state.zeroRaw, 'count', zl);
+          const totalFor = (m)=>{ const t = state.zeroTotals.find(x=>x.month===m); return t && Number.isFinite(t.value) && t.value>0 ? t.value : zMonths.length ? state.zeroRaw.reduce((s,r)=> toMonthKey(r.month)===m ? s+(asNumber(r.count)||0) : s, 0) : 0; };
+          const total = totalFor(zl), before = zp ? totalFor(zp) : null;
+          $('#heroZeroQuery').textContent = zTop[0]?.keyword || '—';
+          let trend = '';
+          if(before){ const d = (total-before)/before*100; trend = Math.abs(d) < 0.5 ? ', about the same as the month before' : `, ${Math.abs(d).toFixed(0)}% ${d<0?'fewer':'more'} than in ${monthLabel(zp,{month:'long'})}`; }
+          $('#heroZeroMeta').innerHTML = `<strong>${Math.round(total).toLocaleString('en-US')}</strong> searches found no apps in ${monthLabel(zl)}${trend}. Above: the query that most often came back empty.`;
+        }
+
+        const first = months[0];
+        $('#heroSource').textContent = `Built from Atlassian's monthly Marketplace search reports, ${monthLabel(first)} to ${monthLabel(latest)}: the top 500 queries by share of all searches, and the queries that returned no apps.`;
+
+        // Typing loop through the top five queries
+        const key = latest + '|' + top.slice(0,5).map(r=>r.keyword).join('|');
+        if(key === state.hero.key) return;
+        state.hero.key = key;
+        state.hero.queue = top.slice(0,5);
+        state.hero.idx = 0;
+        clearTimeout(state.hero.timer);
+        const qEl = $('#heroQuery'), shareEl = $('#heroShare'), metaEl = $('#heroMeta');
+        const showMeta = (r)=>{
+          shareEl.hidden = false;
+          shareEl.textContent = `${r.value.toFixed(2)}%`;
+          metaEl.innerHTML = `<strong>#${r.rank}</strong> in ${monthLabel(latest)}: ${r.value.toFixed(2)}% of all Marketplace searches.`;
+        };
+        if(reduceMotion.matches || !state.hero.queue.length){
+          if(state.hero.queue[0]){ qEl.textContent = state.hero.queue[0].keyword; showMeta(state.hero.queue[0]); }
+          return;
+        }
+        const typeNext = ()=>{
+          const r = state.hero.queue[state.hero.idx % state.hero.queue.length];
+          let i = 0;
+          shareEl.hidden = true;
+          const typeChar = ()=>{
+            qEl.textContent = r.keyword.slice(0, ++i);
+            if(i < r.keyword.length){ state.hero.timer = setTimeout(typeChar, 55 + Math.random()*45); }
+            else { showMeta(r); state.hero.timer = setTimeout(erase, 2600); }
+          };
+          const erase = ()=>{
+            shareEl.hidden = true;
+            const t = qEl.textContent;
+            if(t.length){ qEl.textContent = t.slice(0,-1); state.hero.timer = setTimeout(erase, 22); }
+            else { state.hero.idx++; state.hero.timer = setTimeout(typeNext, 260); }
+          };
+          typeChar();
+        };
+        qEl.textContent = '';
+        typeNext();
       }
 
-      function buildZeroRaceOption(months, topByMonth){
-        const palette = ['#4C9AFF','#36B37E','#6554C0','#FFAB00','#FF5630','#5E5CE6','#00C7E6','#36B37E','#C0B6F2','#79F2C0'];
+      // --- Chart options ---
+      function colorMap(months, topByMonth, palette){
         const colors = {};
         let idx = 0;
         for(const m of months){
           for(const item of (topByMonth[m]||[])){
-            if(!colors[item.name]){
-              colors[item.name] = palette[idx % palette.length];
-              idx++;
-            }
+            if(!colors[item.name]){ colors[item.name] = palette[idx % palette.length]; idx++; }
           }
         }
-        return { backgroundColor:'transparent', animationDurationUpdate: state.playInterval*0.9, animationEasing:'quarticOut',
-          timeline:{ axisType:'category', autoPlay: state.timelinePlaying, playInterval: state.playInterval, data: months, label:{ color:'#C8D1EA' }, lineStyle:{ color:'rgba(255,255,255,.35)' }, controlStyle:{ color:'#fff', borderColor:'rgba(255,255,255,.2)' }, bottom: 0 },
-          baseOption:{ grid:{ left:8, right:36, top:40, bottom:90, containLabel:true }, xAxis:{ type:'value', splitLine:{ lineStyle:{ color:'rgba(255,255,255,.08)'} }, axisLabel:{ color:'#BFC7E5' } }, yAxis:{ type:'category', inverse:true, axisLabel:{ color:'#E6E9F2', margin:6, formatter:(val)=>labelTrim(val, 18) }, axisTick:{ show:false }, axisLine:{ show:false } }, tooltip:{ trigger:'item', borderColor:'rgba(255,255,255,.15)', backgroundColor:'rgba(9,13,31,.96)', textStyle:{ color:'#E6E9F2' }, formatter:p=>`<div><b>${p.name}</b><br/>${p.value}</div>` }, series:[{ type:'bar', realtimeSort:true, barCategoryGap:'20%', label:{ show:true, position:'right', color:'#E6E9F2', formatter:p=>p.value }, itemStyle:{ borderRadius:[4,12,12,4], color:(p)=> colors[p.name] || palette[p.dataIndex%palette.length] } }], graphic:[{ type:'text', left:10, top:6, style:{ text:'Zero-result Keywords', fill:'#C8D1EA', font:'600 12px Inter'} }] },
-          options: months.map(m=>({ title:{ text:m, left:'center', top:6, textStyle:{ color:'#E6E9F2', fontSize:14, fontWeight:700 } }, yAxis:{ data:(topByMonth[m]||[]).map(d=>d.name) }, series:[{ data:(topByMonth[m]||[]).map(d=>({ value:d.value, name:d.name })) }] })) };
+        return colors;
       }
+      function raceOption(months, topByMonth, {isPercent, accent}){
+        const t = T();
+        const palette = accent ? [accent] : t.series;
+        const colors = colorMap(months, topByMonth, palette);
+        return { backgroundColor:'transparent', animationDurationUpdate: state.playInterval*0.9, animationEasing:'quarticOut',
+          timeline:{ axisType:'category', autoPlay: state.timelinePlaying, playInterval: state.playInterval, data: months, bottom: 4, left: 24, right: 24,
+            label:{ color:t.muted, fontFamily:FONT, formatter:(v)=>v }, lineStyle:{ color:t.line }, itemStyle:{ color:t.line }, checkpointStyle:{ color:t.blue, borderColor:t.surface, borderWidth:2 },
+            controlStyle:{ color:t.ink2, borderColor:t.line, itemSize:20 }, progress:{ lineStyle:{ color:t.blue }, itemStyle:{ color:t.blue }, label:{ color:t.ink } }, emphasis:{ label:{ color:t.ink }, controlStyle:{ color:t.ink, borderColor:t.ink2 } } },
+          baseOption:{ textStyle:{ fontFamily:FONT },
+            grid:{ left:8, right:56, top:52, bottom:84, containLabel:true },
+            xAxis:{ type:'value', splitLine:{ lineStyle:{ color:t.grid } }, axisLabel:{ color:t.muted, formatter: isPercent ? '{value}%' : '{value}' } },
+            yAxis:{ type:'category', inverse:true, axisLabel:{ color:t.ink, fontSize:13, fontWeight:500, margin:8, formatter:(val)=>labelTrim(val, 20) }, axisTick:{ show:false }, axisLine:{ show:false } },
+            tooltip:{ trigger:'item', ...tooltipStyle(t), formatter:p=>`<b>${escapeHtml(p.name)}</b><br/>${isPercent ? p.value.toFixed(2)+'% of searches' : Math.round(p.value).toLocaleString('en-US')+' searches'}` },
+            series:[{ type:'bar', realtimeSort:true, barCategoryGap:'24%', label:{ show:true, position:'right', color:t.ink2, fontWeight:600, formatter:p=> isPercent ? `${p.value.toFixed(2)}%` : Math.round(p.value).toLocaleString('en-US') }, itemStyle:{ borderRadius:[2,6,6,2], color:(p)=> colors[p.name] || palette[p.dataIndex%palette.length] } }] },
+          options: months.map(m=>({ title:{ text:monthLabel(m), left:'center', top:4, textStyle:{ color:t.ink, fontSize:20, fontWeight:800, fontFamily:FONT } }, yAxis:{ data:(topByMonth[m]||[]).map(d=>d.name) }, series:[{ data:(topByMonth[m]||[]).map(d=>({ value:d.value, name:d.name })) }] })) };
+      }
+      function buildRaceOption(months, topByMonth){ return raceOption(months, topByMonth, {isPercent:true}); }
+      function buildZeroRaceOption(months, topByMonth){ return raceOption(months, topByMonth, {isPercent:false, accent:T().coral}); }
       function buildZerosOption(months, totals, currentMonth){
-        const data = months.map(m => (totals.find(t=>t.month===m)?.value)||0); const idx = months.indexOf(currentMonth);
-        return { backgroundColor:'transparent', grid:{ left:56,right:26,top:40,bottom:80, containLabel:true }, xAxis:{ type:'category', data: months, axisLabel:{ color:'#BFC7E5' }, axisTick:{ show:false }, axisLine:{ lineStyle:{ color:'rgba(255,255,255,.25)'} } }, yAxis:{ type:'value', axisLabel:{ color:'#BFC7E5' }, splitLine:{ lineStyle:{ color:'rgba(255,255,255,.08)'} } }, tooltip:{ trigger:'axis', borderColor:'rgba(255,255,255,.15)', backgroundColor:'rgba(9,13,31,.96)', textStyle:{ color:'#E6E9F2' } }, series:[{ name:'Zero results', type:'line', smooth:true, symbol:'circle', symbolSize:6, lineStyle:{ width:3 }, areaStyle:{ opacity:.08 }, itemStyle:{ color:'#FF5630' }, data, markPoint: idx>=0 ? { data:[{ xAxis: idx, yAxis: data[idx], value: data[idx]}] } : undefined }], graphic:[{ type:'text', left:10, top:6, style:{ text:'Zero-result totals', fill:'#C8D1EA', font:'600 12px Inter' } }] };
+        const t = T();
+        const data = months.map(m => (totals.find(x=>x.month===m)?.value)||0); const idx = months.indexOf(currentMonth);
+        return { backgroundColor:'transparent', textStyle:{ fontFamily:FONT },
+          grid:{ left:16,right:24,top:56,bottom:40, containLabel:true },
+          xAxis:{ type:'category', data: months, axisLabel:{ color:t.muted, formatter:(v)=>monthLabel(v,{month:'short', year:'2-digit'}) }, axisTick:{ show:false }, axisLine:{ lineStyle:{ color:t.line } } },
+          yAxis:{ type:'value', axisLabel:{ color:t.muted, formatter:(v)=>Number(v).toLocaleString('en-US') }, splitLine:{ lineStyle:{ color:t.grid } } },
+          tooltip:{ trigger:'axis', ...tooltipStyle(t), axisPointer:{ lineStyle:{ color:t.line } }, formatter:(ps)=>`<b>${monthLabel(ps[0].axisValue)}</b><br/>${Math.round(ps[0].value).toLocaleString('en-US')} searches found no apps` },
+          series:[{ name:'Searches with zero results', type:'line', smooth:true, symbol:'circle', symbolSize:5, showSymbol:false, lineStyle:{ width:2.5, color:t.coral }, areaStyle:{ color:t.coral, opacity:.1 }, itemStyle:{ color:t.coral }, data,
+            markPoint: idx>=0 ? { symbol:'circle', symbolSize:14, itemStyle:{ color:t.coral, borderColor:t.surface, borderWidth:3 }, label:{ show:true, position:'top', distance:10, color:t.ink, fontWeight:700, fontFamily:FONT, formatter:()=>`${monthLabel(months[idx],{month:'short', year:'numeric'})}: ${Math.round(data[idx]).toLocaleString('en-US')}` }, data:[{ coord:[idx, data[idx]], value: data[idx] }] } : undefined }] };
       }
       function buildTrailsOption(months, series){
-        const tuned = (series||[]).map(s=>({
+        const t = T();
+        const tuned = (series||[]).map((s,i)=>({
           ...s,
           showSymbol:false,
-          symbolSize:4,
-          lineStyle:{ width:2 }
+          symbolSize:5,
+          lineStyle:{ width:2.25 },
+          color: t.series[i % t.series.length],
+          emphasis:{ focus:'series' }
         }));
         const names = tuned.map(s=>s.name);
-        const pageSize = state.trailsLegendCols * state.trailsLegendRows; // 2 rows per page
+        const pageSize = state.trailsLegendCols * state.trailsLegendRows;
         const totalPages = Math.max(1, Math.ceil(names.length / pageSize));
         state.trailsLegendTotalPages = totalPages;
         if(state.trailsLegendPage >= totalPages) state.trailsLegendPage = totalPages - 1;
@@ -853,73 +1090,63 @@
         const pageData = names.slice(start, start + pageSize);
         const row1 = pageData.slice(0, state.trailsLegendCols);
         const row2 = pageData.slice(state.trailsLegendCols, pageSize);
+        const legendBase = { left:16, right:16, textStyle:{ color:t.ink2, fontFamily:FONT, fontSize:13 }, itemGap:18, icon:'roundRect', itemWidth:14, itemHeight:4, inactiveColor:t.line };
         return {
-          backgroundColor:'transparent',
-          grid:{ left:56, right:18, top:78, bottom:64, containLabel:true },
-          legend:[
-            { top:6, left:56, right:18, data: row1, textStyle:{ color:'#BFC7E5' }, itemGap:18 },
-            { top:34, left:56, right:18, data: row2, textStyle:{ color:'#BFC7E5' }, itemGap:18 }
-          ],
-          tooltip:{ trigger:'axis' },
-          xAxis:{ type:'category', data: months, axisLabel:{ color:'#BFC7E5' } },
-          yAxis:{ type:'value', axisLabel:{ color:'#BFC7E5', formatter:'{value}%' }, splitLine:{ lineStyle:{ color:'rgba(255,255,255,.08)'} } },
-          dataZoom:[ { type:'slider', xAxisIndex:0, height:14, bottom:8 }, { type:'inside', xAxisIndex:0 } ],
+          backgroundColor:'transparent', textStyle:{ fontFamily:FONT },
+          grid:{ left:16, right:20, top:72, bottom:56, containLabel:true },
+          legend:[ { ...legendBase, top:8, data: row1 }, { ...legendBase, top:34, data: row2 } ],
+          tooltip:{ trigger:'axis', ...tooltipStyle(t), axisPointer:{ lineStyle:{ color:t.line } }, order:'valueDesc', valueFormatter:(v)=> v==null ? 'not in top 500' : `${Number(v).toFixed(2)}%` },
+          xAxis:{ type:'category', data: months, axisLabel:{ color:t.muted, formatter:(v)=>monthLabel(v,{month:'short', year:'2-digit'}) }, axisLine:{ lineStyle:{ color:t.line } }, axisTick:{ show:false } },
+          yAxis:{ type:'value', axisLabel:{ color:t.muted, formatter:'{value}%' }, splitLine:{ lineStyle:{ color:t.grid } } },
+          dataZoom:[ sliderZoom(t), { type:'inside', xAxisIndex:0, zoomOnMouseWheel:false, moveOnMouseWheel:false } ],
           series: tuned
         };
       }
-      
+
       function buildHeatmapOption(months, yCats, matrix){
-        const LABEL_PX = 100;
-        const info = yCats.map(k=>{
-          const width = measureTextWidth(k);
-          return { full: k, short: width > LABEL_PX ? trimToWidth(k, LABEL_PX) : k, width };
-        });
-        console.debug('heatmap label widths', { maxLabelWidth: LABEL_PX, labels: info });
-        const trimmed = info.map(i=>i.short);
+        const t = T();
+        const LABEL_PX = 120;
+        const trimmed = yCats.map(k=> measureTextWidth(k) > LABEL_PX ? trimToWidth(k, LABEL_PX) : k);
         const data = [];
         const yIndex = new Map(yCats.map((k,i)=>[k,i]));
         const xIndex = new Map(months.map((m,i)=>[m,i]));
         let vmax = 0;
-        for(const row of matrix){ // {month, keyword, value}
+        for(const row of matrix){
           const yi = yIndex.get(row.keyword); const xi = xIndex.get(row.month);
           if(yi==null || xi==null) continue;
           data.push([xi, yi, row.value]); vmax = Math.max(vmax, row.value);
         }
         return {
-          backgroundColor:'transparent',
-          grid:{ left:120, right:70, top:30, bottom:64 },
-          tooltip:{ position:'top', formatter:(p)=>{
+          backgroundColor:'transparent', textStyle:{ fontFamily:FONT },
+          grid:{ left:136, right:24, top:16, bottom:96 },
+          tooltip:{ position:'top', ...tooltipStyle(t), formatter:(p)=>{
             const kw = yCats[p.value[1]]; const m = months[p.value[0]];
-            return `<div><b>${kw}</b><br/>${m}: ${p.value[2]}</div>`;
+            return `<b>${escapeHtml(kw)}</b><br/>${monthLabel(m)}: ${p.value[2].toLocaleString('en-US')} ${p.value[2]===1?'search':'searches'}`;
           } },
-          xAxis:{ type:'category', data: months, splitArea:{ show:false }, axisLabel:{ color:'#BFC7E5' } },
-          yAxis:{ type:'category', data: trimmed, splitArea:{ show:false }, axisLabel:{ color:'#E6E9F2' } },
-          dataZoom:[ { type:'slider', xAxisIndex:0, height:14, bottom:8 }, { type:'inside', xAxisIndex:0 } ],
-          visualMap:{ min:0, max:vmax||1, calculable:true, orient:'vertical', right:10, top:'middle', text:['more','less'] },
-          series:[{ name:'Zero results', type:'heatmap', data, emphasis:{ itemStyle:{ shadowBlur:10, shadowColor:'rgba(0,0,0,0.4)' } } }]
+          xAxis:{ type:'category', data: months, splitArea:{ show:false }, axisLabel:{ color:t.muted, formatter:(v)=>monthLabel(v,{month:'short', year:'2-digit'}) }, axisLine:{ show:false }, axisTick:{ show:false } },
+          yAxis:{ type:'category', data: trimmed, splitArea:{ show:false }, inverse:true, axisLabel:{ color:t.ink, fontSize:13 }, axisLine:{ show:false }, axisTick:{ show:false } },
+          dataZoom:[ sliderZoom(t, { bottom:46 }), { type:'inside', xAxisIndex:0, zoomOnMouseWheel:false, moveOnMouseWheel:false } ],
+          visualMap:{ min:0, max:vmax||1, calculable:true, orient:'horizontal', left:'center', bottom:2, itemWidth:12, itemHeight:160, text:['more','fewer'], textStyle:{ color:t.muted, fontFamily:FONT }, inRange:{ color:t.heat } },
+          series:[{ name:'Zero results', type:'heatmap', data, itemStyle:{ borderColor:t.surface, borderWidth:1.5, borderRadius:2 }, emphasis:{ itemStyle:{ borderColor:t.ink, borderWidth:1.5 } } }]
         };
       }
 
-      // --- Data transforms for new gadgets ---
+      // --- Data transforms ---
       function computeTrailsSeries(sourceRaw, months, topN, filter){
-        // Score keywords by total percentage across all months
         const sum = new Map();
         const filt = filter && filter.length ? new Set(filter) : null;
         for(const r of sourceRaw){ const k = String(r.keyword||'').trim(); if(filt && !filt.has(k)) continue; const v = asNumber(r.percentage); if(!Number.isFinite(v)) continue; sum.set(k, (sum.get(k)||0)+v); }
         let top = [];
         if(filt){ top = Array.from(filt).filter(k=>sum.has(k)); }
         else { top = Array.from(sum.entries()).sort((a,b)=>b[1]-a[1]).slice(0, topN).map(([k])=>k); }
-        // Build series per keyword across months
         const byMonthKey = new Map();
         for(const r of sourceRaw){ const m = toMonthKey(r.month); const k = String(r.keyword||'').trim(); const v = asNumber(r.percentage); if(!byMonthKey.has(m)) byMonthKey.set(m, new Map()); byMonthKey.get(m).set(k, v); }
-        const series = top.map(k=>({ name:k, type:'line', smooth:true, symbol:'circle', symbolSize:5, data: months.map(m=> byMonthKey.get(m)?.get(k) ?? null) }));
-        return series;
+        return top.map(k=>({ name:k, type:'line', smooth:true, symbol:'circle', symbolSize:5, data: months.map(m=> byMonthKey.get(m)?.get(k) ?? null) }));
       }
       function computeHeatmapMatrix(zeroRaw, months, topK, startIdx, endIdx, filter){
         const rangeMonths = months.slice(startIdx, endIdx + 1);
         const rangeSet = new Set(rangeMonths);
         const filt = filter && filter.length ? new Set(filter) : null;
-        // Top K zero-result keywords within selected months
         const totals = new Map();
         for (const r of zeroRaw) {
           const m = toMonthKey(r.month);
@@ -932,7 +1159,6 @@
         }
         const sorted = Array.from(totals.entries()).sort((a, b) => b[1] - a[1]);
         const yCats = filt ? sorted.map(([k])=>k) : sorted.slice(0, topK).map(([k])=>k);
-        // Matrix rows
         const byMonthKey = new Map();
         for (const r of zeroRaw) {
           const m = toMonthKey(r.month);
@@ -952,13 +1178,11 @@
         return { yCats, matrix };
       }
 
-      // File status updater
       function updateFileStatus(elementId, message){
         const el = document.getElementById(elementId);
         if(el) el.textContent = message;
       }
 
-      // Pager info for Trails legend
       function syncTrailsPager(totalSeries){
         const pageSize = state.trailsLegendCols * state.trailsLegendRows;
         const total = Math.max(1, Math.ceil((totalSeries||0)/pageSize));
@@ -966,32 +1190,29 @@
         if(state.trailsLegendPage >= total) state.trailsLegendPage = total-1;
         const el = document.getElementById('trailsPageInfo');
         if(el) el.textContent = `${state.trailsLegendPage+1}/${total}`;
+        document.getElementById('trailsPrev').disabled = state.trailsLegendPage === 0;
+        document.getElementById('trailsNext').disabled = state.trailsLegendPage >= total-1;
       }
 
       // --- Render pipeline ---
       function updateHeatTimeRangeControls(){
         const max = state.months.length;
-
-        // Initialize end index to maximum on first load
         if(!state.heatTimeRangeInitialized && max > 0) {
           state.heatTimeEndIdx = max - 1;
           state.heatTimeRangeInitialized = true;
         }
-
         const start = Math.max(0, Math.min(state.heatTimeStartIdx, max-1));
         const end = Math.max(start, Math.min(state.heatTimeEndIdx, max-1));
         state.heatTimeStartIdx = start; state.heatTimeEndIdx = end;
-
         const s = document.getElementById('heatTimeStart');
         const e = document.getElementById('heatTimeEnd');
         const sv = document.getElementById('heatTimeStartVal');
         const ev = document.getElementById('heatTimeEndVal');
-
         if(max){
           s.min = 1; s.max = max; e.min = 1; e.max = max;
           s.value = String(start + 1); e.value = String(end + 1);
-          sv.textContent = state.months[start] || '–';
-          ev.textContent = state.months[end] || '–';
+          sv.textContent = state.months[start] ? monthLabel(state.months[start],{month:'short', year:'numeric'}) : '–';
+          ev.textContent = state.months[end] ? monthLabel(state.months[end],{month:'short', year:'numeric'}) : '–';
         } else {
           s.min = e.min = 1; s.max = e.max = 1; s.value = e.value = 1;
           sv.textContent = ev.textContent = '–';
@@ -1001,19 +1222,19 @@
       function renderAll(){
         populateKeywordOptions();
         toggleRangeSelectors();
+        renderHero();
         if(!state.sourceRaw.length){ setStatus('waiting for Popular Search Keywords (or demo)'); return; }
         const { months, topByMonth } = groupByMonthTop(state.sourceRaw, 'percentage', state.topN, state.keywordFilter);
-        
-        // Reset range initialization if months changed
         if(JSON.stringify(state.months) !== JSON.stringify(months)) {
           state.heatTimeRangeInitialized = false;
         }
-        
         state.months = months; if(!months.length){ setStatus('no months detected in source'); return; }
         // 1) Race + zeros overview
         safeSetOption('race', buildRaceOption(months, topByMonth));
         const race = ensureChart('race');
         if(state.zeroMode === 'totals'){
+          $('#zerosTitle').textContent = 'Searches that found nothing';
+          $('#zerosDesc').textContent = 'Monthly count of searches that returned no apps. The marker follows the race month.';
           let totals;
           if(state.keywordFilter.length){
             totals = totalsByMonth(state.zeroRaw,'count', state.keywordFilter);
@@ -1023,6 +1244,8 @@
           safeSetOption('zeros', buildZerosOption(months, totals, months[0]));
           if(race){ race.off('timelinechanged'); race.on('timelinechanged', (e)=>{ const month = state.months[e.currentIndex]; safeSetOption('zeros', buildZerosOption(state.months, totals, month)); }); }
         } else {
+          $('#zerosTitle').textContent = 'Top zero-result queries';
+          $('#zerosDesc').textContent = 'Queries that most often returned no apps, month by month.';
           const { months: zMonths, topByMonth: zTop } = groupByMonthTop(state.zeroRaw, 'count', state.topN, state.keywordFilter);
           if(zMonths.length){ safeSetOption('zeros', buildZeroRaceOption(zMonths, zTop)); }
           if(race){ race.off('timelinechanged'); }
@@ -1031,7 +1254,7 @@
         const trailSeries = computeTrailsSeries(state.sourceRaw, months, state.trailsN, state.keywordFilter);
         safeSetOption('trails', buildTrailsOption(months, trailSeries));
         syncTrailsPager(trailSeries.length);
-        // 3) Heatmap (zero results) with word and month range
+        // 3) Heatmap
         updateHeatTimeRangeControls();
         if(state.zeroRaw.length){
           const { yCats, matrix } = computeHeatmapMatrix(state.zeroRaw, months, state.heatTopK, state.heatTimeStartIdx, state.heatTimeEndIdx, state.keywordFilter);
@@ -1049,7 +1272,7 @@
       $('#heatTopK').addEventListener('input', e=>{ state.heatTopK = +e.target.value; $('#heatTopKVal').textContent = e.target.value; state.heatTimeRangeInitialized = false; renderAll(); });
       $('#heatTimeStart').addEventListener('input', e=>{ state.heatTimeStartIdx = +e.target.value - 1; if(state.heatTimeStartIdx>state.heatTimeEndIdx) state.heatTimeEndIdx = state.heatTimeStartIdx; renderAll(); });
       $('#heatTimeEnd').addEventListener('input', e=>{ state.heatTimeEndIdx = +e.target.value - 1; if(state.heatTimeEndIdx<state.heatTimeStartIdx) state.heatTimeStartIdx = state.heatTimeEndIdx; renderAll(); });
-      $('#btn-play').addEventListener('click', ()=>{ state.timelinePlaying = !state.timelinePlaying; $('#btn-play').textContent = state.timelinePlaying ? '⏸ Pause' : '▶ Play'; renderAll(); });
+      $('#btn-play').addEventListener('click', ()=>{ state.timelinePlaying = !state.timelinePlaying; $('#btn-play').textContent = state.timelinePlaying ? '❚❚ Pause' : '▶ Play'; renderAll(); });
       document.getElementById('btn-share-page').addEventListener('click', sharePage);
 
       const keywordInput = document.getElementById('keywordFilterInput');
@@ -1058,11 +1281,14 @@
       if(keywordInput){
         keywordInput.addEventListener('click', e=>{
           e.stopPropagation();
-          keywordDropdown?.classList.toggle('open');
+          const open = keywordDropdown?.classList.toggle('open');
+          keywordInput.setAttribute('aria-expanded', open ? 'true' : 'false');
+          if(open) keywordDropdown.querySelector('#keywordSearch')?.focus();
         });
       }
       if(keywordDropdown){
         keywordDropdown.addEventListener('click', e=> e.stopPropagation());
+        keywordDropdown.addEventListener('keydown', e=>{ if(e.key==='Escape'){ keywordDropdown.classList.remove('open'); keywordInput?.focus(); } });
       }
       document.addEventListener('click', ()=> keywordDropdown?.classList.remove('open'));
       if(keywordReset){
@@ -1075,46 +1301,50 @@
           renderAll();
         });
       }
+      document.addEventListener('keydown', e=>{
+        if(e.key === 'Escape' && fullscreenState.chartEl && fullscreenState.btn) toggleFullscreen(fullscreenState.chartEl, fullscreenState.chart, fullscreenState.btn);
+      });
 
       // Legend pager (Trails)
       document.getElementById('trailsPrev').addEventListener('click', ()=>{ if(state.trailsLegendPage>0){ state.trailsLegendPage--; renderAll(); } });
       document.getElementById('trailsNext').addEventListener('click', ()=>{ if(state.trailsLegendPage < state.trailsLegendTotalPages-1){ state.trailsLegendPage++; renderAll(); } });
 
       // File inputs
-      $('#file-source').addEventListener('change', async (e)=>{ 
-        const f = e.target.files[0]; 
-        if(!f) { updateFileStatus('source-display', 'No file chosen'); return; }
-        state.manualSource = true; setStatus('reading Popular Search Keywords…'); 
-        updateFileStatus('source-display', `Loading ${f.name}...`);
-        try{ 
-          const buf = await f.arrayBuffer(); 
-          const wb = XLSX.read(buf,{type:'array'}); 
-          const rows = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null }); 
+      $('#file-source').addEventListener('change', async (e)=>{
+        const f = e.target.files[0];
+        if(!f) { updateFileStatus('source-display', 'Choose file'); return; }
+        state.manualSource = true; setStatus('reading Popular Search Keywords…');
+        updateFileStatus('source-display', `Reading ${f.name}…`);
+        try{
+          const buf = await f.arrayBuffer();
+          const wb = XLSX.read(buf,{type:'array'});
+          const rows = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
           state.sourceRaw = rows.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), percentage: asNumber(r.percentage) }));
-          setStatus(`loaded Popular: ${state.sourceRaw.length} rows`); 
-          updateFileStatus('source-display', `${f.name} (${state.sourceRaw.length} rows)`);
-          renderAll(); 
-        }catch(err){ console.error(err); setStatus('error reading Popular file'); updateFileStatus('source-display', 'Error loading file'); } 
+          setStatus(`loaded Popular: ${state.sourceRaw.length} rows`);
+          updateFileStatus('source-display', `${f.name} · ${state.sourceRaw.length.toLocaleString('en-US')} rows`);
+          renderAll();
+        }catch(err){ console.error(err); setStatus('error reading Popular file: check that it has a Raw sheet'); updateFileStatus('source-display', 'Could not read file'); }
       });
 
-      $('#file-zero').addEventListener('change', async (e)=>{ 
-        const f = e.target.files[0]; 
-        if(!f) { updateFileStatus('zero-display', 'No file chosen'); return; }
-        state.manualZero = true; setStatus('reading Zero‑Result Keywords…'); 
-        updateFileStatus('zero-display', `Loading ${f.name}...`);
-        try{ 
-          const buf = await f.arrayBuffer(); 
-          const wb = XLSX.read(buf,{type:'array'}); 
-          if(wb.Sheets['Monthly_Summary']){ 
-            const sum = XLSX.utils.sheet_to_json(wb.Sheets['Monthly_Summary'], { defval:null }); 
-            state.zeroTotals = sum.map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) })); 
-          } 
-          const raw = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null }); 
+      $('#file-zero').addEventListener('change', async (e)=>{
+        const f = e.target.files[0];
+        if(!f) { updateFileStatus('zero-display', 'Choose file'); return; }
+        state.manualZero = true; setStatus('reading Zero-Result Keywords…');
+        updateFileStatus('zero-display', `Reading ${f.name}…`);
+        try{
+          const buf = await f.arrayBuffer();
+          const wb = XLSX.read(buf,{type:'array'});
+          state.zeroTotals = [];
+          if(wb.Sheets['Monthly_Summary']){
+            const sum = XLSX.utils.sheet_to_json(wb.Sheets['Monthly_Summary'], { defval:null });
+            state.zeroTotals = sum.map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) }));
+          }
+          const raw = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
           state.zeroRaw = raw.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), count: asNumber(r.count||0) }));
-          setStatus(`loaded Zero: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`); 
-          updateFileStatus('zero-display', `${f.name} (${state.zeroRaw.length} rows)`);
-          renderAll(); 
-        }catch(err){ console.error(err); setStatus('error reading Zero file'); updateFileStatus('zero-display', 'Error loading file'); } 
+          setStatus(`loaded Zero: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
+          updateFileStatus('zero-display', `${f.name} · ${state.zeroRaw.length.toLocaleString('en-US')} rows`);
+          renderAll();
+        }catch(err){ console.error(err); setStatus('error reading Zero file: check that it has a Raw sheet'); updateFileStatus('zero-display', 'Could not read file'); }
       });
 
       // --- Default file autoload (for GitHub Pages) ---
@@ -1135,7 +1365,7 @@
         const rows = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
         state.sourceRaw = rows.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), percentage: asNumber(r.percentage) }));
         setStatus(`default Popular loaded: ${state.sourceRaw.length} rows`);
-        updateFileStatus('source-display', 'Default data file loaded (see GitHub README)');
+        updateFileStatus('source-display', `Repository data · ${state.sourceRaw.length.toLocaleString('en-US')} rows`);
         renderAll();
       }
 
@@ -1143,6 +1373,7 @@
         setStatus('loading default Zero…');
         const buf = await fetchFirst(DEFAULT_ZERO_CANDIDATES);
         const wb = XLSX.read(buf,{type:'array'});
+        state.zeroTotals = [];
         if(wb.Sheets['Monthly_Summary']){
           const sum = XLSX.utils.sheet_to_json(wb.Sheets['Monthly_Summary'], { defval:null });
           state.zeroTotals = sum.map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) }));
@@ -1150,7 +1381,7 @@
         const raw = XLSX.utils.sheet_to_json(wb.Sheets['Raw'], { defval:null });
         state.zeroRaw = raw.map(r=>({ month:r.month, keyword:sanitizeKeyword(r.keyword), count: asNumber(r.count||0) }));
         setStatus(`default Zero loaded: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
-        updateFileStatus('zero-display', 'Default data file loaded (see GitHub README)');
+        updateFileStatus('zero-display', `Repository data · ${state.zeroRaw.length.toLocaleString('en-US')} rows`);
         renderAll();
       }
 
@@ -1158,39 +1389,24 @@
         let any = false;
         const shouldLoadSource = forceLoad || (!state.sourceRaw.length && !state.manualSource);
         const shouldLoadZero = forceLoad || (!state.zeroRaw.length && !state.manualZero);
-        
-        if(shouldLoadSource){ 
-          try{ 
-            await tryLoadDefaultSource(); 
-            any = true; 
-          } 
-          catch(e){ 
-            console.info('No default Popular found'); 
-            updateFileStatus('source-display', forceLoad ? 'Default files not found' : 'No file chosen');
-          } 
+        if(shouldLoadSource){
+          try{ await tryLoadDefaultSource(); any = true; }
+          catch(e){ console.info('No default Popular found'); updateFileStatus('source-display', forceLoad ? 'Repository file not found' : 'Choose file'); }
         }
-        if(shouldLoadZero){ 
-          try{ 
-            await tryLoadDefaultZero(); 
-            any = true; 
-          } 
-          catch(e){ 
-            console.info('No default Zero found'); 
-            updateFileStatus('zero-display', forceLoad ? 'Default files not found' : 'No file chosen');
-          } 
+        if(shouldLoadZero){
+          try{ await tryLoadDefaultZero(); any = true; }
+          catch(e){ console.info('No default Zero found'); updateFileStatus('zero-display', forceLoad ? 'Repository file not found' : 'Choose file'); }
         }
-        
         if(forceLoad && !any) {
           setStatus('No default files found in /data/ directory');
         } else if(!forceLoad && !any) {
-          setStatus('ready — upload files or Load demo');
+          setStatus('ready: open your files or load the demo');
         }
-        
         return any;
       }
 
       async function autoLoadDefaults(){
-        if(state.defaultsTried) return; 
+        if(state.defaultsTried) return;
         state.defaultsTried = true;
         await loadDefaults(false);
       }
@@ -1235,22 +1451,19 @@
 
       document.getElementById('btn-load-defaults').addEventListener('click', async ()=>{
         setStatus('Loading default files from /data/ directory...');
-        // Reset manual flags to allow loading over existing data
-        state.manualSource = false; 
+        state.manualSource = false;
         state.manualZero = false;
         const loaded = await loadDefaults(true);
-        if(loaded) {
-          setStatus('Default files loaded successfully');
-        }
+        if(loaded) setStatus('Default files loaded successfully');
       });
 
       document.getElementById('btn-demo').addEventListener('click', ()=>{
-          state.sourceRaw = demo.sourceRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
-          state.zeroRaw = demo.zeroRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
+        state.sourceRaw = demo.sourceRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
+        state.zeroRaw = demo.zeroRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
         state.zeroTotals = demo.zeroTotals.slice();
         updateFileStatus('source-display', 'Demo data loaded');
         updateFileStatus('zero-display', 'Demo data loaded');
-        state.timelinePlaying = true; document.getElementById('btn-play').textContent = '⏸ Pause'; renderAll();
+        state.timelinePlaying = true; document.getElementById('btn-play').textContent = '❚❚ Pause'; renderAll();
       });
 
       function runSmokeTests(){
@@ -1263,16 +1476,14 @@
         ok('dynamics help exists', !!document.querySelector('[data-testid="help-dynamics"]'));
         ok('trails help exists', !!document.querySelector('[data-testid="help-trails"]'));
         ok('heatmap help exists', !!document.querySelector('[data-testid="help-heatmap"]'));
-        try{ /* empty render */ renderAll(); ok('renderAll without data does not throw', true); }catch(e){ ok('renderAll without data does not throw', false); }
-        // Verify wrapLabel inserts a newline for long strings
+        try{ renderAll(); ok('renderAll without data does not throw', true); }catch(e){ ok('renderAll without data does not throw', false); }
         const wl = wrapLabel('this is a very very long keyword title that should wrap into two lines', 18);
         ok('wrapLabel inserts newline', wl.includes('\n'));
-        // With demo
-          state.sourceRaw = demo.sourceRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
-          state.zeroRaw = demo.zeroRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
-          state.zeroTotals = demo.zeroTotals.slice();
+        state.sourceRaw = demo.sourceRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
+        state.zeroRaw = demo.zeroRaw.map(r=>({...r, keyword:sanitizeKeyword(r.keyword)}));
+        state.zeroTotals = demo.zeroTotals.slice();
         try{ renderAll(); const race = ensureChart('race'); const zeros = ensureChart('zeros'); const trails = ensureChart('trails'); const heat = ensureChart('heatmap'); ok('race chart instance created', !!race); ok('zeros chart instance created', !!zeros); ok('trails chart instance created', !!trails); ok('heatmap chart instance created', !!heat); }catch(e){ ok('render with demo data succeeds', false); }
-        // Time range controls reflect months
+        ok('hero top list rendered', document.querySelectorAll('#topList li .kw').length > 0);
         const s = document.getElementById('heatTimeStart'); const e = document.getElementById('heatTimeEnd');
         ok('heatTimeStart max set', +s.max === state.months.length);
         ok('heatTimeEnd max set', +e.max === state.months.length);
@@ -1280,15 +1491,18 @@
       }
       document.getElementById('btn-test').addEventListener('click', runSmokeTests);
 
-      // Make file displays clickable
       document.getElementById('source-display').addEventListener('click', ()=>{ document.getElementById('file-source').click(); });
       document.getElementById('zero-display').addEventListener('click', ()=>{ document.getElementById('file-zero').click(); });
 
       initHelp();
-      initAuthorToggle();
-
-      // Try to autoload defaults on boot (works on GitHub Pages when files are in repo)
       autoLoadDefaults();
+
+      // Re-theme charts when the system colour scheme changes
+      const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const onScheme = ()=>{ if(state.sourceRaw.length) renderAll(); };
+      darkQuery.addEventListener ? darkQuery.addEventListener('change', onScheme) : darkQuery.addListener(onScheme);
+      // Fonts can arrive after the first render; re-measure labels once they do
+      if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if(state.sourceRaw.length) renderAll(); });
 
       window.addEventListener('resize', ()=>{ state.charts.race?.resize?.(); state.charts.zeros?.resize?.(); state.charts.trails?.resize?.(); state.charts.heatmap?.resize?.(); });
     }
@@ -1296,4 +1510,3 @@
   </script>
 </body>
 </html>
-

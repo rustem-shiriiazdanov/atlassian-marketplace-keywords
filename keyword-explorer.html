@@ -3,222 +3,291 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Keyword Explorer — Atlassian Marketplace Keywords</title>
+  <meta name="description" content="Track one Atlassian Marketplace search query or a group: share of searches, top-500 rank and zero-result searches by month." />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <title>Keyword Explorer</title>
   <style>
     :root{
-      --bg:#0B1021;--card:#121835;--card-2:#171F43;--chip:#1B2348;--ink:#E6E9F2;
-      --muted:#A9B0C6;--accent:#4C9AFF;--green:#36B37E;--orange:#FFAB00;--danger:#FF5630;
-      --border:rgba(255,255,255,.09);--radius:16px;--shadow:0 20px 40px rgba(0,0,0,.28)
+      --paper:#F4F5F7; --surface:#FFFFFF; --sunken:#EEF0F3;
+      --ink:#172B4D; --ink-2:#44546F; --muted:#626F86; --line:#DCDFE4; --grid:#E9ECF0;
+      --blue:#1D5BD8; --blue-ink:#FFFFFF; --blue-soft:#E8EFFC;
+      --coral:#C9372C; --coral-soft:#FBEAE8;
+      --up:#1F845A; --down:#C9372C;
+      --tip-bg:#172B4D; --tip-ink:#FFFFFF;
+      --series:#1D5BD8,#1F9D8B,#7B4FD6,#D9930D,#C9372C,#2F86C8,#B8467F,#5D8F2E,#6A7896,#0FA3B1;
+      --heat-0:#F1F3F6; --heat-1:#F6C9C3; --heat-2:#E2695D; --heat-3:#A9271D;
+      --search-shadow:0 1px 2px rgba(23,43,77,.08),0 12px 32px -12px rgba(23,43,77,.28);
+      --font:'Schibsted Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
     }
+    @media (prefers-color-scheme: dark){
+      :root:not([data-theme="light"]){
+        --paper:#0F1726; --surface:#162133; --sunken:#121C2C;
+        --ink:#E3E8F0; --ink-2:#B6C0D0; --muted:#8C9BB0; --line:#27354C; --grid:#223047;
+        --blue:#7AA7FF; --blue-ink:#0F1726; --blue-soft:#1B2B49;
+        --coral:#FF8070; --coral-soft:#3A2329;
+        --up:#4CC38A; --down:#FF8070;
+        --tip-bg:#E3E8F0; --tip-ink:#0F1726;
+        --series:#7AA7FF,#3FCFB7,#A98BFF,#F2B74A,#FF8070,#62B6F2,#E47FB1,#9CCB63,#9AA7BF,#4FD3DF;
+        --heat-0:#1F2C43; --heat-1:#5C2F3C; --heat-2:#D0544A; --heat-3:#FFB3A6;
+        --search-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 36px -14px rgba(0,0,0,.7);
+      }
+    }
+    :root[data-theme="dark"]{
+      --paper:#0F1726; --surface:#162133; --sunken:#121C2C;
+      --ink:#E3E8F0; --ink-2:#B6C0D0; --muted:#8C9BB0; --line:#27354C; --grid:#223047;
+      --blue:#7AA7FF; --blue-ink:#0F1726; --blue-soft:#1B2B49;
+      --coral:#FF8070; --coral-soft:#3A2329;
+      --up:#4CC38A; --down:#FF8070;
+      --tip-bg:#E3E8F0; --tip-ink:#0F1726;
+      --series:#7AA7FF,#3FCFB7,#A98BFF,#F2B74A,#FF8070,#62B6F2,#E47FB1,#9CCB63,#9AA7BF,#4FD3DF;
+      --heat-0:#1F2C43; --heat-1:#5C2F3C; --heat-2:#D0544A; --heat-3:#FFB3A6;
+      --search-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 36px -14px rgba(0,0,0,.7);
+    }
+
     *{box-sizing:border-box}
-    html,body{min-height:100%}
-    body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
-    button,input,select{font:inherit}
-    button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-    .wrap{max-width:1400px;margin:24px auto 64px;padding:0 20px}
-    header{display:flex;gap:20px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
-    h1{margin:0 0 8px;font-size:30px;line-height:1.15}
-    .sub{max-width:850px;color:var(--muted);font-size:14px;line-height:1.5}
-    .links{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .links a{color:var(--ink);text-decoration:none;font-size:13px}
-    .links a:hover{color:var(--accent)}
-    .site-tabs{display:flex;gap:6px;margin:22px 0 18px;border-bottom:1px solid var(--border)}
-    .site-tabs a{position:relative;padding:10px 14px;color:var(--muted);font-size:14px;font-weight:700;text-decoration:none}
-    .site-tabs a:hover{color:var(--ink)}
-    .site-tabs a.active{color:var(--ink)}
-    .site-tabs a.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--accent)}
-    .panel{background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,0));border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
-    .panel-body{padding:16px}
-    .section-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
-    .section-title h2,.section-title h3{margin:0;font-size:15px}
-    .section-title p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.45}
-    .metric-guide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px}
-    .metric-definition{padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:12px}
-    .metric-definition strong{display:block;font-size:13px;margin-bottom:4px}
-    .metric-definition span{color:var(--muted);font-size:12px;line-height:1.4}
-    .metric-dot{display:inline-block;width:8px;height:8px;margin-right:7px;border-radius:50%}
-    .toolbar{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
-    .field{display:flex;flex-direction:column;gap:5px;min-width:150px}
-    .field.grow{flex:1 1 310px}
-    .field label{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
-    .input,.select{width:100%;height:38px;padding:0 10px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:#0F1632;color:var(--ink)}
-    .select{cursor:pointer}
-    .btn{height:38px;padding:0 13px;border:0;border-radius:9px;background:var(--accent);color:#071020;font-weight:750;cursor:pointer;white-space:nowrap}
-    .btn:hover{filter:brightness(1.08)}
-    .btn.ghost{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,.14)}
-    .btn.small{height:30px;padding:0 9px;font-size:11px}
-    .btn:disabled{cursor:not-allowed;opacity:.45;filter:none}
-    .data-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:12px}
-    .data-file{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;background:var(--chip);font-size:12px}
-    .data-file strong{font-size:11px;color:var(--muted)}
-    .data-file input{display:none}
-    .data-file button{border:0;background:none;color:var(--accent);cursor:pointer;padding:0}
-    .status{margin-left:auto;color:var(--muted);font-size:12px}
-    .status.ready{color:#79F2C0}
-    .picker{position:relative}
-    .suggestions{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:50;display:none;max-height:300px;overflow:auto;padding:6px;background:#101733;border:1px solid rgba(255,255,255,.16);border-radius:10px;box-shadow:var(--shadow)}
-    .suggestions.open{display:block}
-    .suggestion{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;padding:8px;border:0;border-radius:7px;background:transparent;color:var(--ink);text-align:left;cursor:pointer}
-    .suggestion:hover,.suggestion.active{background:rgba(76,154,255,.14)}
-    .badges{display:flex;gap:4px;flex:0 0 auto}
-    .badge{padding:2px 6px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--muted);font-size:9px;font-weight:800;text-transform:uppercase}
-    .badge.popular{color:#9CCBFF;background:rgba(76,154,255,.15)}
-    .badge.zero{color:#FFB5A4;background:rgba(255,86,48,.14)}
-    .selected-chips{display:flex;gap:7px;flex-wrap:wrap;min-height:34px;margin-top:12px}
-    .selected-chip{display:inline-flex;align-items:center;gap:7px;max-width:100%;padding:7px 9px;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:var(--chip);font-size:12px}
-    .selected-chip .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
-    .selected-chip .text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .selected-chip button{border:0;background:none;color:var(--muted);cursor:pointer;padding:0 2px;font-size:14px}
-    .selected-chip button:hover{color:var(--ink)}
-    .match-info{margin-top:10px;color:var(--muted);font-size:12px}
-    .match-details{margin-top:8px;padding:8px 10px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:9px;color:var(--muted);font-size:11px}
-    .match-details summary{cursor:pointer;color:var(--ink)}
-    .match-list{max-height:140px;overflow:auto;margin:8px 0 0;padding-left:20px;columns:2}
-    .match-list li{margin:3px 0;break-inside:avoid}
-    .filter-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(200px,.7fr);gap:14px}
-    .date-panel{padding:12px;background:var(--card);border:1px solid var(--border);border-radius:12px}
-    .preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-    .preset.active{background:var(--accent);color:#071020;border-color:transparent}
-    .date-selects{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .toggle-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:12px}
-    .toggle-row label{display:flex;align-items:center;gap:6px;cursor:pointer}
-    input[type="checkbox"]{accent-color:var(--accent)}
-    .kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:16px 0}
-    .kpi{min-height:94px;padding:13px;background:var(--card);border:1px solid var(--border);border-radius:12px}
-    .kpi .label{color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
-    .kpi .value{margin-top:9px;font-size:21px;font-weight:800;overflow-wrap:anywhere}
-    .kpi .note{margin-top:4px;color:var(--muted);font-size:10px;line-height:1.35}
-    .charts{display:grid;gap:16px}
-    .chart-card{position:relative;min-width:0}
-    .chart-card .chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px 14px 0}
-    .chart-card h3{margin:0;font-size:14px}
-    .chart-card .description{margin:4px 0 0;color:var(--muted);font-size:11px;line-height:1.4}
-    .chart-actions{display:flex;gap:5px;flex:0 0 auto}
-    .chart{height:390px;width:100%}
-    .chart.rank{height:360px}
-    .chart.zero{height:350px}
-    .chart-placeholder{display:flex;height:280px;align-items:center;justify-content:center;padding:24px;color:var(--muted);font-size:13px;text-align:center}
-    .chart-card.is-fullscreen{position:fixed;inset:14px;z-index:1000;background:var(--bg);overflow:auto}
-    .chart-card.is-fullscreen .chart{height:calc(100vh - 100px)}
-    .table-panel{margin-top:16px}
-    .table-wrap{overflow:auto;border-radius:0 0 var(--radius) var(--radius)}
-    table{width:100%;border-collapse:collapse;font-size:12px}
-    th,td{padding:10px 12px;border-top:1px solid var(--border);text-align:right;white-space:nowrap}
-    th{position:sticky;top:0;background:#151D3E;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em}
-    th:first-child,td:first-child{text-align:left}
-    tbody tr:hover{background:rgba(76,154,255,.06)}
-    .keyword-cell{display:flex;align-items:center;gap:8px;max-width:300px;white-space:normal}
-    .keyword-cell .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
-    .outside{color:var(--muted)}
-    .positive{color:#79F2C0}.negative{color:#FF8F73}
-    .empty-state{padding:28px;text-align:center;color:var(--muted)}
-    .toast{position:fixed;left:50%;bottom:24px;z-index:2000;transform:translate(-50%,20px);opacity:0;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:#172044;color:var(--ink);box-shadow:var(--shadow);font-size:12px;transition:.2s}
-    .toast.show{transform:translate(-50%,0);opacity:1}
+    html{-webkit-text-size-adjust:100%}
+    body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.5;font-feature-settings:"tnum" 1}
+    a{color:var(--blue)}
+    button,input,select{font:inherit;color:inherit}
+    :focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
     .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-    @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.filter-grid{grid-template-columns:1fr}.metric-guide{grid-template-columns:1fr}}
-    @media(max-width:700px){
-      .wrap{margin:14px auto 40px;padding:0 10px}h1{font-size:24px}.kpi-grid{grid-template-columns:repeat(2,1fr)}
-      .toolbar{align-items:stretch}.field,.field.grow{flex:1 1 100%;min-width:100%}.date-selects{grid-template-columns:1fr}
-      .chart{height:340px}.chart.rank,.chart.zero{height:320px}.chart-card .chart-head{flex-direction:column}.match-list{columns:1}
+    .wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+
+    .topbar{border-bottom:1px solid var(--line);background:var(--surface)}
+    .topbar .wrap{display:flex;align-items:center;gap:24px;min-height:60px}
+    .brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:800;font-size:17px;letter-spacing:-.01em;white-space:nowrap}
+    .brand svg{width:22px;height:22px;color:var(--blue)}
+    .site-tabs{display:flex;gap:4px;align-self:stretch}
+    .site-tabs a{display:flex;align-items:center;padding:0 12px;color:var(--ink-2);font-weight:600;font-size:15px;text-decoration:none;border-bottom:3px solid transparent;margin-bottom:-1px}
+    .site-tabs a:hover{color:var(--ink)}
+    .site-tabs a.active{color:var(--ink);border-bottom-color:var(--blue)}
+    .top-links{margin-left:auto;display:flex;align-items:center;gap:6px}
+    .icon-link{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 10px;border-radius:8px;color:var(--ink-2);text-decoration:none;font-size:14px;font-weight:600;background:none;border:0;cursor:pointer}
+    .icon-link:hover{background:var(--sunken);color:var(--ink)}
+    .icon-link svg{width:18px;height:18px}
+
+    .page-head{padding:40px 0 24px}
+    .page-head h1{margin:0 0 8px;font-size:clamp(30px,3.6vw,44px);line-height:1.08;letter-spacing:-.025em;font-weight:800}
+    .page-head p{margin:0;color:var(--ink-2);max-width:66ch;font-size:17px}
+
+    /* Focus panel: the search is the hero of this page */
+    .focus{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--search-shadow);padding:20px 22px}
+    .picker{position:relative}
+    .search-field{display:flex;align-items:center;gap:12px;min-height:60px;padding:0 16px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper)}
+    .search-field:focus-within{border-color:var(--blue)}
+    .search-field svg{width:22px;height:22px;color:var(--muted);flex:0 0 auto}
+    .search-field input{flex:1 1 auto;min-width:0;height:56px;border:0;background:transparent;font-size:20px;font-weight:600;outline:none}
+    .search-field input::placeholder{color:var(--muted);font-weight:500}
+    .search-field .btn{flex:0 0 auto}
+    .suggestions{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:50;display:none;max-height:320px;overflow:auto;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--search-shadow)}
+    .suggestions.open{display:block}
+    .suggestion{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border:0;border-radius:8px;background:transparent;text-align:left;cursor:pointer;font-size:15px}
+    .suggestion:hover,.suggestion.active{background:var(--blue-soft)}
+    .badges{display:flex;gap:4px;flex:0 0 auto}
+    .badge{padding:2px 8px;border-radius:999px;background:var(--sunken);color:var(--ink-2);font-size:12px;font-weight:700}
+    .badge.popular{color:var(--blue);background:var(--blue-soft)}
+    .badge.zero{color:var(--coral);background:var(--coral-soft)}
+    .selected-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+    .selected-chips:empty{display:none}
+    .selected-chip{display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:6px 8px 6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:15px;font-weight:600}
+    .selected-chip .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+    .selected-chip .text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .selected-chip button{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:50%;background:none;color:var(--muted);cursor:pointer;font-size:17px;line-height:1}
+    .selected-chip button:hover{background:var(--sunken);color:var(--ink)}
+    .options{display:flex;gap:12px 20px;align-items:flex-end;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid var(--grid)}
+    .field{display:flex;flex-direction:column;gap:6px;min-width:0}
+    .field label,.field .flabel{color:var(--ink-2);font-size:14px;font-weight:600}
+    .select{height:40px;padding:0 34px 0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23626F86' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;appearance:none;-webkit-appearance:none;cursor:pointer;font-size:15px}
+    .preset-row{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;height:40px}
+    .preset{border:0;border-right:1px solid var(--line);background:var(--surface);padding:0 14px;font-weight:700;font-size:14px;cursor:pointer;color:var(--ink-2)}
+    .preset:last-child{border-right:0}
+    .preset:hover{background:var(--sunken)}
+    .preset.active{background:var(--blue);color:var(--blue-ink)}
+    .date-selects{display:flex;gap:8px;align-items:center}
+    .toggle{display:flex;align-items:center;gap:8px;height:40px;font-size:15px;font-weight:600;color:var(--ink-2);cursor:pointer}
+    input[type="checkbox"]{accent-color:var(--blue);width:17px;height:17px}
+    .options .spacer{flex:1 1 auto}
+    .match-info{margin-top:12px;color:var(--ink-2);font-size:14px}
+    .match-details{margin-top:8px;font-size:14px;color:var(--ink-2)}
+    .match-details summary{cursor:pointer;color:var(--blue);font-weight:600}
+    .match-list{max-height:160px;overflow:auto;margin:8px 0 0;padding-left:20px;columns:3}
+    .match-list li{margin:3px 0;break-inside:avoid}
+
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid transparent;background:var(--blue);color:var(--blue-ink);font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap}
+    .btn:hover{filter:brightness(1.07)}
+    .btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+    .btn.ghost:hover{background:var(--sunken);filter:none}
+    .btn.small{height:34px;padding:0 12px;font-size:14px}
+    .btn:disabled{cursor:not-allowed;opacity:.45;filter:none}
+
+    /* Summary strip */
+    .kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin:28px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .kpi{padding:16px 18px 16px 0}
+    .kpi + .kpi{padding-left:18px;border-left:1px solid var(--grid)}
+    .kpi .label{color:var(--ink-2);font-size:14px;font-weight:600}
+    .kpi .value{margin-top:4px;font-size:28px;line-height:1.15;font-weight:800;letter-spacing:-.02em;overflow-wrap:anywhere}
+    .kpi .note{margin-top:4px;color:var(--muted);font-size:13px;line-height:1.35}
+    .positive{color:var(--up)} .negative{color:var(--down)}
+
+    .charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+    .chart-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;position:relative;min-width:0}
+    #shareCard{grid-column:1 / -1}
+    .chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 18px 0}
+    .chart-head h3{margin:0;font-size:17px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+    .chart-head h3 .metric-dot{width:10px;height:10px;border-radius:2px;flex:0 0 auto}
+    .chart-head .description{margin:2px 0 0;color:var(--muted);font-size:14px;max-width:62ch}
+    .chart-actions{display:flex;gap:6px;flex:0 0 auto}
+    .chart{height:400px;width:100%}
+    .chart.rank,.chart.zero{height:360px}
+    .chart-placeholder{display:flex;height:260px;align-items:center;justify-content:center;padding:24px;color:var(--muted);font-size:15px;text-align:center}
+    .chart-card.is-fullscreen{position:fixed;inset:12px;z-index:1000;overflow:auto;box-shadow:0 0 0 100vmax rgba(9,15,28,.55)}
+    .chart-card.is-fullscreen .chart{height:calc(100vh - 110px)}
+
+    .table-panel{margin-top:20px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+    .table-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:16px 18px 12px}
+    .table-head h3{margin:0;font-size:17px}
+    .table-head p{margin:2px 0 0;color:var(--muted);font-size:14px}
+    .table-wrap{overflow:auto;border-radius:0 0 12px 12px}
+    table{width:100%;border-collapse:collapse;font-size:15px}
+    th,td{padding:11px 14px;border-top:1px solid var(--grid);text-align:right;white-space:nowrap}
+    th{position:sticky;top:0;background:var(--surface);color:var(--ink-2);font-size:13px;font-weight:700}
+    th:first-child,td:first-child{text-align:left}
+    tbody tr:hover{background:var(--sunken)}
+    .keyword-cell{display:flex;align-items:center;gap:10px;max-width:320px;white-space:normal;font-weight:600}
+    .keyword-cell .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+    .outside{color:var(--muted)}
+    .empty-state{padding:28px;text-align:center !important;color:var(--muted)}
+
+    .data-row{display:flex;gap:10px 16px;align-items:center;flex-wrap:wrap;margin-top:40px;padding:16px 18px;background:var(--sunken);border-radius:12px;font-size:14px}
+    .data-row .title{font-weight:700;color:var(--ink)}
+    .data-file{display:flex;align-items:center;gap:8px;color:var(--ink-2)}
+    .data-file input{display:none}
+    .data-file button{border:0;background:none;color:var(--blue);cursor:pointer;padding:0;font-weight:700}
+    .status{margin-left:auto;color:var(--muted)}
+    .status.ready{color:var(--ink-2)}
+
+    footer{margin-top:56px;border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:14px}
+    footer .wrap{display:flex;gap:12px 24px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+    footer a{color:var(--ink-2);text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+    footer img{height:18px;width:18px}
+    .toast{position:fixed;left:50%;bottom:24px;z-index:2000;transform:translate(-50%,20px);opacity:0;padding:10px 16px;border-radius:10px;background:var(--tip-bg);color:var(--tip-ink);font-size:14px;font-weight:600;transition:.2s;pointer-events:none}
+    .toast.show{transform:translate(-50%,0);opacity:1}
+
+    @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.kpi:nth-child(4){border-left:0;padding-left:0}.kpi:nth-child(n+4){border-top:1px solid var(--grid)}.charts{grid-template-columns:1fr}}
+    @media(max-width:720px){
+      .wrap{padding:0 16px}
+      .topbar .wrap{gap:12px;flex-wrap:wrap;padding-top:8px}
+      .site-tabs{order:3;width:100%;min-height:44px}
+      .site-tabs a{padding:0 10px}
+      .icon-link .lbl{display:none}
+      .page-head{padding:28px 0 18px}
+      .page-head p{font-size:16px}
+      .focus{padding:14px}
+      .search-field{min-height:52px;padding:0 12px}
+      .search-field input{height:48px;font-size:17px}
+      .search-field .btn .lbl{display:none}
+      .kpi-grid{grid-template-columns:repeat(2,1fr)}
+      .kpi,.kpi + .kpi{padding:14px 12px 14px 0;border-left:0}
+      .kpi:nth-child(even){padding-left:12px;border-left:1px solid var(--grid)}
+      .kpi:nth-child(n+3){border-top:1px solid var(--grid)}
+      .kpi .value{font-size:23px}
+      .options .field,.options .preset-row{width:100%}
+      .preset{flex:1 1 0}
+      .date-selects .field{flex:1 1 0}
+      .chart{height:340px}.chart.rank,.chart.zero{height:320px}
+      .chart-head{flex-direction:column}
+      .match-list{columns:1}
       .status{width:100%;margin-left:0}
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>Keyword Explorer</h1>
-        <div class="sub">Analyze one query or compare a focused set using Marketplace search share, direct top-500 rank, and zero-result volume.</div>
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="./index.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+        Marketplace Keywords
+      </a>
+      <nav class="site-tabs" aria-label="Primary navigation">
+        <a href="./index.html">Overview</a>
+        <a class="active" href="./keyword-explorer.html" aria-current="page">Keyword Explorer</a>
+      </nav>
+      <div class="top-links">
+        <a class="icon-link" href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12z"/></svg>
+          <span class="lbl">GitHub</span>
+        </a>
+        <button id="sharePage" class="icon-link" type="button" aria-label="Copy a link to this view">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span class="lbl">Copy link</span>
+        </button>
       </div>
-      <div class="links">
-        <a href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="https://actonic.de/en/" target="_blank" rel="noopener noreferrer">Powered by Actonic</a>
-        <button id="sharePage" class="btn ghost">Copy share link</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="page-head">
+      <h1>Keyword Explorer</h1>
+      <p>Follow one search query, or compare a few, month by month: how much of all Marketplace search it gets, where it ranks in the top 500, and how often it finds no apps.</p>
+    </div>
+
+    <section class="focus" aria-labelledby="focusTitle">
+      <h2 id="focusTitle" class="visually-hidden">Choose keywords</h2>
+      <div class="picker">
+        <label for="keywordInput" class="visually-hidden">Keywords or phrases</label>
+        <div class="search-field">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+          <input id="keywordInput" type="text" autocomplete="off" placeholder="Search queries, then press Enter…" />
+          <button id="clearSelection" class="btn ghost small" type="button">Clear all</button>
+        </div>
+        <div id="suggestions" class="suggestions" role="listbox" aria-label="Keyword suggestions"></div>
       </div>
-    </header>
+      <div id="selectedChips" class="selected-chips" aria-live="polite"></div>
+      <div id="matchInfo" class="match-info">Select at least one keyword.</div>
+      <details id="matchDetails" class="match-details" hidden>
+        <summary id="matchSummary">Matched queries</summary>
+        <ul id="matchList" class="match-list"></ul>
+      </details>
 
-    <nav class="site-tabs" aria-label="Primary navigation">
-      <a href="./index.html">Overview</a>
-      <a class="active" href="./keyword-explorer.html" aria-current="page">Keyword Explorer</a>
-    </nav>
-
-    <section class="metric-guide" aria-label="Metric definitions">
-      <div class="metric-definition"><strong><span class="metric-dot" style="background:#4C9AFF"></span>Search share</strong><span>Percentage of all Marketplace searches, including searches beyond the top 500.</span></div>
-      <div class="metric-definition"><strong><span class="metric-dot" style="background:#B8A1FF"></span>Marketplace Top-500 Rank</strong><span>Direct rank supplied by the monthly Marketplace report. Missing rows are outside the top 500.</span></div>
-      <div class="metric-definition"><strong><span class="metric-dot" style="background:#FF7452"></span>Zero-result searches</strong><span>Raw count from the zero-result report. It is not a rate and is never divided by search share.</span></div>
-    </section>
-
-    <section class="panel" aria-labelledby="focusTitle">
-      <div class="panel-body">
-        <div class="section-title">
-          <div><h2 id="focusTitle">Define your focus</h2><p>Choose exact Marketplace queries, or aggregate every query containing specified words.</p></div>
+      <div class="options">
+        <div class="field">
+          <label for="matchMode">Match</label>
+          <select id="matchMode" class="select">
+            <option value="exact">Exact queries</option>
+            <option value="contains">Queries containing words</option>
+          </select>
         </div>
-
-        <div class="data-row">
-          <div class="data-file"><strong>Popular report</strong><button id="popularFileButton" type="button">Default file</button><input id="popularFile" type="file" accept=".xlsx,.xls" /></div>
-          <div class="data-file"><strong>Zero-result report</strong><button id="zeroFileButton" type="button">Default file</button><input id="zeroFile" type="file" accept=".xlsx,.xls" /></div>
-          <button id="reloadDefaults" class="btn ghost small" type="button">Reload defaults</button>
-          <span id="status" class="status">Loading libraries…</span>
+        <div id="containsLogicField" class="field" style="display:none">
+          <label for="containsLogic">Words must match</label>
+          <select id="containsLogic" class="select">
+            <option value="any">Any selected word</option>
+            <option value="all">All selected words</option>
+          </select>
         </div>
-
-        <div class="filter-grid">
-          <div>
-            <div class="toolbar">
-              <div class="field" style="min-width:170px">
-                <label for="matchMode">Selection mode</label>
-                <select id="matchMode" class="select">
-                  <option value="exact">Exact queries</option>
-                  <option value="contains">Queries containing words</option>
-                </select>
-              </div>
-              <div id="containsLogicField" class="field" style="min-width:150px;display:none">
-                <label for="containsLogic">Words must match</label>
-                <select id="containsLogic" class="select">
-                  <option value="any">Any selected word</option>
-                  <option value="all">All selected words</option>
-                </select>
-              </div>
-              <div id="compareModeField" class="field" style="min-width:165px">
-                <label for="compareMode">Display</label>
-                <select id="compareMode" class="select">
-                  <option value="separate">Compare separately</option>
-                  <option value="group">Treat as one group</option>
-                </select>
-              </div>
-              <div class="field grow picker">
-                <label for="keywordInput">Keywords or phrases</label>
-                <input id="keywordInput" class="input" type="text" autocomplete="off" placeholder="Search queries, then press Enter…" />
-                <div id="suggestions" class="suggestions" role="listbox" aria-label="Keyword suggestions"></div>
-              </div>
-              <button id="clearSelection" class="btn ghost" type="button">Clear</button>
-            </div>
-            <div id="selectedChips" class="selected-chips" aria-live="polite"></div>
-            <div id="matchInfo" class="match-info">Select at least one keyword.</div>
-            <details id="matchDetails" class="match-details" hidden>
-              <summary id="matchSummary">Matched queries</summary>
-              <ul id="matchList" class="match-list"></ul>
-            </details>
-          </div>
-
-          <div class="date-panel">
-            <div class="field" style="margin-bottom:8px"><label>Time range</label></div>
-            <div class="preset-row">
-              <button class="btn ghost small preset" data-months="6" type="button">6M</button>
-              <button class="btn ghost small preset active" data-months="12" type="button">12M</button>
-              <button class="btn ghost small preset" data-months="24" type="button">24M</button>
-              <button class="btn ghost small preset" data-months="all" type="button">All</button>
-            </div>
-            <div class="date-selects">
-              <div class="field"><label for="fromMonth">From</label><select id="fromMonth" class="select"></select></div>
-              <div class="field"><label for="toMonth">To</label><select id="toMonth" class="select"></select></div>
-            </div>
-            <div class="toggle-row">
-              <label><input id="smoothSeries" type="checkbox" /> 3-month average</label>
-              <button id="exportCsv" class="btn ghost small" type="button">Export CSV</button>
-            </div>
+        <div id="compareModeField" class="field">
+          <label for="compareMode">Show as</label>
+          <select id="compareMode" class="select">
+            <option value="separate">Separate lines</option>
+            <option value="group">One combined group</option>
+          </select>
+        </div>
+        <div class="field">
+          <span class="flabel" id="periodLabel">Period</span>
+          <div class="preset-row" role="group" aria-labelledby="periodLabel">
+            <button class="preset" data-months="6" type="button">6M</button>
+            <button class="preset active" data-months="12" type="button">12M</button>
+            <button class="preset" data-months="24" type="button">24M</button>
+            <button class="preset" data-months="all" type="button">All</button>
           </div>
         </div>
+        <div class="date-selects">
+          <div class="field"><label for="fromMonth">From</label><select id="fromMonth" class="select"></select></div>
+          <div class="field"><label for="toMonth">To</label><select id="toMonth" class="select"></select></div>
+        </div>
+        <label class="toggle"><input id="smoothSeries" type="checkbox" /> 3-month average</label>
       </div>
     </section>
 
@@ -227,37 +296,52 @@
       <div class="kpi"><div class="label">Latest search share</div><div id="kpiShare" class="value">—</div><div id="kpiShareNote" class="note">Percentage of all searches</div></div>
       <div class="kpi"><div class="label">Share change</div><div id="kpiDelta" class="value">—</div><div class="note">Versus previous month</div></div>
       <div class="kpi"><div class="label">Marketplace rank</div><div id="kpiRank" class="value">—</div><div id="kpiRankNote" class="note">Direct top-500 rank</div></div>
-      <div class="kpi"><div class="label">Zero results</div><div id="kpiZero" class="value">—</div><div class="note">Raw count in selected period</div></div>
+      <div class="kpi"><div class="label">Zero results</div><div id="kpiZero" class="value">—</div><div class="note">Searches in selected period</div></div>
       <div class="kpi"><div class="label">Peak search share</div><div id="kpiPeak" class="value">—</div><div id="kpiPeakNote" class="note">Within selected period</div></div>
     </section>
 
-    <main class="charts">
-      <section id="shareCard" class="panel chart-card">
-        <div class="chart-head"><div><h3>Search Share Over Time</h3><p class="description">Percentage of all Marketplace searches. Missing popular-report rows are rendered as 0%.</p></div><div class="chart-actions"><button class="btn ghost small" data-chart-action="download" data-chart="shareChart">PNG</button><button class="btn ghost small" data-chart-action="fullscreen" data-chart="shareChart">Fullscreen</button></div></div>
-        <div id="shareChart" class="chart"><div class="chart-placeholder">Select keywords to render this chart.</div></div>
+    <div class="charts">
+      <section id="shareCard" class="chart-card" aria-labelledby="shareTitle">
+        <div class="chart-head"><div><h3 id="shareTitle">Share of all searches</h3><p class="description">Percentage of all Marketplace searches, including searches beyond the top 500. A month missing from the report counts as 0%.</p></div><div class="chart-actions"><button class="btn ghost small" type="button" data-chart-action="download" data-chart="shareChart">PNG</button><button class="btn ghost small" type="button" data-chart-action="fullscreen" data-chart="shareChart">Full screen</button></div></div>
+        <div id="shareChart" class="chart"><div class="chart-placeholder">Pick a keyword above to see its share of searches.</div></div>
       </section>
 
-      <section id="rankCard" class="panel chart-card">
-        <div class="chart-head"><div><h3>Marketplace Top-500 Rank Over Time</h3><p class="description">Direct monthly Marketplace rank. Rank #1 is best; missing popular-report rows appear as Outside top 500.</p></div><div class="chart-actions"><button class="btn ghost small" data-chart-action="download" data-chart="rankChart">PNG</button><button class="btn ghost small" data-chart-action="fullscreen" data-chart="rankChart">Fullscreen</button></div></div>
-        <div id="rankChart" class="chart rank"><div class="chart-placeholder">Exact-query selections display their direct Marketplace ranks here.</div></div>
+      <section id="rankCard" class="chart-card" aria-labelledby="rankTitle">
+        <div class="chart-head"><div><h3 id="rankTitle">Top-500 rank</h3><p class="description">Rank from the monthly report. #1 is best; months without the query show as outside the top 500.</p></div><div class="chart-actions"><button class="btn ghost small" type="button" data-chart-action="download" data-chart="rankChart">PNG</button><button class="btn ghost small" type="button" data-chart-action="fullscreen" data-chart="rankChart">Full screen</button></div></div>
+        <div id="rankChart" class="chart rank"><div class="chart-placeholder">Exact queries show their monthly rank here.</div></div>
       </section>
 
-      <section id="zeroCard" class="panel chart-card">
-        <div class="chart-head"><div><h3>Zero-Result Searches Over Time</h3><p class="description">Raw zero-result search counts. This metric is separate from search share and is not a rate.</p></div><div class="chart-actions"><button class="btn ghost small" data-chart-action="download" data-chart="zeroChart">PNG</button><button class="btn ghost small" data-chart-action="fullscreen" data-chart="zeroChart">Fullscreen</button></div></div>
-        <div id="zeroChart" class="chart zero"><div class="chart-placeholder">Select keywords to render this chart.</div></div>
+      <section id="zeroCard" class="chart-card" aria-labelledby="zeroTitle">
+        <div class="chart-head"><div><h3 id="zeroTitle">Searches with no results</h3><p class="description">How many times the query returned no apps. This is a count, not a rate.</p></div><div class="chart-actions"><button class="btn ghost small" type="button" data-chart-action="download" data-chart="zeroChart">PNG</button><button class="btn ghost small" type="button" data-chart-action="fullscreen" data-chart="zeroChart">Full screen</button></div></div>
+        <div id="zeroChart" class="chart zero"><div class="chart-placeholder">Pick a keyword above to see its zero-result searches.</div></div>
       </section>
-    </main>
+    </div>
 
-    <section class="panel table-panel" aria-labelledby="comparisonTitle">
-      <div class="panel-body" style="padding-bottom:10px"><div class="section-title" style="margin:0"><div><h3 id="comparisonTitle">Selected Keyword Comparison</h3><p>Rank is always shown per exact Marketplace query and is never combined with search share.</p></div></div></div>
+    <section class="table-panel" aria-labelledby="comparisonTitle">
+      <div class="table-head"><div><h3 id="comparisonTitle">Comparison</h3><p>Rank is shown per exact query and never combined across a group.</p></div><button id="exportCsv" class="btn ghost small" type="button">Export CSV</button></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Keyword / group</th><th>Matches</th><th>Latest share</th><th>Share change</th><th>Current rank</th><th>Best rank</th><th>Peak share</th><th>Zero results</th></tr></thead>
-          <tbody id="summaryBody"><tr><td colspan="8" class="empty-state">Select keywords to see their comparison.</td></tr></tbody>
+          <thead><tr><th>Keyword or group</th><th>Queries</th><th>Latest share</th><th>Share change</th><th>Current rank</th><th>Best rank</th><th>Peak share</th><th>Zero results</th></tr></thead>
+          <tbody id="summaryBody"><tr><td colspan="8" class="empty-state">Pick keywords above to compare them here.</td></tr></tbody>
         </table>
       </div>
     </section>
-  </div>
+
+    <section class="data-row" aria-label="Data source">
+      <span class="title">Data</span>
+      <div class="data-file">Popular report: <button id="popularFileButton" type="button">Repository file</button><input id="popularFile" type="file" accept=".xlsx,.xls" /></div>
+      <div class="data-file">Zero-result report: <button id="zeroFileButton" type="button">Repository file</button><input id="zeroFile" type="file" accept=".xlsx,.xls" /></div>
+      <button id="reloadDefaults" class="btn ghost small" type="button">Reload repository data</button>
+      <span id="status" class="status" role="status">Loading libraries…</span>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>Data: Atlassian Marketplace search reports. Not affiliated with Atlassian.</span>
+      <a href="https://actonic.de/en/" target="_blank" rel="noopener noreferrer"><img src="img/actonic.svg" alt="" aria-hidden="true">Powered by Actonic</a>
+    </div>
+  </footer>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -275,7 +359,12 @@
     ];
     const DEFAULT_SOURCE = ['./data/source_search_keywords_marketplace.xlsx','./source_search_keywords_marketplace.xlsx'];
     const DEFAULT_ZERO = ['./data/zero_result_keywords_marketplace.xlsx','./zero_result_keywords_marketplace.xlsx'];
-    const COLORS = ['#4C9AFF','#36B37E','#B8A1FF','#FFAB00','#FF7452','#00C7E6','#F47BBA','#79F2C0'];
+    const FONT = "'Schibsted Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif";
+    function T(){
+      const s=getComputedStyle(document.documentElement),v=(n)=>s.getPropertyValue(n).trim();
+      return {ink:v('--ink'),ink2:v('--ink-2'),muted:v('--muted'),line:v('--line'),grid:v('--grid'),surface:v('--surface'),blue:v('--blue'),blueSoft:v('--blue-soft'),coral:v('--coral'),tipBg:v('--tip-bg'),tipInk:v('--tip-ink'),series:v('--series').split(',').map(x=>x.trim()).filter(Boolean)};
+    }
+    let COLORS = T().series;
     const $ = (selector)=>document.querySelector(selector);
     const state = {
       popular:[], zero:[], months:[], allKeywords:[], selections:[],
@@ -334,11 +423,11 @@
       } else if(state.matchMode==='exact'){
         state.selections=state.selections.map(item=>names.get(normalize(item))||item).filter((item,index,array)=>array.findIndex(x=>normalize(x)===normalize(item))===index);
       }
-      populateDateControls(); state.dataReady=true; renderControls(); renderAll(); setStatus(`Ready · ${state.months.length} months · ${state.popular.length.toLocaleString()} popular rows · ${state.zero.length.toLocaleString()} zero-result rows`,true);
+      populateDateControls(); state.dataReady=true; renderControls(); renderAll(); setStatus(`${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}, ${state.months.length} months`,true);
     }
     function populateDateControls(){
       const from=$('#fromMonth'),to=$('#toMonth'); from.textContent='';to.textContent='';
-      state.months.forEach((month,index)=>{ for(const select of [from,to]){ const option=document.createElement('option'); option.value=String(index);option.textContent=month;select.appendChild(option); } });
+      state.months.forEach((month,index)=>{ for(const select of [from,to]){ const option=document.createElement('option'); option.value=String(index);option.textContent=monthShort(month).replace(' ',' 20');select.appendChild(option); } });
       const fromUrl=state.months.indexOf(state.urlFrom),toUrl=state.months.indexOf(state.urlTo);
       state.to=toUrl>=0?toUrl:Math.max(0,state.months.length-1); state.from=fromUrl>=0?fromUrl:Math.max(0,state.to-11);
       from.value=String(state.from);to.value=String(state.to); syncPresetButtons();
@@ -346,8 +435,8 @@
     async function loadDefaults(){
       setStatus('Loading default Marketplace reports…');
       const [popularResult,zeroResult]=await Promise.allSettled([fetchFirst(DEFAULT_SOURCE),fetchFirst(DEFAULT_ZERO)]);
-      if(popularResult.status==='fulfilled'){ state.popular=parsePopular(popularResult.value); $('#popularFileButton').textContent=`Default · ${state.popular.length.toLocaleString()} rows`; }
-      if(zeroResult.status==='fulfilled'){ state.zero=parseZero(zeroResult.value); $('#zeroFileButton').textContent=`Default · ${state.zero.length.toLocaleString()} rows`; }
+      if(popularResult.status==='fulfilled'){ state.popular=parsePopular(popularResult.value); $('#popularFileButton').textContent=`Repository file · ${state.popular.length.toLocaleString('en-US')} rows`; }
+      if(zeroResult.status==='fulfilled'){ state.zero=parseZero(zeroResult.value); $('#zeroFileButton').textContent=`Repository file · ${state.zero.length.toLocaleString('en-US')} rows`; }
       if(!state.popular.length) throw new Error('Popular report could not be loaded'); finalizeData();
     }
     async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); if(type==='popular'){state.popular=parsePopular(buffer);$('#popularFileButton').textContent=`${file.name} · ${state.popular.length.toLocaleString()} rows`;}else{state.zero=parseZero(buffer);$('#zeroFileButton').textContent=`${file.name} · ${state.zero.length.toLocaleString()} rows`;} finalizeData(); }
@@ -379,7 +468,7 @@
       let share=aggregate(state.popular,'percentage',definition,months),zero=aggregate(state.zero,'count',definition,months); const rawShare=share.slice();
       const latest=rawShare.at(-1)||0,previous=rawShare.length>1?rawShare.at(-2):0,peak=Math.max(0,...rawShare),peakIndex=rawShare.indexOf(peak);
       const rank=definition.keywords.length===1?ranksFor(definition.keywords[0],months):[]; const ranked=rank.filter(Number.isFinite);
-      return {definition,share,zero,latest,delta:latest-previous,peak,peakMonth:peak>0&&peakIndex>=0?months[peakIndex]:'—',currentRank:rank.length?rank.at(-1):null,bestRank:ranked.length?Math.min(...ranked):null,zeroTotal:zero.reduce((sum,value)=>sum+value,0)};
+      return {definition,share,zero,latest,delta:Math.abs(latest-previous)<0.005?0:latest-previous,peak,peakMonth:peak>0&&peakIndex>=0?monthShort(months[peakIndex]):'—',currentRank:rank.length?rank.at(-1):null,bestRank:ranked.length?Math.min(...ranked):null,zeroTotal:zero.reduce((sum,value)=>sum+value,0)};
     }
     function renderControls(){
       $('#matchMode').value=state.matchMode;$('#containsLogic').value=state.containsLogic;$('#compareMode').value=state.compareMode;$('#smoothSeries').checked=state.smooth;
@@ -401,33 +490,35 @@
     function closeSuggestions(){ $('#suggestions').classList.remove('open'); }
     function ensureChart(id){ const el=document.getElementById(id); el.querySelector('.chart-placeholder')?.remove(); if(!state.charts[id]||state.charts[id].isDisposed?.()){state.charts[id]=echarts.init(el);state.charts[id].group='keywordExplorer';} return state.charts[id]; }
     function disposeChart(id,message){ if(state.charts[id]){state.charts[id].dispose();state.charts[id]=null;} const el=document.getElementById(id);el.textContent='';const placeholder=document.createElement('div');placeholder.className='chart-placeholder';placeholder.textContent=message;el.appendChild(placeholder); }
-    function commonOption(months){ return {backgroundColor:'transparent',animationDuration:350,legend:{type:'scroll',top:12,left:18,right:18,textStyle:{color:'#C9D1E8'},pageTextStyle:{color:'#C9D1E8'},pageIconColor:'#4C9AFF',pageIconInactiveColor:'#59617A'},grid:{left:66,right:24,top:64,bottom:70},tooltip:{trigger:'axis',backgroundColor:'rgba(9,13,31,.97)',borderColor:'rgba(255,255,255,.15)',textStyle:{color:'#E6E9F2'}},dataZoom:[{type:'inside',xAxisIndex:0,zoomOnMouseWheel:false,moveOnMouseWheel:false},{type:'slider',xAxisIndex:0,bottom:14,height:20,borderColor:'rgba(255,255,255,.1)',backgroundColor:'rgba(255,255,255,.025)',fillerColor:'rgba(76,154,255,.15)',dataBackground:{lineStyle:{color:'#536083'},areaStyle:{color:'#273251'}},selectedDataBackground:{lineStyle:{color:'#4C9AFF'},areaStyle:{color:'#284C7A'}},textStyle:{color:'#A9B0C6'}}],xAxis:{type:'category',boundaryGap:false,data:months,axisLabel:{color:'#A9B0C6'},axisLine:{lineStyle:{color:'rgba(255,255,255,.16)'}}}}; }
+    function commonOption(months){ const t=T(); return {backgroundColor:'transparent',animationDuration:350,textStyle:{fontFamily:FONT},legend:{type:'scroll',top:12,left:18,right:18,icon:'roundRect',itemWidth:14,itemHeight:4,textStyle:{color:t.ink2,fontSize:13},pageTextStyle:{color:t.ink2},pageIconColor:t.blue,pageIconInactiveColor:t.line,inactiveColor:t.line},grid:{left:18,right:24,top:52,bottom:64,containLabel:true},tooltip:{trigger:'axis',backgroundColor:t.tipBg,borderWidth:0,padding:[8,10],textStyle:{color:t.tipInk,fontFamily:FONT,fontSize:13},extraCssText:'border-radius:8px;box-shadow:none;',axisPointer:{lineStyle:{color:t.line}}},dataZoom:[{type:'inside',xAxisIndex:0,zoomOnMouseWheel:false,moveOnMouseWheel:false},{type:'slider',xAxisIndex:0,bottom:12,height:18,borderColor:t.line,backgroundColor:'transparent',fillerColor:t.blueSoft,handleStyle:{color:t.surface,borderColor:t.muted},moveHandleStyle:{color:t.line},dataBackground:{lineStyle:{color:t.line},areaStyle:{color:t.grid}},selectedDataBackground:{lineStyle:{color:t.blue},areaStyle:{color:t.blueSoft}},textStyle:{color:t.muted,fontFamily:FONT}}],xAxis:{type:'category',boundaryGap:false,data:months,axisLabel:{color:t.muted,formatter:value=>monthShort(value)},axisTick:{show:false},axisLine:{lineStyle:{color:t.line}}}}; }
+    function monthShort(key){ const m=/^(\d{4})-(\d{2})/.exec(String(key||'')); return m?new Date(Date.UTC(+m[1],+m[2]-1,1)).toLocaleString('en-US',{month:'short',year:'2-digit',timeZone:'UTC'}):String(key||''); }
+    function monthLong(key){ const m=/^(\d{4})-(\d{2})/.exec(String(key||'')); return m?new Date(Date.UTC(+m[1],+m[2]-1,1)).toLocaleString('en-US',{month:'long',year:'numeric',timeZone:'UTC'}):String(key||''); }
     function renderShareChart(definitions,months){
-      if(!definitions.length){disposeChart('shareChart','Select keywords to render search share.');return;}
-      const option=commonOption(months); option.yAxis={type:'value',min:0,axisLabel:{color:'#A9B0C6',formatter:value=>`${value}%`},splitLine:{lineStyle:{color:'rgba(255,255,255,.07)'}}};
-      option.tooltip.formatter=params=>{const rows=params.map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${formatShare(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(params[0]?.axisValue||'')}</b><br>${rows}`;};
-      option.series=definitions.map(def=>{let values=aggregate(state.popular,'percentage',def,months);if(state.smooth)values=movingAverage(values);return{name:state.smooth?`${def.label} · 3M average`:def.label,type:'line',data:values,smooth:state.smooth,showSymbol:months.length<=18,symbolSize:6,lineStyle:{width:3,color:def.color},itemStyle:{color:def.color},areaStyle:definitions.length===1?{color:def.color,opacity:.08}:undefined,emphasis:{focus:'series'}};}); ensureChart('shareChart').setOption(option,true);
+      if(!definitions.length){disposeChart('shareChart','Pick a keyword above to see its share of searches.');return;}
+      const option=commonOption(months); option.yAxis={type:'value',min:0,axisLabel:{color:T().muted,formatter:value=>`${value}%`},splitLine:{lineStyle:{color:T().grid}}};
+      option.tooltip.formatter=params=>{const rows=params.map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${formatShare(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
+      option.series=definitions.map(def=>{let values=aggregate(state.popular,'percentage',def,months);if(state.smooth)values=movingAverage(values);return{name:state.smooth?`${def.label} · 3M average`:def.label,type:'line',data:values,smooth:state.smooth,showSymbol:months.length<=18,symbolSize:6,lineStyle:{width:2.5,color:def.color},itemStyle:{color:def.color},areaStyle:definitions.length===1?{color:def.color,opacity:.08}:undefined,emphasis:{focus:'series'}};}); ensureChart('shareChart').setOption(option,true);
     }
     function renderRankChart(definitions,months){
-      if(state.matchMode!=='exact'){disposeChart('rankChart','Marketplace rank belongs to exact queries. Switch to Exact queries mode to view direct top-500 ranks.');return;}
-      if(!definitions.length){disposeChart('rankChart','Select exact queries to render Marketplace rank.');return;}
+      if(state.matchMode!=='exact'){disposeChart('rankChart','Rank exists only for exact queries. Switch Match to Exact queries to see it.');return;}
+      if(!definitions.length){disposeChart('rankChart','Exact queries show their monthly rank here.');return;}
       const categories=Array.from({length:500},(_,index)=>`#${index+1}`);categories.push('Outside top 500'); const option=commonOption(months);
-      option.yAxis={type:'category',inverse:true,data:categories,axisLabel:{color:'#A9B0C6',interval:(index)=>index===0||index===99||index===199||index===299||index===399||index===499||index===500,formatter:value=>value==='Outside top 500'?'Outside 500':value},axisLine:{lineStyle:{color:'rgba(255,255,255,.16)'}},splitLine:{show:false}};
-      option.tooltip.formatter=params=>{const rows=params.map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${escapeHtml(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(params[0]?.axisValue||'')}</b><br>${rows}`;};
+      option.yAxis={type:'category',inverse:true,data:categories,axisLabel:{color:T().muted,interval:(index)=>index===0||index===99||index===199||index===299||index===399||index===499||index===500,formatter:value=>value==='Outside top 500'?'Outside 500':value},axisLine:{lineStyle:{color:T().line}},splitLine:{show:false}};
+      option.tooltip.formatter=params=>{const rows=params.map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${escapeHtml(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
       option.series=definitions.map(def=>({name:def.label,type:'line',data:ranksFor(def.keywords[0],months).map(rank=>rank?`#${rank}`:'Outside top 500'),showSymbol:months.length<=18,symbolSize:6,lineStyle:{width:2.5,color:def.color},itemStyle:{color:def.color},emphasis:{focus:'series'}})); ensureChart('rankChart').setOption(option,true);
     }
     function renderZeroChart(definitions,months){
-      if(!definitions.length){disposeChart('zeroChart','Select keywords to render zero-result counts.');return;}
-      const option=commonOption(months);option.xAxis.boundaryGap=definitions.length===1;option.yAxis={type:'value',min:0,minInterval:1,axisLabel:{color:'#A9B0C6',formatter:value=>Number(value).toLocaleString()},splitLine:{lineStyle:{color:'rgba(255,255,255,.07)'}}};
-      option.tooltip.formatter=params=>{const rows=params.map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${formatCount(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(params[0]?.axisValue||'')}</b><br>${rows}`;};
-      option.series=definitions.map(def=>{let values=aggregate(state.zero,'count',def,months);if(state.smooth)values=movingAverage(values);return{name:state.smooth?`${def.label} · 3M average`:def.label,type:definitions.length===1?'bar':'line',data:values,smooth:state.smooth,showSymbol:definitions.length>1&&months.length<=18,symbolSize:6,lineStyle:{width:2.5,color:def.color},itemStyle:{color:def.color,borderRadius:definitions.length===1?[5,5,0,0]:0},emphasis:{focus:'series'}};});ensureChart('zeroChart').setOption(option,true);
+      if(!definitions.length){disposeChart('zeroChart','Pick a keyword above to see its zero-result searches.');return;}
+      const option=commonOption(months);option.xAxis.boundaryGap=definitions.length===1;option.yAxis={type:'value',min:0,minInterval:1,axisLabel:{color:T().muted,formatter:value=>Number(value).toLocaleString('en-US')},splitLine:{lineStyle:{color:T().grid}}};
+      option.tooltip.formatter=params=>{const rows=params.map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${formatCount(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
+      option.series=definitions.map(def=>{let values=aggregate(state.zero,'count',def,months);if(state.smooth)values=movingAverage(values);return{name:state.smooth?`${def.label} · 3M average`:def.label,type:definitions.length===1?'bar':'line',data:values,smooth:state.smooth,showSymbol:definitions.length>1&&months.length<=18,symbolSize:6,lineStyle:{width:2.5,color:def.color},itemStyle:{color:definitions.length===1?T().coral:def.color,borderRadius:definitions.length===1?[3,3,0,0]:0},emphasis:{focus:'series'}};});ensureChart('zeroChart').setOption(option,true);
     }
     function renderKpis(definitions,months){
       const matches=selectedMatches(),aggregateDefinition=matches.length?{label:'Combined selection',keywords:matches}:null,summary=aggregateDefinition?summaryFor(aggregateDefinition,months):null;
       $('#kpiSelected').textContent=matches.length?matches.length.toLocaleString():'—';$('#kpiSelectedNote').textContent=state.matchMode==='contains'?'Matched exact Marketplace queries':'Exact Marketplace queries';
       $('#kpiShare').textContent=summary?formatShare(summary.latest):'—';$('#kpiShareNote').textContent=matches.length>1?'Combined selected-query share':'Percentage of all searches';
       $('#kpiDelta').textContent=summary?`${summary.delta>=0?'+':''}${summary.delta.toFixed(2)} pp`:'—';$('#kpiDelta').className=`value ${summary?(summary.delta>0?'positive':summary.delta<0?'negative':''):''}`;
-      if(state.matchMode==='exact'&&matches.length===1){const rank=ranksFor(matches[0],months).at(-1);$('#kpiRank').textContent=formatRank(rank);$('#kpiRankNote').textContent=`${months.at(-1)||'Latest month'} · direct report rank`;}else if(state.matchMode==='contains'&&matches.length){$('#kpiRank').textContent='Not applicable';$('#kpiRankNote').textContent='Grouped matches have no combined rank';}else{$('#kpiRank').textContent=matches.length?'See table':'—';$('#kpiRankNote').textContent='Rank remains per exact query';}
+      if(state.matchMode==='exact'&&matches.length===1){const rank=ranksFor(matches[0],months).at(-1);$('#kpiRank').textContent=formatRank(rank);$('#kpiRankNote').textContent=`${months.at(-1)||'Latest month'} · direct report rank`;}else if(state.matchMode==='contains'&&matches.length){$('#kpiRank').textContent='—';$('#kpiRankNote').textContent='Grouped matches have no combined rank';}else{$('#kpiRank').textContent=matches.length?'See table':'—';$('#kpiRankNote').textContent='Rank remains per exact query';}
       $('#kpiZero').textContent=summary?formatCount(summary.zeroTotal):'—';$('#kpiPeak').textContent=summary?formatShare(summary.peak):'—';$('#kpiPeakNote').textContent=summary&&summary.peak>0?summary.peakMonth:summary?'No share in selected period':'Within selected period';
     }
     function tableDefinitions(){
@@ -437,7 +528,7 @@
       return state.compareMode==='group'&&matches.length>1?[{label:'Selected group',keywords:matches,color:COLORS[0],group:true},...individual]:individual;
     }
     function renderTable(months){
-      const body=$('#summaryBody');body.textContent='';const definitions=tableDefinitions();if(!definitions.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=8;cell.className='empty-state';cell.textContent='Select keywords to see their comparison.';row.appendChild(cell);body.appendChild(row);return;}
+      const body=$('#summaryBody');body.textContent='';const definitions=tableDefinitions();if(!definitions.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=8;cell.className='empty-state';cell.textContent='Pick keywords above to compare them here.';row.appendChild(cell);body.appendChild(row);return;}
       definitions.forEach(def=>{const summary=summaryFor(def,months),row=document.createElement('tr');const values=[def.keywords.length,formatShare(summary.latest),`${summary.delta>=0?'+':''}${summary.delta.toFixed(2)} pp`,def.group?'—':formatRank(summary.currentRank),def.group?'—':formatRank(summary.bestRank),`${formatShare(summary.peak)} · ${summary.peakMonth}`,formatCount(summary.zeroTotal)];const first=document.createElement('td');const cell=document.createElement('div');cell.className='keyword-cell';const dot=document.createElement('span');dot.className='dot';dot.style.background=def.color;const text=document.createElement('span');text.textContent=def.label;cell.append(dot,text);first.appendChild(cell);row.appendChild(first);values.forEach((value,index)=>{const td=document.createElement('td');td.textContent=String(value);if((index===3||index===4)&&String(value).includes('Outside'))td.className='outside';if(index===2&&summary.delta>0)td.className='positive';if(index===2&&summary.delta<0)td.className='negative';row.appendChild(td);});body.appendChild(row);});
     }
     function renderAll(){ if(!state.dataReady)return; if(state.from>state.to)state.from=state.to;const months=visibleMonths(),definitions=seriesDefinitions(),rankDefs=rankDefinitions();renderKpis(definitions,months);renderShareChart(definitions,months);renderRankChart(rankDefs,months);renderZeroChart(definitions,months);renderTable(months);echarts.connect('keywordExplorer');updateUrl(); }
@@ -449,8 +540,8 @@
       for(const def of definitions){const shares=aggregate(state.popular,'percentage',def,months),zeros=aggregate(state.zero,'count',def,months),ranks=def.keywords.length===1?ranksFor(def.keywords[0],months):months.map(()=>null);months.forEach((month,index)=>rows.push([month,def.label,shares[index],ranks[index]||'Outside top 500',zeros[index]]));}
       const csv=rows.map(row=>row.map(csvEscape).join(',')).join('\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='keyword-explorer.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('CSV export started.');
     }
-    function downloadChart(id){const chart=state.charts[id];if(!chart){toast('This chart has no data to download.');return;}const link=document.createElement('a');link.href=chart.getDataURL({type:'png',pixelRatio:2,backgroundColor:'#0B1021'});link.download=`${id}.png`;document.body.appendChild(link);link.click();link.remove();toast('PNG export started.');}
-    function toggleFullscreen(id,button){const card=document.getElementById(id).closest('.chart-card'),active=card.classList.toggle('is-fullscreen');document.body.style.overflow=active?'hidden':'';button.textContent=active?'Exit fullscreen':'Fullscreen';setTimeout(()=>state.charts[id]?.resize(),50);}
+    function downloadChart(id){const chart=state.charts[id];if(!chart){toast('This chart has no data to download.');return;}const link=document.createElement('a');link.href=chart.getDataURL({type:'png',pixelRatio:2,backgroundColor:T().surface});link.download=`${id}.png`;document.body.appendChild(link);link.click();link.remove();toast('PNG export started.');}
+    function toggleFullscreen(id,button){const card=document.getElementById(id).closest('.chart-card'),active=card.classList.toggle('is-fullscreen');document.body.style.overflow=active?'hidden':'';button.textContent=active?'Exit full screen':'Full screen';setTimeout(()=>state.charts[id]?.resize(),50);}
     async function copyShareLink(){updateUrl();try{await navigator.clipboard.writeText(location.href);toast('Share link copied.');}catch(error){toast('Copy the URL from the address bar.');}}
     function bindEvents(){
       $('#keywordInput').addEventListener('input',renderSuggestions);$('#keywordInput').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();const first=$('#suggestions .suggestion');if(state.matchMode==='exact'&&first)first.click();else addSelection(event.currentTarget.value);}if(event.key==='Escape')closeSuggestions();});
@@ -468,8 +559,10 @@
       $('#popularFile').addEventListener('change',event=>{const file=event.target.files[0];if(file)loadUploaded(file,'popular').catch(error=>setStatus(`Error: ${error.message}`));});
       $('#zeroFile').addEventListener('change',event=>{const file=event.target.files[0];if(file)loadUploaded(file,'zero').catch(error=>setStatus(`Error: ${error.message}`));});
       document.querySelectorAll('[data-chart-action]').forEach(button=>button.addEventListener('click',()=>button.dataset.chartAction==='download'?downloadChart(button.dataset.chart):toggleFullscreen(button.dataset.chart,button)));
-      document.addEventListener('keydown',event=>{if(event.key==='Escape'){document.querySelectorAll('.chart-card.is-fullscreen').forEach(card=>{card.classList.remove('is-fullscreen');card.querySelector('[data-chart-action="fullscreen"]').textContent='Fullscreen';document.body.style.overflow='';const chart=card.querySelector('.chart');setTimeout(()=>state.charts[chart.id]?.resize(),50);});}});
+      document.addEventListener('keydown',event=>{if(event.key==='Escape'){document.querySelectorAll('.chart-card.is-fullscreen').forEach(card=>{card.classList.remove('is-fullscreen');card.querySelector('[data-chart-action="fullscreen"]').textContent='Full screen';document.body.style.overflow='';const chart=card.querySelector('.chart');setTimeout(()=>state.charts[chart.id]?.resize(),50);});}});
       window.addEventListener('resize',()=>Object.values(state.charts).forEach(chart=>chart?.resize?.()));
+      const dq=window.matchMedia('(prefers-color-scheme: dark)'),onScheme=()=>{COLORS=T().series;renderControls();renderAll();};dq.addEventListener?dq.addEventListener('change',onScheme):dq.addListener(onScheme);
+      if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>renderAll());
     }
     function exposeDiagnostics(){window.KeywordExplorer={getState:()=>({popularRows:state.popular.length,zeroRows:state.zero.length,months:state.months.slice(),selections:state.selections.slice(),matchMode:state.matchMode,compareMode:state.compareMode,matchedQueries:selectedMatches().length,chartIds:Object.entries(state.charts).filter(([,chart])=>chart&&!chart.isDisposed?.()).map(([id])=>id)}),runSmokeTests:()=>({dataLoaded:state.popular.length>0,rankFieldPresent:state.popular.some(row=>row.rank>=1&&row.rank<=500),monthsLoaded:state.months.length>0,selectionPresent:state.selections.length>0,chartsRendered:['shareChart','rankChart','zeroChart'].every(id=>state.charts[id]&&!state.charts[id].isDisposed?.())})};}
     async function boot(){
