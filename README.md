@@ -18,11 +18,12 @@ With these inputs the site provides two linked pages:
 
 The Overview provides:
 
+- **Latest month at a glance** – the newest report's top 10 searches with rank change, the query that most often returned no apps, and the month-over-month change in zero-result searches
 - **Search Dynamics** – bar chart race of popular keywords plus a zero‑result overview that can flip between total counts and top zero keywords
 - **Keyword Trails** – line chart tracking how top keywords change over time
 - **Zero‑Result Heatmap** – matrix highlighting months and keywords that frequently return nothing
 
-A global **keyword filter** lets you focus on specific terms across all charts. Chart toolbars offer fullscreen, download, and share actions; the zero‑result chart also has a flip button.
+A sticky **keyword filter** lets you focus on specific terms across all charts. Chart toolbars offer full-screen, download, and share actions; the zero‑result chart also has a flip button. Both pages follow the system light or dark theme.
 
 The **Keyword Explorer** keeps the API metrics distinct while placing them on synchronized monthly timelines:
 
@@ -36,20 +37,20 @@ The **Keyword Explorer** keeps the API metrics distinct while placing them on sy
 
 ### 1. Use Demo Data
 1. Open `index.html` in a browser.
-2. Click **Load demo**.
+2. Scroll to **Use your own data** and click **Load demo data**.
 3. Press **▶ Play** to start the race.
 
 ### 2. Upload Your Data
-1. Open `index.html`.
-2. For each file input select the proper spreadsheet:
+1. Open `index.html` and scroll to **Use your own data**.
+2. For each file tile choose the proper spreadsheet:
    - **Popular Search Keywords**: `.xlsx` with `Raw` sheet containing `month`, `keyword`, `percentage`
    - **Zero‑Result Keywords**: `.xlsx` with `Raw` sheet containing `month`, `keyword`, `count`. Optional `Monthly_Summary` sheet with `month`, `sum_count`
-3. Use the **Keyword Filter** chip to narrow charts to particular terms (optional).
+3. Use the **Charts show** filter to narrow charts to particular terms (optional). Files are read in the browser and never uploaded.
 
 To perform focused analysis, open `keyword-explorer.html` or select the **Keyword Explorer** tab. Its default workbooks load automatically; select exact queries or switch to the contains mode.
 
 ### 3. Load Default Files
-If the files below exist they autoload on startup or via **Load default files**:
+If the files below exist they autoload on startup or via **Reload repository data**:
 - `./data/source_search_keywords_marketplace.xlsx`
 - `./data/zero_result_keywords_marketplace.xlsx`
 
@@ -73,7 +74,7 @@ Click **Run smoke tests** to verify required elements render.
 ### Data Inputs & Diagnostics
 - Upload both spreadsheets
 - Keyword filter to limit charts to selected terms
-- Buttons: **Load default files**, **Load demo**, **Run smoke tests**
+- Buttons: **Reload repository data**, **Load demo data**, **Run smoke tests**
 
 ### Search Dynamics — Bar Chart Race & Zero‑Result Overview
 - **Top N** slider (5–20 keywords)
@@ -101,14 +102,16 @@ Click **Run smoke tests** to verify required elements render.
 
 ### Chart Toolbars
 Every chart exposes buttons for:
-- **Fullscreen** view
+- **Full screen** view with a data table
 - **Download** PNG snapshot
 - **Share** image/link (Web Share API or share chooser)
 - **Flip** (zero‑result chart only)
 
 ## Technical Notes
 - Pure JavaScript with **ECharts 5.5.0** and **XLSX** libraries
-- Responsive layout for desktop and mobile
+- Schibsted Grotesk typeface from Google Fonts, with system-font fallback
+- Light and dark themes from CSS custom properties; charts read the same tokens
+- Responsive layout for desktop and mobile; respects reduced-motion settings
 - Sequential CDN fallbacks for robust loading
 - Automatic default file loading on GitHub Pages
 - Built‑in smoke tests to confirm rendering
