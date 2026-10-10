@@ -18,12 +18,14 @@ With these inputs the site provides two linked pages:
 
 The Overview provides:
 
-- **Latest month at a glance** – the newest report's top 10 searches with rank change, the query that most often returned no apps, and the month-over-month change in zero-result searches
+- **Latest month at a glance** – the biggest climbers and new entries in the top 100, the total number of searches that found no apps and the most frequent of them
 - **Search Dynamics** – bar chart race of popular keywords plus a zero‑result overview that can flip between total counts and top zero keywords
 - **Keyword Trails** – line chart tracking how top keywords change over time
 - **Zero‑Result Heatmap** – matrix highlighting months and keywords that frequently return nothing
 
-A sticky **keyword filter** lets you focus on specific terms across all charts. Chart toolbars offer full-screen, download, and share actions; the zero‑result chart also has a flip button. Both pages follow the system light or dark theme.
+A sticky **keyword filter** lets you focus on specific terms across all charts. Chart toolbars offer full screen (with a Chart/Table toggle) and PNG download. Both pages follow the system light or dark theme.
+
+Data handling: partial monthly reports (Dec 2021, Nov 2023) are left out of trend lines; bot noise (queries with no letters or digits, HTML/URL injection probes) is dropped on load; visually identical query variants are folded together. Atlassian's report shows a methodology break in Nov 2024, so trend views default to the period after it and the race chart keeps one scale per period.
 
 The **Keyword Explorer** keeps the API metrics distinct while placing them on synchronized monthly timelines:
 
@@ -37,7 +39,7 @@ The **Keyword Explorer** keeps the API metrics distinct while placing them on sy
 
 ### 1. Use Demo Data
 1. Open `index.html` in a browser.
-2. Scroll to **Use your own data** and click **Load demo data**.
+2. Open `index.html?debug`, scroll to **Use your own data** and click **Load demo data** (demo and smoke-test buttons only show in debug mode).
 3. Press **▶ Play** to start the race.
 
 ### 2. Upload Your Data
@@ -55,7 +57,7 @@ If the files below exist they autoload on startup or via **Reload repository dat
 - `./data/zero_result_keywords_marketplace.xlsx`
 
 ### 4. Run Smoke Tests
-Click **Run smoke tests** to verify required elements render.
+Open `index.html?debug` and click **Run smoke tests** to verify required elements render. On the Keyword Explorer run `KeywordExplorer.runSmokeTests()` in the console.
 
 ## Data Format
 
