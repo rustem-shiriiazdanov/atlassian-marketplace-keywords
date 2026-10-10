@@ -521,11 +521,16 @@
       return new Promise((resolve,reject)=>{ let index=0; const next=()=>{ if(index>=urls.length){reject(new Error(`Unable to load ${globalName}`));return;} const url=urls[index++]; const script=document.createElement('script'); script.src=url; script.async=true; script.crossOrigin='anonymous'; script.referrerPolicy='no-referrer'; script.onload=()=>window[globalName]?resolve(window[globalName]):next(); script.onerror=next; document.head.appendChild(script); }; next(); });
     }
     async function fetchFirst(urls){ for(const url of urls){ try{ const response=await fetch(url,{cache:'no-cache'}); if(response.ok) return await response.arrayBuffer(); }catch(error){} } throw new Error('Default workbook not found'); }
-    function workbookRows(buffer){ const workbook=XLSX.read(buffer,{type:'array'}); const sheet=workbook.Sheets.Raw; if(!sheet) throw new Error('The workbook has no Raw sheet'); return XLSX.utils.sheet_to_json(sheet,{defval:null}); }
+    // Reading a workbook takes about a second of CPU, so it runs in a background worker and the page never freezes (falls back to the page if workers fail).
+    const ensureXLSX=()=>window.XLSX?Promise.resolve(window.XLSX):loadScriptSeq(XLSX_URLS,'XLSX');
+    const WORKER_SRC=`const URLS=${JSON.stringify(XLSX_URLS)}; for(const u of URLS){ try{ importScripts(u); if(self.XLSX) break; }catch(e){} }
+      self.onmessage=(e)=>{ try{ if(!self.XLSX) throw new Error('no xlsx'); const wb=XLSX.read(e.data,{type:'array'}); const sh=wb.Sheets.Raw; if(!sh) throw new Error('The workbook has no Raw sheet'); const rows=XLSX.utils.sheet_to_json(sh,{defval:null}).map(r=>{ if(typeof r.month==='number'){ const d=XLSX.SSF.parse_date_code(r.month); r.month=d.y+'-'+String(d.m).padStart(2,'0'); } return r; }); self.postMessage({rows}); }catch(err){ self.postMessage({error:String(err&&err.message||err)}); } };`;
+    function workbookRowsOnPage(buffer){ return ensureXLSX().then(()=>{ const workbook=XLSX.read(buffer,{type:'array'}); const sheet=workbook.Sheets.Raw; if(!sheet) throw new Error('The workbook has no Raw sheet'); return XLSX.utils.sheet_to_json(sheet,{defval:null}); }); }
+    function workbookRows(buffer){ return new Promise((resolve,reject)=>{ let w=null; try{ w=new Worker(URL.createObjectURL(new Blob([WORKER_SRC],{type:'text/javascript'}))); }catch(e){} if(!w){ workbookRowsOnPage(buffer).then(resolve,reject); return; } const copy=buffer.slice(0); w.onmessage=(e)=>{ w.terminate(); if(e.data&&e.data.rows) resolve(e.data.rows); else if(e.data&&/Raw sheet/.test(e.data.error||'')) reject(new Error(e.data.error)); else workbookRowsOnPage(buffer).then(resolve,reject); }; w.onerror=()=>{ w.terminate(); workbookRowsOnPage(buffer).then(resolve,reject); }; w.postMessage(copy,[copy]); }); }
     // Same bot-noise rule as the Overview, so both pages count the same rows.
-    function isJunkQuery(k){ const t=String(k||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/[<>]/g,'').replace(/\s+/g,' ').trim(); return !/[\p{L}\p{N}]/u.test(t) || /href=|https?:\/\/|script\b.*\/script|\bonerror\b/i.test(t.replace(/[<>]/g,'')); }
-    function parsePopular(buffer){ return workbookRows(buffer).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),percentage:number(row.percentage),rank:number(row.rank)})).filter(row=>row.month&&row.keyword&&!isJunkQuery(row.keyword)); }
-    function parseZero(buffer){ return workbookRows(buffer).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),count:number(row.count),rank:number(row.rank)})).filter(row=>row.month&&row.keyword&&!isJunkQuery(row.keyword)); }
+    function isJunkQuery(k){ const t=String(k||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/[<>]/g,'').replace(/\s+/g,' ').trim(); return !/[\p{L}\p{N}]/u.test(t) || /href=|https?:\/\/|script.*\/script|\bonerror\b/i.test(t.replace(/[<>]/g,'')); }
+    async function parsePopular(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),percentage:number(row.percentage),rank:number(row.rank)})).filter(row=>row.month&&row.keyword&&!isJunkQuery(row.keyword)); }
+    async function parseZero(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),count:number(row.count),rank:number(row.rank)})).filter(row=>row.month&&row.keyword&&!isJunkQuery(row.keyword)); }
     function hydrateUrl(){
       const params=new URLSearchParams(location.search); const queries=params.getAll('q').map(keywordText).filter(Boolean);
       state.urlHadSelection=queries.length>0; state.selections=queries;
@@ -542,6 +547,13 @@
       if(state.months[state.from]) params.set('from',state.months[state.from]); if(state.months[state.to]) params.set('to',state.months[state.to]);
       if(state.smooth) params.set('smooth','1');
       const query=params.toString(); history.replaceState(null,'',`${location.pathname}${query?'?'+query:''}`);
+    }
+    function indexRows(){
+      const by=(rows)=>{ const m=new Map(); for(const r of rows){ const k=normalize(r.keyword); let a=m.get(k); if(!a){a=[];m.set(k,a);} a.push(r); } return m; };
+      state.popByKey=by(state.popular); state.zeroByKey=by(state.zero);
+      state.canon=new Map(); for(const k of state.allKeywords) state.canon.set(normalize(k),k);
+      state.popularSet=new Set(state.popByKey.keys()); state.zeroSet=new Set(state.zeroByKey.keys());
+      state.allNorm=state.allKeywords.map(normalize);
     }
     function finalizeData(){
       state.months=Array.from(new Set([...state.popular.map(row=>row.month),...state.zero.map(row=>row.month)])).filter(Boolean).sort();
@@ -561,7 +573,7 @@
         const big=new Set([...tot.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k])=>k)); const by=state.months.map(m=>0); const idx=new Map(state.months.map((m,i)=>[m,i]));
         state.popular.forEach(r=>{ if(big.has(normalize(r.keyword))&&idx.has(r.month)) by[idx.get(r.month)]+=r.percentage; });
         state.reportBreak=null; for(let i=1;i<by.length;i++){ if(by[i-1]>0&&by[i]<by[i-1]*0.4){ state.reportBreak=state.months[i]; break; } } }
-      state.colorRank=null; populateDateControls(); state.dataReady=true; renderControls(); renderAll(); setStatus(`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}`,true);
+      indexRows(); state.colorRank=null; populateDateControls(); state.dataReady=true; renderControls(); renderAll(); setStatus(`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}`,true);
     }
     function populateDateControls(){
       const from=$('#fromMonth'),to=$('#toMonth'); from.textContent='';to.textContent='';
@@ -577,20 +589,20 @@
     }
     async function loadDefaults(){
       setStatus('Loading default Marketplace reports…');
-      const [popularResult,zeroResult]=await Promise.allSettled([fetchFirst(DEFAULT_SOURCE),fetchFirst(DEFAULT_ZERO)]);
-      if(popularResult.status==='fulfilled'){ state.popular=parsePopular(popularResult.value); $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`; }
-      if(zeroResult.status==='fulfilled'){ state.zero=parseZero(zeroResult.value); $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`; }
+      const [popularResult,zeroResult]=await Promise.allSettled([fetchFirst(DEFAULT_SOURCE).then(parsePopular),fetchFirst(DEFAULT_ZERO).then(parseZero)]);
+      if(popularResult.status==='fulfilled'){ state.popular=popularResult.value; $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`; }
+      if(zeroResult.status==='fulfilled'){ state.zero=zeroResult.value; $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`; }
       if(!state.popular.length) throw new Error(zeroResult.status==='fulfilled'?'The popular-searches report could not be loaded':'Neither report could be loaded'); finalizeData();
     }
-    async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); if(type==='popular'){state.popular=parsePopular(buffer);$('#popularFileStatus').textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zero=parseZero(buffer);$('#zeroFileStatus').textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
-    function canonicalKeyword(input){ return state.allKeywords.find(item=>normalize(item)===normalize(input)); }
+    async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); if(type==='popular'){state.popular=await parsePopular(buffer);$('#popularFileStatus').textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zero=await parseZero(buffer);$('#zeroFileStatus').textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
+    function canonicalKeyword(input){ return state.canon?state.canon.get(normalize(input)):state.allKeywords.find(item=>normalize(item)===normalize(input)); }
     function addSelection(input){
       const parts=String(input).split(/[\n,]+/).map(keywordText).filter(Boolean); let added=0;
       for(let part of parts){ if(state.matchMode==='exact'){ part=canonicalKeyword(part); if(!part) continue; } if(!state.selections.some(item=>normalize(item)===normalize(part))){state.selections.push(part);added++;} }
       if(!added){toast(state.matchMode==='exact'?'Choose a query from the Marketplace data.':'Enter a word or phrase.');return;}
-      $('#keywordInput').value=''; closeSuggestions(); renderControls(); renderAll();
+      $('#keywordInput').value=''; closeSuggestions(); renderControls(); scheduleRender();
     }
-    function removeSelection(index){ state.selections.splice(index,1); renderControls(); renderAll(); }
+    function removeSelection(index){ state.selections.splice(index,1); renderControls(); scheduleRender(); }
     function selectedMatches(){
       if(!state.selections.length) return [];
       if(state.matchMode==='exact') return state.selections.map(canonicalKeyword).filter(Boolean);
@@ -605,8 +617,10 @@
     }
     function rankDefinitions(){ if(state.matchMode!=='exact') return []; return selectedMatches().map((keyword,index)=>({label:keyword,keywords:[keyword],color:colorOf(keyword)})); }
     function visibleMonths(){ return state.months.slice(state.from,state.to+1); }
-    function aggregate(rows,field,definition,months){ const wanted=new Set(definition.keywords.map(normalize)); const sums=new Map(months.map(month=>[month,0])); for(const row of rows){ if(sums.has(row.month)&&wanted.has(normalize(row.keyword))) sums.set(row.month,sums.get(row.month)+number(row[field])); } return months.map(month=>sums.get(month)||0); }
-    function ranksFor(keyword,months){ const wanted=normalize(keyword),map=new Map(); for(const row of state.popular){ if(normalize(row.keyword)===wanted&&row.rank>=1&&row.rank<=500) map.set(row.month,row.rank); } return months.map(month=>map.get(month)||null); }
+    function aggregate(rows,field,definition,months){ const index=rows===state.popular?state.popByKey:rows===state.zero?state.zeroByKey:null; const sums=new Map(months.map(month=>[month,0])); const add=(row)=>{ if(sums.has(row.month)) sums.set(row.month,sums.get(row.month)+number(row[field])); };
+      if(index){ for(const k of new Set(definition.keywords.map(normalize))) for(const row of (index.get(k)||[])) add(row); } else { const wanted=new Set(definition.keywords.map(normalize)); for(const row of rows) if(wanted.has(normalize(row.keyword))) add(row); }
+      return months.map(month=>sums.get(month)||0); }
+    function ranksFor(keyword,months){ const map=new Map(); for(const row of (state.popByKey?.get(normalize(keyword))||[])){ if(row.rank>=1&&row.rank<=500) map.set(row.month,row.rank); } return months.map(month=>map.get(month)||null); }
     function summaryFor(definition,months){
       let share=aggregate(state.popular,'percentage',definition,months),zero=aggregate(state.zero,'count',definition,months); const rawShare=share.slice();
       const latest=rawShare.at(-1)||0,previous=rawShare.length>1?rawShare.at(-2):0,peak=Math.max(0,...rawShare),peakIndex=rawShare.indexOf(peak);
@@ -637,8 +651,8 @@
     }
     function renderSuggestions(){
       const box=$('#suggestions'),term=normalize($('#keywordInput').value); box.textContent=''; if(!term||!state.dataReady){closeSuggestions();return;}
-      const popularSet=new Set(state.popular.map(row=>normalize(row.keyword))),zeroSet=new Set(state.zero.map(row=>normalize(row.keyword)));
-      const found=state.allKeywords.filter(keyword=>normalize(keyword).includes(term)).sort((a,b)=>Number(!normalize(a).startsWith(term))-Number(!normalize(b).startsWith(term))||a.localeCompare(b)); const results=found.slice(0,60);
+      const popularSet=state.popularSet,zeroSet=state.zeroSet;
+      const found=state.allKeywords.filter((keyword,i)=>state.allNorm[i].includes(term)).sort((a,b)=>Number(!normalize(a).startsWith(term))-Number(!normalize(b).startsWith(term))||a.localeCompare(b)); const results=found.slice(0,60);
       results.forEach(keyword=>{ const button=document.createElement('button');button.type='button';button.className='suggestion';button.setAttribute('role','option'); const text=document.createElement('span');{const k=keyword,lk=normalize(k),at=lk.indexOf(term);text.innerHTML=at>=0?escapeHtml(k.slice(0,at))+'<b>'+escapeHtml(k.slice(at,at+term.length))+'</b>'+escapeHtml(k.slice(at+term.length)):escapeHtml(k);} const badges=document.createElement('span');badges.className='badges'; const key=normalize(keyword); if(popularSet.has(key)){const badge=document.createElement('span');badge.className='badge popular';badge.textContent='Top 500';badges.appendChild(badge);} if(zeroSet.has(key)){const badge=document.createElement('span');badge.className='badge zero';badge.textContent='Found no apps';badges.appendChild(badge);} button.append(text,badges);button.addEventListener('click',()=>addSelection(state.matchMode==='exact'?keyword:$('#keywordInput').value));box.appendChild(button); });
       if(!results.length&&state.matchMode==='contains'){const button=document.createElement('button');button.type='button';button.className='suggestion';button.textContent=`Add “${$('#keywordInput').value.trim()}” as a contains filter`;button.addEventListener('click',()=>addSelection($('#keywordInput').value));box.appendChild(button);}
       if(results.length){const foot=document.createElement('div');foot.className='sug-foot';foot.textContent=found.length>results.length?`Showing ${results.length} of ${found.length.toLocaleString('en-US')} matches. Keep typing to narrow down.`:`${found.length} ${found.length===1?'match':'matches'}`;box.appendChild(foot);}
@@ -646,6 +660,8 @@
     }
     function closeSuggestions(){ $('#suggestions').classList.remove('open'); }
     function ensureChart(id){ const el=document.getElementById(id); el.querySelector('.chart-placeholder')?.remove(); if(!state.charts[id]||state.charts[id].isDisposed?.()){state.charts[id]=echarts.init(el);state.charts[id].group='keywordExplorer';} return state.charts[id]; }
+    // Same picture, same size: the chart is left alone. The draw-in animation plays once; later updates appear at once.
+    function drawChart(id,option){ const c=ensureChart(id); const sig=c.getWidth()+'x'+c.getHeight()+'|'+JSON.stringify(option); if(c.__sig===sig) return; if(c.__sig) option.animation=false; c.__sig=sig; c.setOption(option,true); }
     function disposeChart(id,message){ if(state.charts[id]){state.charts[id].dispose();state.charts[id]=null;} const el=document.getElementById(id);el.textContent='';if(!message)return;const placeholder=document.createElement('div');placeholder.className='chart-placeholder';placeholder.textContent=message;el.appendChild(placeholder); }
     function commonOption(months,id,series){
       const t=T(), el=document.getElementById(id), W=el?.clientWidth||800;
@@ -694,7 +710,7 @@
       if(bi>0) $('#shareCard .description').textContent+=` The dashed line marks ${monthShort(state.reportBreak)}, when Atlassian changed how searches are counted.`;
       if(bi>0) series.push({name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,formatter:'Report change'},data:[{xAxis:bi}]}});
       option.legend.data=definitions.map(d=>d.label);
-      option.series=series; ensureChart('shareChart').setOption(option,true);
+      option.series=series; drawChart('shareChart',option);
     }
     function renderRankChart(definitions,months){
       const card=$('#rankCard');
@@ -711,7 +727,7 @@
       option.yAxis={type:'log',logBase:2,inverse:true,min:lo,max:hi,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>`#${Math.round(value)}`},axisTick:{show:false},splitLine:{lineStyle:{color:T().grid}}};
       option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${param.value==null?'outside top 500':'#'+param.value}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
       option.series=series.map(({def,ranks},i)=>({...lineSeries(def,ranks,series.length,months),z:10-i,clip:false})).concat(breakSeries(months,true));
-      ensureChart('rankChart').setOption(option,true);
+      drawChart('rankChart',option);
     }
     function renderZeroChart(definitions,months){
       if(!definitions.length){disposeChart('zeroChart','');return;}
@@ -722,7 +738,7 @@
       const option=commonOption(months,'zeroChart',series);
       option.yAxis={type:'value',min:0,minInterval:1,splitNumber:4,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>Number(value).toLocaleString('en-US')},splitLine:{lineStyle:{color:T().grid}}};
       option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${formatCount(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
-      option.series=series.concat(breakSeries(months)); ensureChart('zeroChart').setOption(option,true);
+      option.series=series.concat(breakSeries(months)); drawChart('zeroChart',option);
     }
     function renderKpis(definitions,months){
       const matches=selectedMatches(),aggregateDefinition=matches.length?{label:'Combined selection',keywords:matches}:null,summary=aggregateDefinition?summaryFor(aggregateDefinition,months):null;
@@ -730,7 +746,7 @@
       const inLatest=matches.length>1?new Set(state.popular.filter(r=>r.month===last).map(r=>normalize(r.keyword))):null;
       const liveCount=inLatest?matches.filter(k=>inLatest.has(normalize(k))).length:0;
       $('#kpiShare').textContent=summary?formatShare(summary.latest):'—';
-      $('#kpiShareNote').textContent=matches.length<2?`of all searches, ${monthShort(last)}`:state.matchMode==='contains'?`${liveCount.toLocaleString('en-US')} queries in the ${monthShort(last)} top 500`:`${matches.length} queries · ${monthShort(last)}`;
+      $('#kpiShareNote').textContent=matches.length<2?`of all searches, ${monthShort(last)}`:state.matchMode==='contains'?`${liveCount.toLocaleString('en-US')} ${liveCount===1?'query':'queries'} in the ${monthShort(last)} top 500`:`${matches.length} queries · ${monthShort(last)}`;
       $('#kpiShareLabel').textContent=matches.length>1?'Combined share':'Latest search share';$('#kpiPeakLabel').textContent=matches.length>1?'Combined peak':'Peak search share';
       $('#kpiDelta').innerHTML=summary?`<span class="${summary.delta>0?'positive':summary.delta<0?'negative':''}">${summary.delta>0?'+':summary.delta<0?'−':''}${Math.abs(summary.delta).toFixed(2)} pp</span>`:'—';$('#kpiDelta').className='value';
       $('#kpiDeltaNote').textContent=prev?`vs ${monthShort(prev)}`:'vs previous month';
@@ -763,9 +779,11 @@
       if(empty&&!$('#examples').childElementCount){ const latest=state.months.at(-1); const top=state.popular.filter(r=>r.month===latest&&r.rank>=1).sort((a,b)=>a.rank-b.rank).slice(0,8);
         top.forEach(r=>{ const b=document.createElement('button'); b.type='button'; b.textContent=r.keyword; b.addEventListener('click',()=>{ if(state.matchMode!=='exact'){state.matchMode='exact';} addSelection(r.keyword); }); $('#examples').appendChild(b); }); }
     }
+    let renderQueued=false;
+    function scheduleRender(){ if(renderQueued) return; renderQueued=true; requestAnimationFrame(()=>setTimeout(()=>{ renderQueued=false; renderAll(); },0)); }
     function renderAll(){ if(!state.dataReady)return; renderEmpty(); if(state.from>state.to)state.from=state.to;const months=visibleMonths(),definitions=seriesDefinitions(),rankDefs=rankDefinitions();renderKpis(definitions,months);renderShareChart(definitions,months);renderRankChart(rankDefs,months);renderZeroChart(definitions,months);renderTable(months);echarts.connect('keywordExplorer');updateUrl(); }
     function syncPresetButtons(){ const length=state.to-state.from+1;let any=false;document.querySelectorAll('.preset').forEach(button=>{const value=button.dataset.months;if(value==='custom')return;const on=!state.customRange&&(value==='all'?state.from===0&&state.to===state.months.length-1:Number(value)===length&&state.to===state.months.length-1);button.classList.toggle('active',on);any=any||on;});if(!any)state.customRange=true;document.querySelector('.preset[data-months="custom"]').classList.toggle('active',!!state.customRange);document.querySelector('.date-selects').hidden=!state.customRange; }
-    function setPreset(value){ if(value==='custom'){state.customRange=true;syncPresetButtons();return;} state.customRange=false; state.to=Math.max(0,state.months.length-1);state.from=value==='all'?0:Math.max(0,state.to-Number(value)+1);$('#fromMonth').value=String(state.from);$('#toMonth').value=String(state.to);syncPresetButtons();renderAll(); }
+    function setPreset(value){ if(value==='custom'){state.customRange=true;syncPresetButtons();return;} state.customRange=false; state.to=Math.max(0,state.months.length-1);state.from=value==='all'?0:Math.max(0,state.to-Number(value)+1);$('#fromMonth').value=String(state.from);$('#toMonth').value=String(state.to);syncPresetButtons();scheduleRender(); }
     function csvEscape(value){const text=String(value??'');return /[",\n]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;}
     function exportCsv(){
       const months=visibleMonths(),definitions=seriesDefinitions();if(!definitions.length){toast('Select keywords before exporting.');return;}const rows=[['month','series','search_share_percentage','marketplace_top_500_rank','zero_result_count']];
@@ -782,14 +800,14 @@
     function bindEvents(){
       $('#keywordInput').addEventListener('input',renderSuggestions);$('#keywordInput').addEventListener('keydown',event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){const items=[...document.querySelectorAll('#suggestions .suggestion')];if(items.length){event.preventDefault();let i=items.findIndex(x=>x.classList.contains('active'));items[i]?.classList.remove('active');i=(i+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items[i].classList.add('active');items[i].scrollIntoView({block:'nearest'});}}if(event.key==='Enter'){event.preventDefault();const first=$('#suggestions .suggestion.active')||$('#suggestions .suggestion');if(state.matchMode==='exact'&&first)first.click();else addSelection(event.currentTarget.value);}if(event.key==='Escape')closeSuggestions();});
       document.addEventListener('click',event=>{if(!event.target.closest('.picker'))closeSuggestions();});
-      $('#matchMode').addEventListener('change',event=>{state.matchMode=event.target.value;if(state.matchMode==='contains')state.compareMode='group';renderControls();renderAll();});
-      $('#containsLogic').addEventListener('change',event=>{state.containsLogic=event.target.value;renderControls();renderAll();});
-      $('#compareMode').addEventListener('change',event=>{state.compareMode=event.target.value;renderControls();renderAll();});
-      $('#smoothSeries').addEventListener('change',event=>{state.smooth=event.target.checked;renderAll();});
-      $('#clearSelection').addEventListener('click',()=>{state.selections=[];renderControls();renderAll();});
+      $('#matchMode').addEventListener('change',event=>{state.matchMode=event.target.value;if(state.matchMode==='contains')state.compareMode='group';renderControls();scheduleRender();});
+      $('#containsLogic').addEventListener('change',event=>{state.containsLogic=event.target.value;renderControls();scheduleRender();});
+      $('#compareMode').addEventListener('change',event=>{state.compareMode=event.target.value;renderControls();scheduleRender();});
+      $('#smoothSeries').addEventListener('change',event=>{state.smooth=event.target.checked;scheduleRender();});
+      $('#clearSelection').addEventListener('click',()=>{state.selections=[];renderControls();scheduleRender();});
       document.querySelectorAll('.preset').forEach(button=>button.addEventListener('click',()=>setPreset(button.dataset.months)));
-      $('#fromMonth').addEventListener('change',event=>{state.from=Number(event.target.value);if(state.from>state.to){state.to=state.from;$('#toMonth').value=String(state.to);}syncPresetButtons();renderAll();});
-      $('#toMonth').addEventListener('change',event=>{state.to=Number(event.target.value);if(state.to<state.from){state.from=state.to;$('#fromMonth').value=String(state.from);}syncPresetButtons();renderAll();});
+      $('#fromMonth').addEventListener('change',event=>{state.from=Number(event.target.value);if(state.from>state.to){state.to=state.from;$('#toMonth').value=String(state.to);}syncPresetButtons();scheduleRender();});
+      $('#toMonth').addEventListener('change',event=>{state.to=Number(event.target.value);if(state.to<state.from){state.from=state.to;$('#fromMonth').value=String(state.from);}syncPresetButtons();scheduleRender();});
       $('#exportCsv').addEventListener('click',exportCsv);$('#sharePage').addEventListener('click',copyShareLink);$('#reloadDefaults').addEventListener('click',()=>loadDefaults().catch(error=>setStatus(`Error: ${error.message}`)));
       $('#popularFileButton').addEventListener('click',()=>$('#popularFile').click());$('#zeroFileButton').addEventListener('click',()=>$('#zeroFile').click());
       $('#popularFile').addEventListener('change',event=>{const file=event.target.files[0];if(file)loadUploaded(file,'popular').catch(error=>setStatus(`Error: ${error.message}`));});
@@ -805,7 +823,7 @@
     function exposeDiagnostics(){window.KeywordExplorer={getState:()=>({popularRows:state.popular.length,zeroRows:state.zero.length,months:state.months.slice(),selections:state.selections.slice(),matchMode:state.matchMode,compareMode:state.compareMode,matchedQueries:selectedMatches().length,chartIds:Object.entries(state.charts).filter(([,chart])=>chart&&!chart.isDisposed?.()).map(([id])=>id)}),runSmokeTests:()=>({dataLoaded:state.popular.length>0,rankFieldPresent:state.popular.some(row=>row.rank>=1&&row.rank<=500),monthsLoaded:state.months.length>0,selectionPresent:state.selections.length>0,chartsRendered:['shareChart','rankChart','zeroChart'].every(id=>state.charts[id]&&!state.charts[id].isDisposed?.())})};}
     async function boot(){
       hydrateUrl();bindEvents();renderControls();
-      try{setStatus('Loading chart and spreadsheet libraries…');await Promise.all([window.echarts?Promise.resolve():loadScriptSeq(ECHARTS_URLS,'echarts'),window.XLSX?Promise.resolve():loadScriptSeq(XLSX_URLS,'XLSX')]);await loadDefaults();exposeDiagnostics();}catch(error){console.warn(error);showLoadError(error);}
+      try{setStatus('Loading chart and spreadsheet libraries…');await (window.echarts?Promise.resolve():loadScriptSeq(ECHARTS_URLS,'echarts'));await loadDefaults();exposeDiagnostics();}catch(error){console.warn(error);showLoadError(error);}
     }
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
   })();
