@@ -17,15 +17,6 @@
     zero: ['./data/zero_result_keywords_marketplace.xlsx']
   };
 
-  // Links used on About and in the footer. Empty values hide the button.
-  const LINKS = {
-    github: 'https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords',
-    reportBuilder: 'https://marketplace.atlassian.com/apps/1216997',
-    actonic: 'https://actonic.de/en/',
-    linkedin: 'https://www.linkedin.com/in/rustem-shiriiazdanov/',
-    bookCall: 'https://calendly.com/rustem-shiriiazdanov-actonic'
-  };
-
   function loadScriptSeq(urls, globalName){
     return new Promise((resolve, reject)=>{
       let i = 0;
@@ -372,13 +363,12 @@
   const HEAT_BINS = [0, 1, 5, 10, 20, 50];
   const heatBin = (n)=>{ let b = 0; for(let i=0;i<HEAT_BINS.length;i++) if(n >= HEAT_BINS[i]) b = i; return n > 0 ? Math.max(1, b) : 0; };
 
-  window.MK = { XLSX_URLS, ECHARTS_URLS, LINKS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, loadDone, loadFailed, fillGhosts, ghostHTML, loadCardHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
+  window.MK = { XLSX_URLS, ECHARTS_URLS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, loadDone, loadFailed, fillGhosts, ghostHTML, loadCardHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
     toMonthKey, monthLabel, monthLong, monthShort, monthName, monthAbbr, addMonths, monthsBetween,
     escapeHtml, fmtInt, fmtPct, cleanKeyword, isJunkQuery, num, REPORT_BREAK, BREAK_NOTE, NOISE_NOTE, ZERO_NOTE,
     attachLookup, lookupIndex, tokens, HEAT_BINS, heatBin, isSpike, inkOn };
 
   // Fill links that are configured above; hide the ones that are not.
-  const fillLinks = ()=> document.querySelectorAll('[data-link]').forEach(a=>{ const u = LINKS[a.dataset.link]; if(u) a.href = u; else a.hidden = true; });
-  const ready = ()=>{ fillLinks(); bindJunkToggles(); fillGhosts(); };
+  const ready = ()=>{ bindJunkToggles(); fillGhosts(); };
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready); else ready();
 })();
