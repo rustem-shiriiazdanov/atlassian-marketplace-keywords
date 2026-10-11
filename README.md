@@ -22,12 +22,12 @@ With these inputs the site provides six linked pages:
 
 All pages follow the system light or dark theme. Shared styles live in `assets/site.css` and shared helpers (loading workbooks, cleaning queries, month labels) in `assets/common.js`.
 
-Data handling: partial monthly reports (Dec 2021, Nov 2023) are shown as published and marked; months whose zero-result total is far below their neighbours (Oct and Dec 2023) are marked; visually identical query variants are folded together. Every query is shown as Atlassian reports it by default. A **Hide meaningless queries** checkbox (on This month, Month by month, Keyword Explorer, Archive and Method; remembered in the browser) leaves out bot noise: queries with no letters or digits, long digit strings such as `1234`, HTML tags, pasted links and e-mail addresses, and script or SQL injection attempts. Totals are always added up from the rows shown. In November 2024 broad queries such as "automation" lost most of their share in one month, as Atlassian rolled out its redesigned Marketplace with autocomplete; trend views mark that month and default to the period after it.
+Data handling: partial monthly reports (December 2021, and the November 2023 zero-result report) are shown as published and marked; ranks are only compared between two full reports; months whose zero-result total is far below their neighbours (Oct and Dec 2023) are marked; visually identical query variants are folded together. Every query is shown as Atlassian reports it by default. A **Hide meaningless queries** checkbox (on This month, Month by month, Keyword Explorer, Archive and Method; remembered in the browser) leaves out bot noise: queries with no letters or digits, long digit strings such as `1234`, HTML tags, pasted links and e-mail addresses, and script or SQL injection attempts. Totals are always added up from the rows shown. In November 2024 broad queries such as "automation" lost most of their share in one month, as Atlassian rolled out its redesigned Marketplace with autocomplete; charts mark that month, and the biggest-queries chart on Month by month starts after it by default (the heatmap and the Keyword Explorer show the last 12 months).
 
 The **Keyword Explorer** keeps the API metrics distinct while placing them on synchronized monthly timelines:
 
 - Search share as a percentage of all Marketplace searches
-- Direct Marketplace top-500 rank from the report; months where a query is outside the top 500 show as gaps in the charts and **Outside top 500** in the CSV
+- Direct Marketplace top-500 rank from the report; months where a query is outside the top 500 show as gaps in the charts (also with the three-month average) and **Outside top 500** in the CSV; combined groups have no rank
 - Raw zero-result counts, never presented as a rate
 - Exact-query comparison or contains-any/contains-all aggregation
 - Date presets, three-month averages, URL state, CSV export, PNG export, and fullscreen charts
@@ -42,7 +42,7 @@ The **Keyword Explorer** keeps the API metrics distinct while placing them on sy
 ### 2. Upload Your Data
 1. Open `month-by-month.html` and scroll to **Use your own data**.
 2. For each file tile choose the proper spreadsheet:
-   - **Popular Search Keywords**: `.xlsx` with `Raw` sheet containing `month`, `keyword`, `percentage`
+   - **Popular Search Keywords**: `.xlsx` with `Raw` sheet containing `month`, `keyword`, `percentage`, `rank`
    - **Zero‑Result Keywords**: `.xlsx` with `Raw` sheet containing `month`, `keyword`, `count`. Optional `Monthly_Summary` sheet with `month`, `sum_count`
 3. Use the **Charts show** filter to narrow charts to particular terms (optional). Files are read in the browser and never uploaded.
 
@@ -70,13 +70,20 @@ Open `month-by-month.html?debug` and click **Run smoke tests** to verify require
 
 ## Features & Controls
 
+### This month
+- **Look up a query** in the header: suggestions open the query in the Keyword Explorer; Enter on text with no match opens every query that contains all of its words
+- Earlier issues with ← / → links; every query name links to the Keyword Explorer
+- Searches that found no apps: **12 months**, **24 months** or **All years**
+- Empty-search heatmap with **Show values** and a Total column
+- **Hide meaningless queries** switch
+
 ### Month by month
 - **Charts show** filter to focus every chart on picked queries
 - **Hide meaningless queries** switch (shared with the other pages)
 - Race: **Top 5–20** queries, **0.5× / 1× / 2×** speed, **▶ Play / ⏸ Pause** and a month slider
 - Searches that found no apps: **Total per month** or **By query**
 - Biggest queries over the years: **3–10** queries, **Since Nov 2024** or **All years**
-- Empty-search heatmap: **10–30** queries; **Since Nov 2024**, **12 months**, **All years** or a custom From/To range
+- Empty-search heatmap: **10–30** queries; **Since Nov 2024**, **12 months**, **All years** or a custom From/To range; **Show values** (greyed out when the cells are too narrow for numbers, e.g. All years on a laptop or a phone)
 - Each chart opens full screen with its data table or downloads as PNG; **Share** shares the page
 - **Use your own data** reads your own exports in the browser; `?debug` adds **Load demo data** and **Run smoke tests**
 
@@ -88,13 +95,15 @@ Open `month-by-month.html?debug` and click **Run smoke tests** to verify require
 - 6-, 12-, 24-month and All presets plus custom month selection
 - Three-month average toggle for share and zero-result series
 - Comparison table with current and best ranks, share changes, peaks, and zero-result totals
-- Shareable URL state plus filtered CSV and chart PNG exports
+- Shareable URL state plus filtered CSV and chart PNG exports (CSV cells that could run as spreadsheet formulas are prefixed with `'`)
 
 ## Technical Notes
 - Pure JavaScript with **ECharts 5.5.0** and **XLSX** libraries
 - Newsreader (headlines and numbers) and Public Sans (text) from Google Fonts, with system-font fallbacks
 - Light and dark themes from CSS custom properties; charts read the same tokens
 - Responsive layout for desktop and mobile; respects reduced-motion settings
+- Every element that shows report data has its own loading state (placeholder, progress card or spinner), and says so if the reports can't be loaded
+- Links are plain `href`s in the HTML; nothing rewrites them at runtime
 - Sequential CDN fallbacks for robust loading
 - Automatic default file loading on GitHub Pages
 - Built‑in smoke tests to confirm rendering

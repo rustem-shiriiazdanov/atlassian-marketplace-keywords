@@ -35,11 +35,12 @@
 
   // --- Months ---
   function toMonthKey(v){
-    if(typeof v === 'string' && v.length === 7 && v.charCodeAt(4) === 45) return v;
+    if(typeof v === 'string' && /^\d{4}-\d{2}$/.test(v)) return v;
     if(v instanceof Date && !isNaN(v)) return v.getUTCFullYear() + '-' + String(v.getUTCMonth()+1).padStart(2,'0');
     if(typeof v === 'number' && window.XLSX){ const d = XLSX.SSF.parse_date_code(v); return d.y + '-' + String(d.m).padStart(2,'0'); }
     const t = String(v == null ? '' : v).trim(); const m = /^(\d{4})-(\d{2})/.exec(t); if(m) return m[1] + '-' + m[2];
-    const d = new Date(t); return isNaN(d) ? '' : d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0');
+    // Text dates ("Dec 2021", "12/1/2021") are parsed in local time, so the month is read in local time too.
+    const d = new Date(t); return isNaN(d) ? '' : d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
   }
   function monthLabel(key, opts={month:'long', year:'numeric'}){
     const m = /^(\d{4})-(\d{2})/.exec(String(key||'')); if(!m) return String(key||'');
@@ -76,7 +77,7 @@
   // --- Reading workbooks: in a background worker, so the page never freezes ---
   const WORKER_SRC = `const URLS=${JSON.stringify(XLSX_URLS)};
     for(const u of URLS){ try{ importScripts(u); if(self.XLSX) break; }catch(e){} }
-    const key=(v)=>{ if(typeof v==='number'){ const d=XLSX.SSF.parse_date_code(v); return d.y+'-'+String(d.m).padStart(2,'0'); } const t=String(v==null?'':v).trim(); const m=/^(\\d{4})-(\\d{2})/.exec(t); if(m) return m[1]+'-'+m[2]; const d=new Date(t); return isNaN(d)?t.slice(0,7):d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0'); };
+    const key=(v)=>{ if(typeof v==='number'){ const d=XLSX.SSF.parse_date_code(v); return d.y+'-'+String(d.m).padStart(2,'0'); } const t=String(v==null?'':v).trim(); const m=/^(\\d{4})-(\\d{2})/.exec(t); if(m) return m[1]+'-'+m[2]; const d=new Date(t); return isNaN(d)?'':d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); };
     self.onmessage=(e)=>{ try{ if(!self.XLSX) throw new Error('no xlsx'); const wb=XLSX.read(e.data,{type:'array'}); const out={}; for(const name of ['Raw','Monthly_Summary']){ if(wb.Sheets[name]) out[name]=XLSX.utils.sheet_to_json(wb.Sheets[name],{defval:null}).map(r=>({...r, month:key(r.month)})); } self.postMessage(out); }catch(err){ self.postMessage({error:String(err&&err.message||err)}); } };`;
   function readWorkbook(buf){
     load.reading++; paintLoad();
@@ -111,7 +112,8 @@
   function paintLoad(){
     const st = loadState();
     let bar = document.querySelector('.mk-load');
-    if(!bar && document.body){ bar = document.createElement('div'); bar.className = 'mk-load'; bar.setAttribute('aria-hidden', 'true'); bar.innerHTML = '<i></i>'; document.body.prepend(bar); }
+    // Only pages that load the reports get the progress line (About loads nothing).
+    if(!bar && document.body && (load.files.size || load.reading || document.querySelector('[data-ghost]'))){ bar = document.createElement('div'); bar.className = 'mk-load'; bar.setAttribute('aria-hidden', 'true'); bar.innerHTML = '<i></i>'; document.body.prepend(bar); }
     if(bar){ bar.firstChild.style.transform = `scaleX(${st.p})`; bar.classList.toggle('done', load.done || load.failed); }
     // One status for screen readers; the cards on the page are visual only.
     let live = document.getElementById('mkLoadStatus');
@@ -123,14 +125,20 @@
     document.querySelectorAll('[data-load-bar]').forEach(n=>{ n.style.width = pct; });
     document.querySelectorAll('.load-card').forEach(c=> c.classList.toggle('failed', load.failed));
     // Figures that a page leaves empty once the reports are in show a dash instead of spinning on.
-    if(load.done || load.failed){ document.querySelectorAll('.file-loading').forEach(m=> m.replaceWith(load.failed ? 'Not loaded' : 'Loaded')); document.querySelectorAll('.mini-load').forEach(m=> m.replaceWith('—')); }
+    // Once the page is drawn, markers a page left in place become plain text. After a failure they stay in place
+    // in a failed state, so a retry can show them loading again.
+    if(load.done){ document.querySelectorAll('.file-loading').forEach(m=> m.replaceWith('Loaded')); document.querySelectorAll('.mini-load').forEach(m=> m.replaceWith('—')); }
+    else {
+      document.querySelectorAll('.mini-load').forEach(m=> m.classList.toggle('failed', load.failed));
+      document.querySelectorAll('.file-loading').forEach(m=>{ m.classList.toggle('failed', load.failed); const t = m.querySelector('.fl-text'); if(t) t.textContent = load.failed ? 'Not loaded' : 'Loading from the repository…'; });
+    }
   }
   // Pages call this once the first view is drawn; the line fills up and fades out.
   function loadDone(){ if(load.done) return; load.done = true; paintLoad(); }
   function loadFailed(){ load.failed = true; paintLoad(); }
   // Fetches the first file that exists, counting bytes as they arrive for the progress line.
   async function fetchFirst(urls){
-    const key = urls[0]; load.failed = false; load.done = false;
+    const key = urls[0]; load.failed = false; load.done = false; paintLoad();
     for(const u of urls){
       try{
         const res = await fetch(u, {cache:'no-cache'}); if(!res.ok) continue;
@@ -160,6 +168,7 @@
     const wrap = (inner, tag = 'div')=> `<${tag} class="skel-wrap">${inner}${card ? loadCardHTML(label) : ''}</${tag}>`;
     const rows = (k, f)=> Array.from({length:k}, (_, i)=> f(i)).join('');
     if(kind === 'num') return `<span class="mini-load"><span class="spin"></span><span class="sr-only">Loading</span></span>`;
+    if(kind === 'file') return `<span class="file-loading"><span class="mini-load"><span class="spin"></span></span><span class="fl-text">Loading from the repository…</span></span>`;
     if(kind === 'text'){ n = n || 3; return wrap(`<span class="skel g-text" aria-hidden="true">${rows(n, i=> `<b style="width:${i === n-1 ? 58 : 96 - (i*7)%14}%"></b>`)}</span>`, 'span'); }
     if(kind === 'bars'){ n = n || 10; return wrap(`<div class="skel g-bars" aria-hidden="true">${rows(n, i=> `<span><b style="width:${40 + (i*37)%45}%"></b><i style="width:${W[i] || 18}%"></i></span>`)}</div>`); }
     if(kind === 'line'){ const pts = [62,58,66,55,60,48,52,44,50,41,46,38,42,36,40,33,30,34,28,26].map((y,i)=> `${(i/19*100).toFixed(1)},${y}`).join(' ');
@@ -170,6 +179,8 @@
     if(kind === 'cards'){ n = n || 12; return wrap(`<div class="skel g-cards" aria-hidden="true">${rows(n, i=> `<span><b style="width:${35 + (i*17)%30}%"></b><i style="width:${55 + (i*13)%35}%"></i><i style="width:${30 + (i*11)%25}%"></i></span>`)}</div>`); }
     return '';
   }
+  // Before a retry: every element that still waits for data (or shows the failure) gets its loading state back.
+  function refillGhosts(root){ load.failed = false; load.done = false; load.files.clear(); (root || document).querySelectorAll('[data-ghost]').forEach(el=>{ delete el.dataset.ghosted; }); fillGhosts(root); }
   function fillGhosts(root){
     (root || document).querySelectorAll('[data-ghost]').forEach(el=>{
       if(el.dataset.ghosted) return; el.dataset.ghosted = '1';
@@ -277,7 +288,7 @@
     const issues = months.slice();
     return { popular, zero, zeroTotals: totals, byMonth, zeroByMonth, months, issues, popularPartial, zeroPartial, zeroLow };
   }
-  // A report with far fewer rows than usual is a partial export (Dec 2021, Nov 2023). Shown, with a note.
+  // A report with far fewer rows than usual is a partial export (the popular report for Dec 2021). Shown, with a note.
   function smallReports(map){
     const c = Array.from(map.values()).map(l=>l.length).sort((a,b)=>a-b); if(!c.length) return new Set();
     const median = c[Math.floor(c.length/2)];
@@ -286,8 +297,6 @@
 
   // Atlassian rolled out its redesigned Marketplace from mid-October to early November 2024; broad one-word queries lost most of their share in November.
   const REPORT_BREAK = '2024-11';
-  const BREAK_NOTE = 'In November 2024 broad queries such as “automation”, “jira” and “structure” lost most of their share in a single month, while app names held steady. Atlassian rolled out its redesigned Marketplace, with autocomplete and new categories, from mid-October to early November 2024, so shares before and after are not directly comparable.';
-  const NOISE_NOTE = 'Meaningless queries are bot noise, test strings such as “1234”, pasted links and e-mail addresses, and HTML or script injection attempts. They are shown by default, as Atlassian reports them; tick “Hide meaningless queries” to leave them out on every page.';
   // The zero-result report lists the 500 queries that most often found no apps; its monthly total adds those up.
   const ZERO_NOTE = 'Each month adds up the 500 queries that most often found no apps, as Atlassian reports them; rarer empty searches are not in the report.';
 
@@ -297,21 +306,24 @@
     if(!form) return;
     const input = form.querySelector('input'), box = form.querySelector('.suggest');
     let items = [], active = -1;
-    const close = ()=>{ box.hidden = true; active = -1; input.setAttribute('aria-expanded','false'); };
+    // Announced as a combobox: the highlighted suggestion is the active descendant, so Enter's target is read out.
+    input.setAttribute('role', 'combobox'); input.setAttribute('aria-autocomplete', 'list');
+    const close = ()=>{ box.hidden = true; active = -1; input.setAttribute('aria-expanded','false'); input.removeAttribute('aria-activedescendant'); };
     const go = (q, exact=true)=>{
       if(exact){ location.href = './keyword-explorer.html?q=' + encodeURIComponent(q); return; }
       const words = Array.from(new Set(cleanKeyword(q).split(' ').filter(Boolean)));
       if(!words.length) return;
       location.href = './keyword-explorer.html?' + words.map(w=>'q=' + encodeURIComponent(w)).join('&') + '&mode=contains&logic=all';
     };
-    const mark = ()=> box.querySelectorAll('button').forEach((b,i)=> b.classList.toggle('active', i === active));
+    const mark = ()=>{ box.querySelectorAll('button').forEach((b,i)=>{ b.classList.toggle('active', i === active); b.setAttribute('aria-selected', String(i === active)); });
+      if(active >= 0) input.setAttribute('aria-activedescendant', box.id + '-o' + active); else input.removeAttribute('aria-activedescendant'); };
     const render = ()=>{
       const q = cleanKeyword(input.value); const index = getIndex();
       if(!q || !index){ close(); return; }
       const starts = [], has = [];
       for(const it of index){ if(it.k.startsWith(q)) starts.push(it); else if(has.length < 8 && it.k.includes(q)) has.push(it); if(starts.length >= 8) break; }
       items = starts.concat(has).slice(0, 8);
-      box.innerHTML = items.length ? items.map((it,i)=>{ const at = it.k.indexOf(q); const name = escapeHtml(it.k.slice(0,at)) + '<b>' + escapeHtml(it.k.slice(at, at+q.length)) + '</b>' + escapeHtml(it.k.slice(at+q.length)); return `<button type="button" role="option" data-i="${i}"><span>${name}</span><span>${escapeHtml(it.note||'')}</span></button>`; }).join('')
+      box.innerHTML = items.length ? items.map((it,i)=>{ const at = it.k.indexOf(q); const name = escapeHtml(it.k.slice(0,at)) + '<b>' + escapeHtml(it.k.slice(at, at+q.length)) + '</b>' + escapeHtml(it.k.slice(at+q.length)); return `<button type="button" role="option" id="${box.id}-o${i}" data-i="${i}"><span>${name}</span><span>${escapeHtml(it.note||'')}</span></button>`; }).join('')
         : `<div class="none">No query contains “${escapeHtml(input.value.trim())}”. Press Enter to see every query that contains ${q.includes(' ') ? 'all of these words' : 'it'}.</div>`;
       active = items.length ? 0 : -1; mark(); box.hidden = false; input.setAttribute('aria-expanded','true');
     };
@@ -363,9 +375,9 @@
   const HEAT_BINS = [0, 1, 5, 10, 20, 50];
   const heatBin = (n)=>{ let b = 0; for(let i=0;i<HEAT_BINS.length;i++) if(n >= HEAT_BINS[i]) b = i; return n > 0 ? Math.max(1, b) : 0; };
 
-  window.MK = { XLSX_URLS, ECHARTS_URLS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, loadDone, loadFailed, fillGhosts, ghostHTML, loadCardHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
+  window.MK = { XLSX_URLS, ECHARTS_URLS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, loadDone, loadFailed, fillGhosts, refillGhosts, ghostHTML, loadCardHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
     toMonthKey, monthLabel, monthLong, monthShort, monthName, monthAbbr, addMonths, monthsBetween,
-    escapeHtml, fmtInt, fmtPct, cleanKeyword, isJunkQuery, num, REPORT_BREAK, BREAK_NOTE, NOISE_NOTE, ZERO_NOTE,
+    escapeHtml, fmtInt, fmtPct, cleanKeyword, isJunkQuery, num, REPORT_BREAK, ZERO_NOTE,
     attachLookup, lookupIndex, tokens, HEAT_BINS, heatBin, isSpike, inkOn };
 
   // On every page: the hide switches and the loading placeholders.

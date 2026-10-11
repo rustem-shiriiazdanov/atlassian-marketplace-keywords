@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Marketplace Keywords — Archive</title>
-  <meta name="description" content="Every monthly issue of Marketplace Keywords: the #1 Atlassian Marketplace search and the searches that found no apps, month by month since 2022." />
+  <meta name="description" content="Every monthly issue of Marketplace Keywords: the #1 Atlassian Marketplace search and the searches that found no apps, month by month since December 2021." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -107,7 +107,7 @@
     $('#loadAlert').hidden = true;
     MK.loadData().then(D=>{ loaded = true; render(D); MK.loadDone(); }).catch(err=>{ console.error(err); MK.loadFailed(); $('#loadAlert').hidden = false; $('#archive').innerHTML = ''; });
   }
-  $('#retry').addEventListener('click', start);
+  $('#retry').addEventListener('click', ()=>{ MK.refillGhosts(); start(); });
   start();
 })();
 </script>
