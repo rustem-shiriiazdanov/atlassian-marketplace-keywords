@@ -113,8 +113,8 @@
         <p>Atlassian’s reports include searches that are not real questions about apps: bot noise, test strings such as “1234”, pasted links and e-mail addresses, and attempts to inject HTML, scripts or SQL into the search box. Some of them reached the top of a month: in February 2022 “1234” alone took 28.93% of all searches. By default every page shows all queries exactly as Atlassian reports them. Tick <strong>Hide meaningless queries</strong> to leave them out; the setting applies on every page, in every chart, total and ranking, and to files you open yourself, and it is remembered in this browser.</p>
         <p><label class="check"><input type="checkbox" data-junk-toggle> Hide meaningless queries</label></p>
         <p>A query counts as meaningless when it has no letters or digits, is a long string of digits, contains an e-mail address, an HTML tag, a link, or a script or SQL injection pattern. Ordinary words that happen to be technical, such as “iframe”, “svg” or “xss”, and Jira smart values such as “{{issue.key}}” are kept.</p>
-        <p id="removedLine" class="small">Counting the meaningless rows…</p>
-        <ul class="removed" id="removedList" aria-label="Largest meaningless queries"></ul>
+        <p id="removedLine" class="small"><span class="wait">Counting the meaningless rows…</span></p>
+        <ul class="removed" id="removedList" aria-label="Largest meaningless queries" data-ghost="list" data-rows="5"></ul>
       </section>
 
       <section id="files" aria-labelledby="h-files">
@@ -145,7 +145,7 @@
   }
   let loaded = false;
   window.addEventListener('mk:junk', ()=>{ if(loaded) render(MK.currentData()); });
-  MK.loadData().then(D=>{ loaded = true; render(D); }).catch(err=>{ console.error(err); $('#removedLine').textContent = 'The reports could not be loaded, so the counts are not shown.'; });
+  MK.loadData().then(D=>{ loaded = true; render(D); MK.loadDone(); }).catch(err=>{ console.error(err); MK.loadFailed(); $('#removedLine').textContent = 'The reports could not be loaded, so the counts are not shown.'; });
 })();
 </script>
 </body>

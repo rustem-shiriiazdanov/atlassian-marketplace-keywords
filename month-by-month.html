@@ -177,7 +177,7 @@
     .chart{height:480px;width:100%;position:relative;display:flex;align-items:center;justify-content:center}
     .chart.wide{height:440px}
     .chart.heat{height:520px}
-    .chart .placeholder{color:var(--muted);font-size:14px}
+    .chart .placeholder{color:var(--muted);font-size:14px;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
     .chart.flip{animation:flipY .6s}
     @keyframes flipY{0%{transform:rotateY(0)}50%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
     .card.is-fullscreen{position:fixed;inset:24px;margin:0 !important;z-index:1000;overflow:auto;display:flex;flex-direction:column;box-shadow:0 0 0 100vmax rgba(9,15,28,.62)}
@@ -416,7 +416,7 @@
           <div class="card-controls">
             <div class="ctrl"><label for="topN">Show</label><span class="sel-note" hidden></span><select id="topN" class="select-sm"><option value="5">Top 5</option><option value="10" selected>Top 10</option><option value="15">Top 15</option><option value="20">Top 20</option></select><span id="topNVal" hidden>10</span></div>
           </div>
-          <div class="card-body"><div id="race" class="chart" data-testid="race"><div class="placeholder">Loading charts…</div></div></div>
+          <div class="card-body"><div id="race" class="chart" data-testid="race"><div class="placeholder" data-ghost="bars" data-rows="10"></div></div></div>
           <p class="card-note" id="raceNote"></p>
         </div>
         <div class="card" id="zeros-card">
@@ -425,7 +425,7 @@
             <div class="head-tools"><div data-toolbar-for="zeros"></div></div>
           </div>
           <div class="card-controls"><div class="seg" role="group" aria-label="Zero-result view"><button type="button" id="zeroModeTotals" aria-pressed="true">Total per month</button><button type="button" id="zeroModeKeywords" aria-pressed="false">By query</button></div></div>
-          <div class="card-body"><div id="zeros" class="chart" data-testid="zeros"><div class="placeholder">Loading charts…</div></div></div>
+          <div class="card-body"><div id="zeros" class="chart" data-testid="zeros"><div class="placeholder" data-ghost="line"></div></div></div>
           <p class="card-note" id="zerosNote"></p>
         </div>
         <div class="scrubber card player" aria-label="Month player">
@@ -454,7 +454,7 @@
           <div class="seg" role="group" aria-label="Time range"><button type="button" id="trailsRecent" aria-pressed="true">Since Nov 2024</button><button type="button" id="trailsAll" aria-pressed="false">All years</button></div>
           <div class="ctrl"><label for="trailsN">Show</label><span class="sel-note" hidden></span><select id="trailsN" class="select-sm"><option value="3">3 queries</option><option value="4">4 queries</option><option value="5">5 queries</option><option value="6" selected>6 queries</option><option value="8">8 queries</option><option value="10">10 queries</option></select><span id="trailsNVal" hidden>6</span></div>
         </div>
-        <div class="card-body"><div id="trails" class="chart wide" data-testid="trails"><div class="placeholder">Waiting for data…</div></div></div>
+        <div class="card-body"><div id="trails" class="chart wide" data-testid="trails"><div class="placeholder" data-ghost="line"></div></div></div>
         <p class="card-note" id="trailsNote"></p>
       </div>
       <div class="card" id="heatmap-card" style="margin-top:20px">
@@ -467,7 +467,7 @@
           <div class="ctrl"><label for="heatTopK">Show</label><span class="sel-note" hidden></span><select id="heatTopK" class="select-sm"><option value="10">10 queries</option><option value="15" selected>15 queries</option><option value="20">20 queries</option><option value="30">30 queries</option></select><span id="heatTopKVal" hidden>15</span></div>
           <div class="ctrl" id="heatTimeRangeChip" hidden><label for="heatTimeStart">From</label><select id="heatTimeStart" class="select-sm"></select><label for="heatTimeEnd">to</label><select id="heatTimeEnd" class="select-sm"></select><span id="heatTimeStartVal" hidden></span><span id="heatTimeEndVal" hidden></span></div>
         </div>
-        <div class="card-body"><div id="heatmap" class="chart heat" data-testid="heatmap"><div class="placeholder">Waiting for data…</div></div></div>
+        <div class="card-body"><div id="heatmap" class="chart heat" data-testid="heatmap"><div class="placeholder" data-ghost="heat" data-rows="12"></div></div></div>
         <div id="heatLegend" class="heat-legend" aria-label="Colour key"></div>
       </div>
     </section>
@@ -862,6 +862,9 @@
           const grid = ys.map(()=> xs.map(()=> ''));
           for(const [xi, yi, v] of series[0].data) grid[yi][xi] = v;
           rows = [['Query', 'Total', ...xs.map(fmtCat)], ...ys.map((y,i)=>[y, grid[i].reduce((a,v)=> a + (+v||0), 0).toLocaleString('en-US'), ...grid[i].map(v=> v ? Number(v).toLocaleString('en-US') : '–')])];
+        } else if(series[0]?.type === 'custom' && series[0]?.id === 'race'){
+          const rowsR = (series[0].data || []).map(d=>[d.name, d.value?.[0], d.value?.[1]]).sort((x,y)=> x[2] - y[2]);
+          rows = [['#', 'Query', 'Value'], ...rowsR.map((r,k)=>[k+1, r[0], Number(r[1]).toLocaleString('en-US', { maximumFractionDigits:2 })])];
         } else if(series[0]?.type === 'bar' && opt.yAxis?.[0]?.type === 'category'){
           const names = opt.yAxis[0].data || [], vals = series[0].data || [];
           rows = [['Query', 'Value'], ...names.map((n,i)=>[n, (vals[i]?.value ?? vals[i])])];
@@ -1092,21 +1095,19 @@
       }
       function raceOption(months, topByMonth, {isPercent, accent, index=0, lookup=null}){
         const t = T();
-        const barColor = accent || t.blue;
+        const raceColors = raceColorFrames(months, topByMonth, t);
         const fmt = (v)=> isPercent ? `${v.toFixed(2)}%` : Math.round(v).toLocaleString('en-US');
         const n = Math.max(...months.map(m=>(topByMonth[m]||[]).length), 1);
-        // Every query that ever makes the cut gets a fixed category, so a bar keeps its identity while the race plays.
+        // The name column fits the longest query that shows at any point of the race.
         const allNames = Array.from(new Set(months.flatMap(m=>(topByMonth[m]||[]).map(d=>d.name))));
         const small = narrow('race');
         const longest = Math.max(60, ...allNames.map(nm=>measureTextWidth(nm)));
         const labelW = small ? 138 : Math.min(accent ? 150 : 220, Math.ceil(longest) + 8);
-        // mode: 'static' (scrubbing, sorted rows), 'prep' (same frame in race layout, no motion), 'play' (animated step)
-        const frame = (i, mode='static')=>{ const m = months[i], pm = months[i-1]; const rows = topByMonth[m]||[];
-          const playing = mode === 'play', race = mode !== 'static';
+        // One frame per month: rows sorted by value; each row is drawn by raceSeries at its place (pos 0 = top).
+        const frame = (i)=>{ const m = months[i], pm = months[i-1]; const rows = topByMonth[m]||[];
           const top = Math.max(0, ...rows.map(d=>d.value));
           const ax = niceAxis(top*1.06, small ? 3 : 4);
           const rankOf = new Map(rows.map((d,k)=>[d.name, k+1]));
-          const byName = new Map(rows.map(d=>[d.name, d.value]));
           const change = (name, v)=>{
             if(!pm || !lookup) return '';
             if(isPercent && state.trailsBreak === m) return `<br/>${breakIsMarketplace() ? 'Atlassian’s redesigned Marketplace arrived this month' : 'The biggest queries drop sharply this month'}, so no comparison`;
@@ -1116,49 +1117,105 @@
             const d = v - before;
             return isPercent ? `<br/>${d > 0 ? '+' : d < 0 ? '−' : ''}${Math.abs(d).toFixed(2)} pp vs ${when}` : `<br/>${d > 0 ? '+' : d < 0 ? '−' : ''}${Math.abs(Math.round(d)).toLocaleString('en-US')} vs ${when}`;
           };
-          const names = race ? allNames : rows.map(d=>d.name);
+          const items = rows.map((d,k)=>({ name:d.name, value:d.value, pos:k, color: raceColors[i].get(d.name) || t.muted }));
           return {
-          backgroundColor:'transparent', animation: playing && !reduceMotion.matches, animationDuration:0, animationDurationUpdate: Math.min(700, state.playInterval*0.6), animationEasing:'cubicInOut', animationEasingUpdate:'cubicInOut', textStyle:{ fontFamily:FONT },
+          backgroundColor:'transparent', animation:false, textStyle:{ fontFamily:FONT },
           grid:{ left: labelW + 12, right:56, top:24, bottom:28, containLabel:false },
-          // While playing, the scale changes every step; gridlines and ticks come back when the race stops.
-          xAxis:{ type:'value', min:0, max: ax.max, interval: ax.interval, splitLine:{ show:true, lineStyle:{ color: raceGridColors(ax.interval, ax.max) } }, axisLabel:{ show: true, color:t.muted, fontSize:12, hideOverlap:true, formatter: isPercent ? (v)=> v === 0 ? '0%' : `${v.toFixed(ax.decimals)}%` : (v)=> Number(v).toLocaleString('en-US') } },
-          yAxis:{ type:'category', inverse:true, max: n-1, data: names, animationDurationUpdate: Math.min(700, state.playInterval*0.6), axisLabel:{ color:t.ink, fontSize: small ? 12 : 13, fontWeight:600, margin:12, width: labelW, overflow: (small || accent) ? 'break' : 'truncate', lineHeight: (small || accent) ? 15 : undefined }, axisTick:{ show:false }, axisLine:{ show:false } },
-          tooltip:{ trigger:'item', ...tooltipStyle(t), formatter:p=>`<b>${escapeHtml(p.name)}</b><br/>#${rankOf.get(p.name) ?? '–'}${state.keywordFilter.length ? ' of the picked queries' : ''} in ${monthLabel(m,{month:'short', year:'numeric'})}: ${isPercent ? fmt(p.value)+' of all searches' : fmt(p.value)+' empty searches'}${change(p.name, p.value)}` },
-          series:[{ id:'race', type:'bar', realtimeSort: race, barCategoryGap:'42%', barMaxWidth:24, label:{ show:true, position:'right', distance:8, color:t.ink2, fontSize:12, fontWeight:600, textBorderColor:t.surface, textBorderWidth:3, valueAnimation: false, formatter:p=> byName.has(p.name) ? fmt(byName.get(p.name)) : '' }, itemStyle:{ borderRadius:0, color: barColor }, emphasis:{ itemStyle:{ color: t.ink } },
-            data: names.map(nm=>({ value: byName.get(nm) ?? 0, name:nm })) }]
+          xAxis:{ type:'value', min:0, max: ax.max, interval: ax.interval, axisLine:{ show:false, onZero:false }, axisTick:{ show:false }, splitLine:{ show:true, lineStyle:{ color: raceGridColors(ax.interval, ax.max) } }, axisLabel:{ show: true, color:t.muted, fontSize:12, hideOverlap:true, formatter: isPercent ? (v)=> v === 0 ? '0%' : `${v.toFixed(ax.decimals)}%` : (v)=> Number(v).toLocaleString('en-US') } },
+          // Rows are placed on a hidden numeric axis, so a bar can glide between places while the race plays.
+          yAxis:{ type:'value', inverse:true, min:-0.5, max: n-0.5, show:false },
+          tooltip:{ trigger:'item', ...tooltipStyle(t), formatter:p=>{ const v = Array.isArray(p.value) ? p.value[0] : p.value; return `<b>${escapeHtml(p.name)}</b><br/>#${rankOf.get(p.name) ?? '–'}${state.keywordFilter.length ? ' of the picked queries' : ''} in ${monthLabel(m,{month:'short', year:'numeric'})}: ${isPercent ? fmt(v)+' of all searches' : fmt(v)+' empty searches'}${change(p.name, v)}`; } },
+          series:[ raceSeries(items, { n, t, fmt, labelW, small, wrap: small || !!accent }) ],
+          _race:{ items, n, fmt, labelW, small, wrap: small || !!accent }
         }; };
         return frame;
+      }
+      // Bars, query names and values drawn together, so a row moves as one piece. Rows below the last place fade out.
+      function raceSeries(items, { n, t, fmt, labelW, small, wrap }){
+        const fs = small ? 12 : 13;
+        return { id:'race', type:'custom', clip:false, animation:false, encode:{ x:0, y:1 }, dimensions:['value','pos'],
+          data: items.map(d=>({ name:d.name, value:[d.value, d.pos] })),
+          renderItem:(params, api)=>{
+            const d = items[params.dataIndex]; if(!d) return null;
+            const alpha = Math.max(0, Math.min(1, (n - 0.5 - d.pos)*2)); if(alpha <= 0) return null;
+            const [x0, y] = api.coord([0, d.pos]), [x1] = api.coord([d.value, d.pos]);
+            const band = api.size([0, 1])[1], h = Math.max(4, Math.min(24, band*0.58));
+            return { type:'group', children:[
+              { type:'rect', shape:{ x:x0, y:y - h/2, width: Math.max(0, x1 - x0), height:h }, style:{ fill:d.color, opacity:alpha } },
+              { type:'text', x:x0 - 12, y, silent:true, style:{ text:d.name, align:'right', verticalAlign:'middle', fill:t.ink, opacity:alpha, font:`600 ${fs}px ${FONT}`, width:labelW, overflow: wrap ? 'break' : 'truncate', ellipsis:'…', lineHeight: wrap ? 15 : undefined } },
+              { type:'text', x:x1 + 8, y, silent:true, style:{ text: d.label ?? fmt(d.value), align:'left', verticalAlign:'middle', fill:t.ink2, opacity:alpha, font:`600 12px ${FONT}`, stroke:t.surface, lineWidth:3 } }
+            ] };
+          } };
+      }
+      // Race colours: a query keeps its colour for the whole race, and no two queries on screen at once share one.
+      // A query that leaves and comes back keeps its colour if it is free.
+      function raceColorFrames(months, topByMonth, t){
+        const mix = (a, b, k)=>{ const h = (c)=> { const x = c.replace('#',''); const f = x.length === 3 ? x.split('').map(y=>y+y).join('') : x; return [0,2,4].map(i=> parseInt(f.slice(i,i+2),16)); };
+          try{ const A = h(a), B = h(b); if(A.some(isNaN) || B.some(isNaN)) return a; return '#' + A.map((v,i)=> Math.round(v*(1-k) + B[i]*k).toString(16).padStart(2,'0')).join(''); }catch(e){ return a; } };
+        const base = t.series.length ? t.series : [t.ink];
+        // As many distinct colours as rows can show at once (Top 20 included): the series colours, then lighter
+        // tints and deeper shades of them, skipping any that come out the same.
+        const rows = Math.max(1, ...months.map(m=> (topByMonth[m] || []).length));
+        const pal = [], seen = new Set();
+        for(const [to, k] of [[null, 0], [t.paper, .5], [t.ink, .3], [t.paper, .75], [t.paper, .25], [t.ink, .55]]){
+          for(const c of base){ const v = (to ? mix(c, to, k) : c).toLowerCase(); if(!seen.has(v)){ seen.add(v); pal.push(v); } }
+          if(pal.length >= Math.max(rows, base.length*2)) break;
+        }
+        const own = new Map(), frames = [];
+        for(let i = 0; i < months.length; i++){
+          const rows = topByMonth[months[i]] || [], taken = new Map(), out = new Map();
+          // Queries already on screen last month keep their colour first, then the ones that enter.
+          const prev = i ? frames[i-1] : new Map();
+          const order = rows.map(d=>d.name).sort((a,b)=> (prev.has(b) ? 1 : 0) - (prev.has(a) ? 1 : 0));
+          const here = new Set(order), leaving = new Set(Array.from(prev.keys()).filter(k=> !here.has(k)).map(k=> own.get(k)));
+          for(const nm of order){
+            let c = own.get(nm);
+            if(c == null || taken.has(c)){ const pref = (state.colorRank?.get(nm) ?? pal.length) % base.length; c = null;
+              // A colour still on a query leaving the screen in this step is used only when nothing else is free.
+              const free = (j, soft)=> !taken.has(j) && (soft || !leaving.has(j));
+              for(const soft of [false, true]){ for(let k = 0; k < pal.length && c == null; k++){ const j = (pref + k) % pal.length; if(free(j, soft)) c = j; } }
+              if(c == null) c = own.size % pal.length; }
+            own.set(nm, c); taken.set(c, nm); out.set(nm, pal[c]);
+          }
+          frames.push(out);
+        }
+        // Queries that never show keep a neutral colour (they sit off screen while the race plays).
+        return frames;
       }
       function monthLookup(list, field){ const by = new Map(); for(const r of list){ const m = toMonthKey(r.month); const v = asNumber(r[field]); if(!Number.isFinite(v)) continue; if(!by.has(m)) by.set(m, new Map()); const k = String(r.keyword||'').trim(); by.get(m).set(k, (by.get(m).get(k)||0) + v); } return (m, k)=> by.get(m)?.get(k); }
       function buildRaceOption(months, topByMonth, index){ return raceOption(months, topByMonth, {isPercent:true, index, lookup: state.popLookup}); }
       function buildZeroRaceOption(months, topByMonth, index){ return raceOption(months, topByMonth, {isPercent:false, accent:T().coral, index, lookup: state.zeroLookup}); }
-      // While playing, each step glides: rows take the new month's order at once, and every bar grows or shrinks
-      // from its own previous value to the new one (new entries grow from zero). Bars never slide past each other,
-      // so a label always sits next to its own bar, and the gridlines come back when the step ends.
+      // While playing, each step glides: every row slides from last month's place to this month's while its bar
+      // grows or shrinks; new entries rise from below the last place and leavers sink out of view. Gridlines and
+      // tick labels stay on screen and slide while the scale eases to the new maximum.
       const tweens = {};
       function drawRace(id, frame, i, mode='static', prevI=null){
         const c = ensureChart(id); if(!c || !frame) return;
         cancelAnimationFrame(tweens[id]);
         const fit = (o)=>{ if(id === 'zeros'){ const extra = Math.max(0, document.getElementById('zeros').clientHeight - document.getElementById('race').clientHeight); o.grid.bottom += extra; } return o; };
-        const to = fit(frame(i, 'static'));
+        const to = fit(frame(i));
         if(mode !== 'play' || prevI == null || prevI < 0 || reduceMotion.matches){ c.setOption(to, { notMerge:true }); return; }
-        const from = frame(prevI, 'static');
-        const before = new Map(from.series[0].data.map(d=>[d.name, d.value]));
-        const target = to.series[0].data;
+        const from = frame(prevI);
+        const R = to._race, n = R.n;
+        const A = new Map(from._race.items.map(d=>[d.name, d])), B = new Map(R.items.map(d=>[d.name, d]));
+        // Leavers keep their colour and sink below the last place; entries start just below it.
+        const moves = R.items.map(d=>({ d, a: A.get(d.name) || { value:0, pos:n } }))
+          .concat(from._race.items.filter(d=> !B.has(d.name)).map(d=>({ d:{ ...d, pos:n + 0.5 }, a:d })));
         const maxA = from.xAxis.max, maxB = to.xAxis.max;
         const dur = Math.min(650, state.playInterval*0.55), t0 = performance.now();
         const iv = to.xAxis.interval, tickFmt = to.xAxis.axisLabel.formatter;
         const onTick = (v)=> Math.abs(v/iv - Math.round(v/iv)) < 1e-6 ? tickFmt(v) : '';
-        const num = id === 'race' ? (v)=> `${v.toFixed(2)}%` : (v)=> Math.round(v).toLocaleString('en-US');
+        const t = T();
         let first = true;
         const step = (now)=>{
-          const p = Math.min(1, (now - t0)/dur), e = 1 - Math.pow(1 - p, 3);
+          const p = Math.min(1, (now - t0)/dur), e = p < .5 ? 4*p*p*p : 1 - Math.pow(-2*p + 2, 3)/2;
           if(p >= 1){ c.setOption(to, { notMerge:true }); return; }
-          // Gridlines and tick labels stay on screen: ticks keep the new month's step and slide while the scale
-          // eases to its new maximum, and the unlabeled right edge never gets a label of its own.
           const mx = maxA + (maxB - maxA)*e;
           const xAxis = { ...to.xAxis, max: mx, splitLine:{ show:true, lineStyle:{ color: raceGridColors(iv, mx) } }, axisLabel:{ ...to.xAxis.axisLabel, formatter: onTick } };
-          const series = [{ ...to.series[0], label:{ ...to.series[0].label, formatter: (q)=> num(q.value) }, data: target.map(d=>{ const a = before.get(d.name) ?? 0; return { name:d.name, value: a + (d.value - a)*e }; }) }];
+          // Rows further down are drawn first, so a row moving up passes over the ones it overtakes.
+          const items = moves.map(({ d, a })=>{ const v = a.value + (d.value - a.value)*e; return { name:d.name, color:d.color, value:v, pos: a.pos + (d.pos - a.pos)*e }; })
+            .sort((x,y)=> y.pos - x.pos);
+          const series = [ raceSeries(items, { n, t, fmt: R.fmt, labelW: R.labelW, small: R.small, wrap: R.wrap }) ];
           c.setOption(first ? { ...to, xAxis, series } : { xAxis, series }, { notMerge: first });
           first = false;
           tweens[id] = requestAnimationFrame(step);
@@ -1597,31 +1654,11 @@
       const DEFAULT_SOURCE_CANDIDATES = ['./data/source_search_keywords_marketplace.xlsx','./source_search_keywords_marketplace.xlsx'];
       const DEFAULT_ZERO_CANDIDATES   = ['./data/zero_result_keywords_marketplace.xlsx','./zero_result_keywords_marketplace.xlsx'];
 
-      async function fetchFirst(urls){
-        for(const u of urls){
-          try{ const res = await fetch(u, {cache:'no-cache'}); if(res.ok){ return await res.arrayBuffer(); } }catch(e){}
-        }
-        throw new Error('defaults not found');
-      }
+      // Fetching and reading go through the shared loader, which drives the progress line and notes.
+      const fetchFirst = (urls)=> MK.fetchFirst(urls);
 
-      // Reading a workbook takes about a second of CPU, so it happens in a background worker and the page never freezes.
-      // If workers are unavailable it falls back to the page itself.
-      const ensureXLSX = ()=> window.XLSX ? Promise.resolve(window.XLSX) : loadScriptSeq(XLSX_URLS, 'XLSX');
-      const WORKER_SRC = `const URLS=${JSON.stringify(XLSX_URLS)};
-        for(const u of URLS){ try{ importScripts(u); if(self.XLSX) break; }catch(e){} }
-        const key=(v)=>{ if(typeof v==='number'){ const d=XLSX.SSF.parse_date_code(v); return d.y+'-'+String(d.m).padStart(2,'0'); } const t=String(v==null?'':v).trim(); const m=/^(\\d{4})-(\\d{2})/.exec(t); if(m) return m[1]+'-'+m[2]; const d=new Date(t); return isNaN(d)?t.slice(0,7):d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0'); };
-        self.onmessage=(e)=>{ try{ if(!self.XLSX) throw new Error('no xlsx'); const wb=XLSX.read(e.data,{type:'array'}); const out={}; for(const name of ['Raw','Monthly_Summary']){ if(wb.Sheets[name]) out[name]=XLSX.utils.sheet_to_json(wb.Sheets[name],{defval:null}).map(r=>({...r, month:key(r.month)})); } self.postMessage(out); }catch(err){ self.postMessage({error:String(err&&err.message||err)}); } };`;
-      function readWorkbook(buf){
-        return new Promise((resolve, reject)=>{
-          let w; try{ w = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], {type:'text/javascript'}))); }catch(e){ w = null; }
-          const onPage = ()=> ensureXLSX().then(()=>{ const wb = XLSX.read(buf, {type:'array'}); const out = {}; for(const name of ['Raw','Monthly_Summary']) if(wb.Sheets[name]) out[name] = XLSX.utils.sheet_to_json(wb.Sheets[name], {defval:null}).map(r=>({...r, month: toMonthKey(r.month)})); resolve(out); }).catch(reject);
-          if(!w){ onPage(); return; }
-          const copy = buf.slice(0);
-          w.onmessage = (e)=>{ w.terminate(); if(e.data && e.data.error) onPage(); else resolve(e.data); };
-          w.onerror = ()=>{ w.terminate(); onPage(); };
-          w.postMessage(copy, [copy]);
-        });
-      }
+      // Reading a workbook takes about a second of CPU, so the shared loader does it in a background worker.
+      function readWorkbook(buf){ return MK.readWorkbook(buf); }
       // Every row is kept and meaningless ones are flagged on the raw text; the reader decides whether to hide them.
       const sourceRows = (rows)=> rows.map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword) || String(r.keyword ?? '').trim(), junk:isJunkQuery(r.keyword), percentage: asNumber(r.percentage), rank: asNumber(r.rank) })).filter(r=>r.keyword);
       const zeroRows = (rows)=> rows.map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword) || String(r.keyword ?? '').trim(), junk:isJunkQuery(r.keyword), count: asNumber(r.count||0) })).filter(r=>r.keyword);
@@ -1657,7 +1694,7 @@
         const [src, zero] = await Promise.allSettled([shouldLoadSource ? tryLoadDefaultSource() : null, shouldLoadZero ? tryLoadDefaultZero() : null]);
         if(shouldLoadSource){ if(src.status === 'fulfilled') any = true; else { console.info('No default Popular found'); updateFileStatus('source-display', forceLoad ? 'Repository file not found' : 'Not loaded'); } }
         if(shouldLoadZero){ if(zero.status === 'fulfilled') any = true; else { console.info('No default Zero found'); updateFileStatus('zero-display', forceLoad ? 'Repository file not found' : 'Not loaded'); } }
-        if(any) renderAll();
+        if(any){ renderAll(); MK.loadDone(); } else MK.loadFailed();
         if(forceLoad && !any) {
           setStatus('No default files found in /data/ directory');
         } else if(!forceLoad && !any) {
