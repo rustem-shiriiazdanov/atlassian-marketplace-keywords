@@ -119,34 +119,34 @@
   </section>
 
   <section class="kpis" aria-label="By the numbers" id="kpis">
-    <div class="kpi"><span class="big accent num wait">000</span><span class="what">searches found no apps, as Atlassian reports them</span></div>
     <div class="kpi"><span class="big num wait">0.00%</span><span class="what">of all searches went to the #1 query</span></div>
-    <div class="kpi"><span class="big word wait">query</span><span class="what">was the most frequent empty search</span></div>
     <div class="kpi"><span class="big num wait">+000</span><span class="what">places climbed by the biggest mover</span></div>
+    <div class="kpi"><span class="big accent num wait">000</span><span class="what">searches found no apps, as Atlassian reports them</span></div>
+    <div class="kpi"><span class="big word wait">query</span><span class="what">was the most frequent empty search</span></div>
+  </section>
+
+  <section class="block two" aria-label="Top queries and climbers">
+    <div>
+      <div class="block-head"><div class="titles"><span class="kicker">1 · The top ten</span><h2 class="sec" id="topTitle">Share of all searches</h2></div></div>
+      <ol class="topten" id="topTen"></ol>
+    </div>
+    <div>
+      <div class="block-head"><div class="titles"><span class="kicker">2 · Climbers</span><h2 class="sec">New in the top 100, and who jumped furthest</h2></div></div>
+      <ul class="climb" id="climbers"></ul>
+      <p class="also" id="also"></p>
+    </div>
   </section>
 
   <section class="block" aria-labelledby="zeroTitle">
     <div class="block-head">
       <div class="titles">
-        <span class="kicker">1 · Empty searches</span>
+        <span class="kicker">3 · Empty searches</span>
         <h2 class="sec" id="zeroTitle">Searches that found no apps, per month</h2>
       </div>
       <div class="tools"><div class="seg" role="group" aria-label="Period" id="zeroRange"><button type="button" data-n="12" aria-pressed="false">12 months</button><button type="button" data-n="24" aria-pressed="true">24 months</button><button type="button" data-n="all" aria-pressed="false">All years</button></div></div>
     </div>
     <div id="zeroChart" role="img" aria-label="Line chart of searches that found no apps per month"></div>
     <p class="note chart-note" id="zeroNote">A count of searches, not a rate. <a href="./month-by-month.html">All charts, month by month</a></p>
-  </section>
-
-  <section class="block two" aria-label="Top queries and climbers">
-    <div>
-      <div class="block-head"><div class="titles"><span class="kicker">2 · The top ten</span><h2 class="sec" id="topTitle">Share of all searches</h2></div></div>
-      <ol class="topten" id="topTen"></ol>
-    </div>
-    <div>
-      <div class="block-head"><div class="titles"><span class="kicker">3 · Climbers</span><h2 class="sec">New in the top 100, and who jumped furthest</h2></div></div>
-      <ul class="climb" id="climbers"></ul>
-      <p class="also" id="also"></p>
-    </div>
   </section>
 
   <section class="block" aria-labelledby="heatTitle">
@@ -183,7 +183,6 @@
   const params = new URLSearchParams(location.search);
 
   const qLink = (k, label)=> `<a href="./keyword-explorer.html?q=${encodeURIComponent(k)}">${escapeHtml(label ?? k)}</a>`;
-  const cap = (s)=> s.charAt(0).toUpperCase() + s.slice(1);
   // "January" in the same year as the issue, "December 2025" otherwise.
   const when = (m, ref)=> m.slice(0,4) === ref.slice(0,4) ? monthName(m) : monthLong(m);
   const ordinal = (n)=> n + (['th','st','nd','rd'][(n%100-20)%10] || ['th','st','nd','rd'][n%100] || 'th');
@@ -212,53 +211,65 @@
     return { m, prevIssue, rankBase, rows, prevRows, top, entries, gains, zRows, z, zPrev, zPrevMonth };
   }
 
-  // --- The headline is written from the numbers, one clause for empty searches and one for the top ---
+  // --- The headline is written from the numbers: one story, picked by how unusual it is ---
+  // Empty searches: how this month compares with the reports before it.
   function zeroStory(f){
-    const m = f.m; if(f.z == null || !zeroUsable(m)) return null;
+    const m = f.m; if(f.z == null || !zeroUsable(m) || D.zeroLow.has(m)) return null;
     const hist = D.zeroTotals.filter(t=> t.month < m && zeroUsable(t.month));
     if(hist.length < 12) return null;
+    const S = 'Searches that found no apps';
     const lowerBefore = [...hist].reverse().find(t=> t.value <= f.z);
     const higherBefore = [...hist].reverse().find(t=> t.value >= f.z);
     const change = f.zPrev ? (f.z - f.zPrev) / f.zPrev : null;
-    if(!lowerBefore) return { kind:'low', clause:'reported empty searches hit a record low', ref: maxSince(hist, m, 12) };
-    if(!higherBefore) return { kind:'high', clause:'reported empty searches hit a record high', ref: minSince(hist, m, 12) };
+    if(!lowerBefore) return { kind:'low', rank:3, text:`${S} hit a record low`, ref: maxSince(hist, m, 12) };
+    if(!higherBefore) return { kind:'high', rank:3, text:`${S} hit a record high`, ref: minSince(hist, m, 12) };
     const gapLow = monthsBetween(lowerBefore.month, m), gapHigh = monthsBetween(higherBefore.month, m);
-    if(gapLow >= 12) return { kind:'low', clause: gapLow >= 24 && gapLow % 12 < 2 ? `reported empty searches hit a ${['','','two','three','four','five'][Math.floor(gapLow/12)] || Math.floor(gapLow/12)}-year low` : `reported empty searches fell to their lowest since ${monthLong(lowerBefore.month)}`, ref: maxSince(hist, m, 12) };
-    if(gapHigh >= 12) return { kind:'high', clause: `reported empty searches climbed to their highest since ${monthLong(higherBefore.month)}`, ref: minSince(hist, m, 12) };
-    if(change != null && Math.abs(change) >= 0.1) return { kind: change < 0 ? 'fall' : 'rise', clause: `reported empty searches ${change < 0 ? 'fell' : 'rose'} ${Math.round(Math.abs(change)*100)}% from ${monthName(f.zPrevMonth)}` };
-    return { kind:'flat', clause: 'reported empty searches held steady' };
+    const years = (g)=> g >= 24 && g % 12 < 2 ? (['','','two','three','four','five'][Math.floor(g/12)] || String(Math.floor(g/12))) : null;
+    if(gapLow >= 12) return { kind:'low', rank:5, text: years(gapLow) ? `${S} hit a ${years(gapLow)}-year low` : `${S} fall to their lowest since ${monthLong(lowerBefore.month)}`, ref: maxSince(hist, m, 12) };
+    if(gapHigh >= 12) return { kind:'high', rank:5, text: years(gapHigh) ? `${S} hit a ${years(gapHigh)}-year high` : `${S} climb to their highest since ${monthLong(higherBefore.month)}`, ref: minSince(hist, m, 12) };
+    if(change != null && Math.abs(change) >= 0.1) return { kind: change < 0 ? 'fall' : 'rise', rank:7, text: `${S} ${change < 0 ? 'fall' : 'rise'} ${Math.round(Math.abs(change)*100)}% from ${monthName(f.zPrevMonth)}` };
+    return { kind:'flat', rank:99, text: null };
   }
   function maxSince(hist, m, n){ const w = hist.filter(t=> monthsBetween(t.month, m) <= n); return w.reduce((a,t)=> !a || t.value > a.value ? t : a, null); }
   function minSince(hist, m, n){ const w = hist.filter(t=> monthsBetween(t.month, m) <= n); return w.reduce((a,t)=> !a || t.value < a.value ? t : a, null); }
   function leaderStreak(m){ let n = 0, k = (D.byMonth.get(m)||[])[0]?.keyword; for(let i = D.issues.indexOf(m); i >= 0; i--){ if((D.byMonth.get(D.issues[i])||[])[0]?.keyword === k) n++; else break; } return n; }
+  // The top query: a spike, a new #1, a tie, a long run at the top, or no change.
   function topStory(f){
     const [a, b] = f.rows; if(!a) return null;
     const tie = b && a.percentage.toFixed(2) === b.percentage.toFixed(2);
     const prevLead = f.prevRows[0];
     // A #1 far above the usual leaders of the surrounding year is called out as a spike.
-    if(MK.isSpike(D, f.m)) return { spike:true, clause: `an unusual spike put ${q(a.keyword)} on top with ${fmtPct(a.percentage)} of all searches` };
-    if(tie) return { clause: `${q(a.keyword)} and ${q(b.keyword)} share the top spot`, alone: `At the top, ${q(a.keyword)} and ${q(b.keyword)} share first place` };
-    if(!prevLead) return { clause: `${q(a.keyword)} leads`, alone: `In the first report, ${q(a.keyword)} leads with ${fmtPct(a.percentage)} of all searches` };
-    if(prevLead && prevLead.keyword !== a.keyword) return { clause: `${q(a.keyword)} takes the top spot from ${q(prevLead.keyword)}`, alone: `A new #1: ${q(a.keyword)} takes the top spot from ${q(prevLead.keyword)}` };
+    if(MK.isSpike(D, f.m)) return { rank:1, text: `An unusual spike puts ${q(a.keyword)} at #1 with ${fmtPct(a.percentage)} of all searches` };
+    if(!prevLead) return { rank:8, text: `First report: ${q(a.keyword)} is the top query` };
+    if(tie) return { rank:4, text: `A tie for the top query: ${q(a.keyword)} and ${q(b.keyword)}, ${fmtPct(a.percentage)} of searches each` };
+    if(prevLead.keyword !== a.keyword) return { rank:2, text: `New top query: ${q(a.keyword)} overtakes ${q(prevLead.keyword)}` };
     const s = leaderStreak(f.m);
-    const c = s >= 3 ? `${q(a.keyword)} leads for ${aOrAn(s)} ${ordinal(s)} month in a row` : `${q(a.keyword)} stays on top`;
-    return { clause: c, alone: s >= 3 ? `At the top, ${c}` : `No change at the top: ${q(a.keyword)} is #1 again` };
+    if(s >= 3) return { rank:6, text: `Still the top query: ${q(a.keyword)}, ${aOrAn(s)} ${ordinal(s)} month in a row` };
+    return { rank:8, text: `No change at the top: ${q(a.keyword)} is #1 again` };
+  }
+  function pickStory(f){
+    const z = zeroStory(f), t = topStory(f);
+    if(z) z.about = 'zero'; if(t) t.about = 'top';
+    return [z, t].filter(x=> x && x.text).sort((x,y)=> x.rank - y.rank)[0] || null;
   }
   function headline(f){
-    const zs = zeroStory(f), ts = topStory(f);
-    const z = zs && zs.kind !== 'flat' ? zs.clause : null;
-    if(z && ts) return cap(`${z}, while ${ts.clause}.`);
-    if(z) return cap(`${z}.`);
-    if(ts) return cap(`${ts.alone || ts.clause}.`);
-    return `What people searched for on the Marketplace in ${monthLong(f.m)}.`;
+    const pick = pickStory(f);
+    if(!pick) return `What people searched for on the Marketplace in ${monthLong(f.m)}`;
+    return pick.text;
   }
+  // The summary: partial-report notes, then the headline's subject, then the other one; each subject stays in one place.
   function dek(f){
-    const zs = zeroStory(f), out = [];
+    const zs = zeroStory(f), out = [], top = [], empty = [];
     if(D.popularPartial.has(f.m)) out.push(`Atlassian’s ${monthLong(f.m)} report is partial: it lists ${fmtInt(D.reportRows.get(f.m) || 0)} queries instead of the usual 500, so its shares are not comparable with other months.`);
     if(f.z != null && D.zeroPartial.has(f.m)) out.push(`The zero-result report for ${monthName(f.m)} is partial: it counts only ${fmtInt(f.z)} ${f.z === 1 ? 'search' : 'searches'} that found no apps.`);
+    const [a, b, c] = f.rows;
+    const same = (x, y)=> x && y && x.percentage.toFixed(2) === y.percentage.toFixed(2);
+    if(same(a, b)) top.push(`Two queries share the top: ${q(a.keyword)} and ${q(b.keyword)}, ${fmtPct(a.percentage)} of all searches each${c ? (same(a, c) ? `, level with ${q(c.keyword)}` : `, just ahead of ${q(c.keyword)} at ${fmtPct(c.percentage)}`) : ''}.`);
+    else if(a && b) top.push(`The top query, ${q(a.keyword)}, took ${fmtPct(a.percentage)} of all searches, ahead of ${q(b.keyword)} at ${fmtPct(b.percentage)}.`);
+    else if(a) top.push(`The top query, ${q(a.keyword)}, took ${fmtPct(a.percentage)} of all searches.`);
     if(f.z != null && !D.zeroPartial.has(f.m)){
       // Atlassian's zero-result report lists the 500 queries that most often found no apps; the total adds those up.
-      let s = `${zs && zs.kind === 'low' ? 'Just ' : ''}${fmtInt(f.z)} searches found no apps in ${monthName(f.m)}, as Atlassian reports them`;
+      let s = `In ${monthName(f.m)}, ${zs && zs.kind === 'low' ? 'just ' : ''}${fmtInt(f.z)} searches found no apps, as Atlassian reports them`;
       // Compared with last month, and for a low or high also with the extreme of the past year.
       const dir = (v)=> f.z < v ? 'down' : 'up';
       const far = zs && zs.ref && (zs.kind === 'low' || zs.kind === 'high') && zs.ref.month !== f.m && zs.ref.month !== f.zPrevMonth ? zs.ref : null;
@@ -266,14 +277,11 @@
       else if(f.zPrev) s += `, ${dir(f.zPrev)} from ${fmtInt(f.zPrev)} in ${when(f.zPrevMonth, f.m)}`;
       else if(far) s += `, ${dir(far.value)} from ${fmtInt(far.value)} in ${when(far.month, f.m)}`;
       if(D.zeroLow.has(f.m)) s += `, far below the months around it`;
-      out.push(s + '.');
-      const once = f.zRows.filter(r=> r.count === 1).length;
-      if(f.zRows.length && once / f.zRows.length >= 0.5) out.push(`Most of those queries came up only once.`);
+      const z0 = f.zRows[0];
+      empty.push(s + '.' + (z0 ? ` The most frequent empty search was ${q(z0.keyword)}, ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}${f.zRows.length && f.zRows.filter(r=> r.count === 1).length / f.zRows.length >= 0.5 ? '; most others came up only once' : ''}.` : ''));
     }
-    const [a, b, c] = f.rows;
-    if(a && b && a.percentage.toFixed(2) === b.percentage.toFixed(2)) out.push(`At the top, ${q(a.keyword)} and ${q(b.keyword)} each took ${fmtPct(a.percentage)} of all searches${c ? `, with ${q(c.keyword)} ${c.percentage.toFixed(2) === a.percentage.toFixed(2) ? 'level' : 'one step behind'}` : ''}.`);
-    else if(a && b) out.push(`${out.length ? 'At the top, ' : 'The top query, '}${q(a.keyword)}${out.length ? '' : ','} took ${fmtPct(a.percentage)} of all searches, ahead of ${q(b.keyword)} at ${fmtPct(b.percentage)}.`);
-    return out.join(' ');
+    const zeroFirst = pickStory(f)?.about === 'zero';
+    return out.concat(zeroFirst ? empty : top, zeroFirst ? top : empty).join(' ');
   }
 
   // --- Render ---
@@ -298,16 +306,16 @@
   function renderKpis(f){
     const k = $('#kpis'); const [a, b] = f.rows; const z0 = f.zRows[0]; const c = f.gains[0];
     const cells = [];
+    if(a){ const tie = b && a.percentage.toFixed(2) === b.percentage.toFixed(2); cells.push(`<div class="kpi"><span class="big num">${fmtPct(a.percentage)}</span><span class="what">of all searches went to <strong>${escapeHtml(a.keyword)}</strong>, ${tie ? `level with <strong>${escapeHtml(b.keyword)}</strong>` : 'the #1 query'}</span></div>`); }
+    if(c) cells.push(`<div class="kpi"><span class="big num">+${c.gain}</span><span class="what">places climbed by <strong>${escapeHtml(c.keyword)}</strong>, to #${c.rk}</span></div>`);
+    else if(f.entries[0]) cells.push(`<div class="kpi"><span class="big num">#${f.entries[0].rk}</span><span class="what">where <strong>${escapeHtml(f.entries[0].keyword)}</strong> entered the top 100</span></div>`);
     if(f.z != null && !D.zeroPartial.has(f.m)){
       const d = f.zPrev ? Math.round((f.z - f.zPrev) / f.zPrev * 100) : null;
       const note = D.zeroLow.has(f.m) ? 'unusually low in Atlassian’s report' : d == null ? '' : d === 0 ? `about the same as ${monthName(f.zPrevMonth)}` : `${Math.abs(d)}% ${d < 0 ? 'fewer' : 'more'} than ${monthName(f.zPrevMonth)}`;
       cells.push(`<div class="kpi"><span class="big accent num">${fmtInt(f.z)}</span><span class="what">searches found no apps, as Atlassian reports them${note ? ` <span class="muted">· ${note}</span>` : ''}</span></div>`);
     } else if(f.z != null) cells.push(`<div class="kpi"><span class="big accent num">${fmtInt(f.z)}</span><span class="what">searches found no apps, as Atlassian reports them <span class="muted">· partial report</span></span></div>`);
     else cells.push(`<div class="kpi"><span class="big accent num">—</span><span class="what">searches found no apps <span class="muted">· the zero-result report for this month is not available</span></span></div>`);
-    if(a){ const tie = b && a.percentage.toFixed(2) === b.percentage.toFixed(2); cells.push(`<div class="kpi"><span class="big num">${fmtPct(a.percentage)}</span><span class="what">of all searches went to <strong>${escapeHtml(a.keyword)}</strong>, ${tie ? `level with <strong>${escapeHtml(b.keyword)}</strong>` : 'the #1 query'}</span></div>`); }
     if(z0) cells.push(`<div class="kpi"><span class="big word">${escapeHtml(z0.keyword)}</span><span class="what">was the most frequent empty search <span class="muted">· ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}</span></span></div>`);
-    if(c) cells.push(`<div class="kpi"><span class="big num">+${c.gain}</span><span class="what">places climbed by <strong>${escapeHtml(c.keyword)}</strong>, to #${c.rk}</span></div>`);
-    else if(f.entries[0]) cells.push(`<div class="kpi"><span class="big num">#${f.entries[0].rk}</span><span class="what">where <strong>${escapeHtml(f.entries[0].keyword)}</strong> entered the top 100</span></div>`);
     k.innerHTML = cells.join('');
     k.style.gridTemplateColumns = window.matchMedia('(max-width:900px)').matches ? '' : `repeat(${cells.length},minmax(0,1fr))`;
   }
