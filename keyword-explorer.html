@@ -568,7 +568,8 @@
     async function parseZero(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),count:number(row.count),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
     // Every row is kept and meaningless ones are flagged; the rows shown follow the "Hide meaningless queries" setting.
     function applyJunk(){ const hide=MK.hideJunk(); state.popular=hide?state.popularAll.filter(r=>!r.junk):state.popularAll; state.zero=hide?state.zeroAll.filter(r=>!r.junk):state.zeroAll; }
-    window.addEventListener('mk:junk',()=>{ applyJunk(); if(state.popular.length) finalizeData(); });
+    // Keep the chosen period when the rows change.
+    window.addEventListener('mk:junk',()=>{ if(state.dataReady){ state.urlFrom=state.months[state.from]; state.urlTo=state.months[state.to]; } applyJunk(); if(state.popular.length) finalizeData(); });
     function hydrateUrl(){
       const params=new URLSearchParams(location.search); const queries=params.getAll('q').map(keywordText).filter(Boolean);
       state.urlHadSelection=queries.length>0; state.selections=queries;

@@ -401,7 +401,8 @@
       D = data; index = MK.lookupIndex(D);
       const want = params.get('month');
       issue = want && D.issues.includes(want) ? want : D.issues.at(-1);
-      const lead = (D.byMonth.get(D.issues.at(-1)) || [])[0];
+      // The example in the search box is a real query, even when meaningless ones are shown.
+      const lead = (D.byMonth.get(D.issues.at(-1)) || []).find(r=> !r.junk);
       if(lead) $('#lookupInput').placeholder = `e.g. ${lead.keyword}`;
       renderIssue();
       // For checks: the written headline and summary of any issue.

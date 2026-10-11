@@ -126,10 +126,14 @@
   // --- Reader setting: hide meaningless queries (off by default: everything as Atlassian reports it) ---
   const JUNK_KEY = 'mk-hide-junk';
   function hideJunk(){ try{ return localStorage.getItem(JUNK_KEY) === '1'; }catch(e){ return false; } }
-  function setHideJunk(on){
-    try{ if(on) localStorage.setItem(JUNK_KEY, '1'); else localStorage.removeItem(JUNK_KEY); }catch(e){}
+  // Tick every checkbox to match and tell the page to redraw.
+  function announceJunk(on){
     document.querySelectorAll('input[data-junk-toggle]').forEach(i=> i.checked = !!on);
     window.dispatchEvent(new CustomEvent('mk:junk', { detail:{ hide: !!on } }));
+  }
+  function setHideJunk(on){
+    try{ if(on) localStorage.setItem(JUNK_KEY, '1'); else localStorage.removeItem(JUNK_KEY); }catch(e){}
+    announceJunk(on);
   }
   // Every checkbox marked data-junk-toggle reflects and changes the setting; pages listen for 'mk:junk'.
   function bindJunkToggles(){
@@ -139,7 +143,7 @@
     });
   }
   // Another tab changed the setting.
-  window.addEventListener('storage', e=>{ if(e.key === JUNK_KEY) setHideJunk(hideJunk()); });
+  window.addEventListener('storage', e=>{ if(e.key === JUNK_KEY) announceJunk(hideJunk()); });
   const zeroTotalsFrom = (summary)=> (summary || []).map(r=>({ month: toMonthKey(r.month), value: num(r.sum_count) || 0 })).filter(r=>r.month);
 
   let dataPromise = null, rawData = null;
