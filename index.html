@@ -193,21 +193,23 @@
 
   // --- Facts for one issue ---
   function zeroTotal(m){ const t = D.zeroTotals.find(x=>x.month === m); return t ? t.value : null; }
-  // Partial reports are left out; unusually low months are real reports and stay in, with a caveat.
+  // Partial zero-result reports are not compared with other months; unusually low months are real reports and stay in, with a caveat.
   const zeroUsable = (m)=> zeroTotal(m) != null && !D.zeroPartial.has(m);
   function facts(m){
     const prevIssue = D.issues[D.issues.indexOf(m) - 1] || null;
     const rows = D.byMonth.get(m) || [];
     const prevRows = prevIssue ? D.byMonth.get(prevIssue) || [] : [];
-    const prevPos = new Map(prevRows.map(r=>[r.keyword, r.rk]));
+    // Ranks are only compared between two full reports: a partial report's lower ranks rest on very few searches.
+    const rankBase = prevIssue && !D.popularPartial.has(prevIssue) && !D.popularPartial.has(m) ? prevIssue : null;
+    const prevPos = new Map((rankBase ? prevRows : []).map(r=>[r.keyword, r.rk]));
     const top = rows.slice(0, 10);
     // Climbers: new entries and the biggest rank gains into the top 100.
-    const in100 = prevIssue ? rows.filter(r=> r.rk <= 100).map(r=>({ ...r, prev: prevPos.get(r.keyword) ?? null })) : [];
+    const in100 = rankBase ? rows.filter(r=> r.rk <= 100).map(r=>({ ...r, prev: prevPos.get(r.keyword) ?? null })) : [];
     const entries = in100.filter(r=> !r.prev);
     const gains = in100.filter(r=> r.prev && r.prev > r.rk).map(r=>({ ...r, gain: r.prev - r.rk })).sort((a,b)=> b.gain - a.gain || a.rk - b.rk);
     const zRows = D.zeroByMonth.get(m) || [];
     const z = zeroTotal(m), zPrevMonth = addMonths(m, -1), zPrev = zeroUsable(zPrevMonth) ? zeroTotal(zPrevMonth) : null;
-    return { m, prevIssue, rows, prevRows, top, entries, gains, zRows, z, zPrev, zPrevMonth };
+    return { m, prevIssue, rankBase, rows, prevRows, top, entries, gains, zRows, z, zPrev, zPrevMonth };
   }
 
   // --- The headline is written from the numbers, one clause for empty searches and one for the top ---
@@ -252,7 +254,7 @@
   }
   function dek(f){
     const zs = zeroStory(f), out = [];
-    if(D.popularPartial.has(f.m)) out.push(`Atlassian’s ${monthLong(f.m)} report is partial: it lists ${fmtInt(D.popular.filter(r=> r.month === f.m).length)} queries instead of the usual 500, so its shares are not comparable with other months.`);
+    if(D.popularPartial.has(f.m)) out.push(`Atlassian’s ${monthLong(f.m)} report is partial: it lists ${fmtInt(D.reportRows.get(f.m) || 0)} queries instead of the usual 500, so its shares are not comparable with other months.`);
     if(f.z != null && D.zeroPartial.has(f.m)) out.push(`The zero-result report for ${monthName(f.m)} is partial: it counts only ${fmtInt(f.z)} ${f.z === 1 ? 'search' : 'searches'} that found no apps.`);
     if(f.z != null && !D.zeroPartial.has(f.m)){
       // Atlassian's zero-result report lists the 500 queries that most often found no apps; the total adds those up.
@@ -318,7 +320,9 @@
 
   function renderClimbers(f){
     const list = [...f.entries.slice(0,2), ...f.gains].slice(0, 6);
-    $('#climbers').innerHTML = !f.prevIssue ? '<li class="empty-note">Rank changes start with the second report.</li>' : list.length ? list.map(r=> r.prev
+    const noBase = !f.prevIssue ? 'Rank changes start with the second report.'
+      : !f.rankBase ? `Ranks are not compared with ${D.popularPartial.has(f.m) ? 'this' : `the ${monthLong(f.prevIssue)}`} report, which is partial.` : null;
+    $('#climbers').innerHTML = noBase ? `<li class="empty-note">${noBase}</li>` : list.length ? list.map(r=> r.prev
       ? `<li><span class="kw">${qLink(r.keyword)}<small class="num">#${r.prev} → #${r.rk} · ${fmtPct(r.percentage)} of searches</small></span><span class="gain num">+${r.prev - r.rk}</span></li>`
       : `<li><span class="kw">${qLink(r.keyword)}<small class="num">entered at #${r.rk} · ${fmtPct(r.percentage)} of searches</small></span><span class="gain new">New</span></li>`).join('') : '<li class="empty-note">No climbers this month.</li>';
     const more = f.entries.slice(2);
@@ -327,13 +331,14 @@
   }
 
   function renderHeat(f){
-    // The last 12 months up to this issue; partial reports show as hatched cells.
+    // The last 12 months up to this issue; partial reports get a * and missing reports hatched cells.
     const months = []; for(let i = 11; i >= 0; i--){ const x = addMonths(f.m, -i); if(x >= D.issues[0]) months.push(x); }
     const tot = new Map();
     for(const m of months){ for(const r of D.zeroByMonth.get(m) || []) tot.set(r.keyword, (tot.get(r.keyword)||0) + r.count); }
     const rows = Array.from(tot.entries()).sort((a,b)=> b[1]-a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, 10);
     const cell = new Map(); for(const m of months) for(const r of D.zeroByMonth.get(m) || []) cell.set(m + '|' + r.keyword, r.count);
-    const head = months.map((m,i)=> `<th scope="col"${D.zeroPartial.has(m) ? ' title="Partial report"' : ''}>${i === 0 || m.endsWith('-01') ? `${monthAbbr(m)} ’${m.slice(2,4)}` : monthAbbr(m)}${D.zeroPartial.has(m) ? '*' : ''}</th>`).join('');
+    const colW = `style="width:${(64 / months.length).toFixed(2)}%"`;
+    const head = months.map((m,i)=> `<th scope="col" ${colW}${D.zeroPartial.has(m) ? ' title="Partial report"' : ''}>${i === 0 || m.endsWith('-01') ? `${monthAbbr(m)} ’${m.slice(2,4)}` : monthAbbr(m)}${D.zeroPartial.has(m) ? '*' : ''}</th>`).join('');
     const tk = MK.tokens();
     const body = rows.map(([k, t])=> `<tr><td class="q">${qLink(k)}</td>${months.map(m=>{
       if(!D.zeroByMonth.has(m)) return `<td class="c na" title="No report">–</td>`;

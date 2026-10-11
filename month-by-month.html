@@ -661,7 +661,7 @@
           const foot = document.createElement('div'); foot.className = 'kw-foot';
           foot.innerHTML = '<span id="kwCount"></span><button type="button" id="kwClear">Clear</button>';
           list.append(search, box, foot);
-          const keywords = Array.from(weight.keys()).filter(k=> /[\p{L}\p{N}]/u.test(k)).sort((a,b)=> weight.get(b)-weight.get(a) || a.localeCompare(b));
+          const keywords = Array.from(weight.keys()).filter(Boolean).sort((a,b)=> weight.get(b)-weight.get(a) || a.localeCompare(b));
           // Only the rows on screen exist as elements (at most 80), so opening and typing stay instant with thousands of queries.
           const nodes = new Map();
           const node = (k)=>{
@@ -997,7 +997,7 @@
         }
         return { months, topByMonth: top };
       }
-      // Monthly totals are added up from the cleaned rows, so removed meaningless queries are not counted;
+      // Monthly totals are added up from the rows shown (with or without meaningless queries);
       // the summary sheet only fills months that have no rows.
       function cleanZeroTotals(summary, rows){
         const fromRows = totalsByMonth(rows, 'count'); const have = new Set(fromRows.map(x=>x.month));
@@ -1035,11 +1035,13 @@
       }
 
       // --- Chart options ---
-      // Reports with too few rows are partial exports (e.g. Dec 2021, Nov 2023); they are kept out of trend lines.
+      // Reports with too few rows are partial exports (e.g. Dec 2021, Nov 2023); they are shown and marked.
       function monthCounts(list){ const c = new Map(); for(const r of list){ const m = toMonthKey(r.month); c.set(m, (c.get(m)||0)+1); } return c; }
       function incompleteMonths(list){
         const c = monthCounts(list); if(!c.size) return new Set();
         const sorted = Array.from(c.values()).sort((a,b)=>a-b); const median = sorted[Math.floor(sorted.length/2)];
+        // Small files (the demo, or a trimmed export) have no "usual" size to compare against.
+        if(median < 50) return new Set();
         return new Set(Array.from(c.entries()).filter(([,n])=> n < median*0.8).map(([m])=>m));
       }
       const axisMonth = (v)=> monthLabel(v,{month:'short', year:'numeric'}).replace(/ (\d{4})$/, (_, y)=>` ’${y.slice(2)}`);
@@ -1107,7 +1109,7 @@
           const byName = new Map(rows.map(d=>[d.name, d.value]));
           const change = (name, v)=>{
             if(!pm || !lookup) return '';
-            if(isPercent && state.trailsBreak === m) return `<br/>${breakIsMarketplace() ? 'Atlassian’s redesigned Marketplace arrived this month' : 'The report changed this month'}, so no comparison`;
+            if(isPercent && state.trailsBreak === m) return `<br/>${breakIsMarketplace() ? 'Atlassian’s redesigned Marketplace arrived this month' : 'The biggest queries drop sharply this month'}, so no comparison`;
             const before = lookup(pm, name);
             const when = monthLabel(pm,{month:'short'});
             if(before == null) return `<br/>Not in the ${isPercent ? 'top 500' : 'report'} in ${when}`;
@@ -1178,13 +1180,13 @@
           grid:{ left:4, right:20, top:28, bottom:6, containLabel:true },
           xAxis:{ type:'category', boundaryGap:false, data: months, axisLabel:{ color:t.muted, fontSize:12, margin:12, interval:0, formatter: smartTicks(months, px), hideOverlap:true }, axisTick:{ show:false }, axisLine:{ lineStyle:{ color:t.line } } },
           yAxis:{ type:'value', splitNumber:4, axisLabel:{ color:t.muted, fontSize:12, formatter:(v)=>Number(v).toLocaleString('en-US') }, splitLine:{ lineStyle:{ color:t.grid } } },
-          tooltip:{ trigger:'axis', ...tooltipStyle(t), position: tipAt(8, 56), axisPointer:{ type:'line', lineStyle:{ color:t.line } }, formatter:(ps)=>{ const p=ps.find(x=>x.seriesName!=='_break' && x.seriesName!=='_odd')||ps[0]; return `<b>${monthLabel(p.axisValue)}</b><br/>${p.value==null ? 'No data: the report is incomplete' : Math.round(p.value).toLocaleString('en-US')+' searches found no apps'}`; } },
+          tooltip:{ trigger:'axis', ...tooltipStyle(t), position: tipAt(8, 56), axisPointer:{ type:'line', lineStyle:{ color:t.line } }, formatter:(ps)=>{ const p=ps.find(x=>x.seriesName!=='_break' && x.seriesName!=='_odd')||ps[0]; return `<b>${monthLabel(p.axisValue)}</b><br/>${p.value==null ? 'No report for this month' : Math.round(p.value).toLocaleString('en-US')+' searches found no apps'}`; } },
           series:[{ name:'Searches with zero results', type:'line', smooth:false, connectNulls:false, symbol:'circle', symbolSize:6, showSymbol:false, itemStyle:{ color:t.coral }, lineStyle:{ width:2, color:t.coral, join:'round' }, areaStyle:{ color:t.coral, opacity: dark ? .06 : .08 }, data,
             markArea: gapAreas.length ? { silent:true, itemStyle:{ color:t.grid, opacity:.9 }, label:{ show: (document.getElementById('zeros')?.clientWidth || 999) >= 380, position:'top', distance:4, color:t.muted, fontSize:11, fontFamily:FONT, formatter:'no data' }, data: gapAreas.map(([a,b])=>[{...a, xAxis: months[Math.max(0, months.indexOf(a.xAxis)-1)]},{...b, xAxis: months[Math.min(months.length-1, months.indexOf(b.xAxis)+1)]}]) } : undefined,
             markLine: idx>=0 && idx < months.length-1 ? { silent:true, symbol:'none', lineStyle:{ color:t.coral, type:'solid', width:1, opacity:.4 }, label:{ show:false }, data:[{ xAxis: idx }] } : undefined,
             markPoint: idx>=0 && cur!=null ? { symbol:'circle', symbolSize:9, itemStyle:{ color:t.coral, borderColor:t.surface, borderWidth:1 }, label:{ show:false }, data:[{ coord:[idx, cur] }] } : undefined },
             ...((state.zeroOdd||[]).length && !state.keywordFilter.length ? [{ name:'_odd', type:'scatter', silent:true, symbol:'circle', symbolSize:7, z:5, itemStyle:{ color:t.surface, borderColor:t.coral, borderWidth:1.5 }, data: state.zeroOdd.map(m=> [months.indexOf(m), byMonth.get(m)]).filter(d=> d[0] >= 0 && d[1] != null) }] : []),
-            ...(state.trailsBreak && months.indexOf(state.trailsBreak) > 0 ? [{ name:'_break', type:'line', data:[], silent:true, markLine:{ silent:true, symbol:'none', lineStyle:{ color:t.muted, type:[4,4], width:1 }, label:{ show: (document.getElementById('zeros')?.clientWidth || 999) >= 380, position:'end', distance:4, color:t.muted, opacity:1, fontSize:11, fontFamily:FONT, formatter: breakIsMarketplace() ? 'New Marketplace' : 'Report change' }, data:[{ xAxis: months.indexOf(state.trailsBreak) }] } }] : [])] };
+            ...(state.trailsBreak && months.indexOf(state.trailsBreak) > 0 ? [{ name:'_break', type:'line', data:[], silent:true, markLine:{ silent:true, symbol:'none', lineStyle:{ color:t.muted, type:[4,4], width:1 }, label:{ show: (document.getElementById('zeros')?.clientWidth || 999) >= 380, position:'end', distance:4, color:t.muted, opacity:1, fontSize:11, fontFamily:FONT, formatter: breakIsMarketplace() ? 'New Marketplace' : 'Sharp drop' }, data:[{ xAxis: months.indexOf(state.trailsBreak) }] } }] : [])] };
       }
       // The collapse found in the data is Atlassian's redesigned Marketplace only when it falls in November 2024 (uploaded files may differ).
       const breakIsMarketplace = ()=> state.trailsBreak === MK.REPORT_BREAK;
@@ -1249,7 +1251,7 @@
         const breakIdx = opts.breakMonth ? months.indexOf(opts.breakMonth) : -1;
         const extra = [];
         if(breakIdx > 0) extra.push({ name:'_break', type:'line', data:[], silent:true, markLine:{ silent:true, symbol:'none', lineStyle:{ color:t.muted, type:[4,4], width:1 },
-          label:{ show:true, position:'end', distance:6, color:t.ink2, fontSize:12, fontWeight:600, fontFamily:FONT, formatter: `${breakIsMarketplace() ? 'New Marketplace' : 'Report change'}, ${monthLabel(months[breakIdx],{month:'short', year:'numeric'})}` }, data:[{ xAxis: breakIdx }] } });
+          label:{ show:true, position:'end', distance:6, color:t.ink2, fontSize:12, fontWeight:600, fontFamily:FONT, formatter: `${breakIsMarketplace() ? 'New Marketplace' : 'Sharp drop'}, ${monthLabel(months[breakIdx],{month:'short', year:'numeric'})}` }, data:[{ xAxis: breakIdx }] } });
         const right = useLegend ? 12 : Math.min(300, longest + 24);
         const el = document.getElementById('trails'); const px = Math.max(120, (el?.clientWidth || 800) - right - 48) / Math.max(1, months.length-1);
         return {
@@ -1315,7 +1317,7 @@
         const median = (k)=>{ const a = (perMonth.get(k)||[]).slice(); while(a.length < valid) a.push(0); a.sort((x,y)=>x-y); return a.length ? a[Math.floor(a.length/2)] : 0; };
         let top = filt ? Array.from(filt).filter(k=>sum.has(k)) : Array.from(sum.keys()).map(k=>[k, median(k)]).sort((a,b)=>b[1]-a[1]).slice(0, topN).map(([k])=>k);
         const byMonthKey = new Map();
-        for(const r of sourceRaw){ const m = toMonthKey(r.month); const k = String(r.keyword||'').trim(); const v = asNumber(r.percentage); if(!byMonthKey.has(m)) byMonthKey.set(m, new Map()); byMonthKey.get(m).set(k, v); }
+        for(const r of sourceRaw){ const m = toMonthKey(r.month); const k = String(r.keyword||'').trim(); const v = asNumber(r.percentage); if(!byMonthKey.has(m)) byMonthKey.set(m, new Map()); const mk = byMonthKey.get(m); mk.set(k, (mk.get(k) || 0) + (Number.isFinite(v) ? v : 0)); }
         return top.map(k=>({ name:k, type:'line', data: months.map(m=> gaps.has(m) ? null : (byMonthKey.get(m)?.get(k) ?? null)) }));
       }
       function computeHeatmapMatrix(zeroRaw, months, topK, startIdx, endIdx, filter){
@@ -1378,7 +1380,7 @@
         // Months step without tweening: an animated re-sort leaves labels and bars out of step mid-frame.
         const mode = !state.timelinePlaying ? 'static' : fromChart === 'play' ? 'play' : 'prep';
         drawRace('race', state.raceFrame, i, mode, i-1);
-        const breakText = state.trailsBreak && months[i] < state.trailsBreak ? breakIsMarketplace() ? `Before Atlassian’s redesigned Marketplace arrived in ${monthLabel(state.trailsBreak)}, broad queries such as “automation” and “jira” took a much larger share, so these shares are not directly comparable with later months.` : `Shares before ${monthLabel(state.trailsBreak)} are not directly comparable with later months: the report changed that month.` : '';
+        const breakText = state.trailsBreak && months[i] < state.trailsBreak ? breakIsMarketplace() ? `Before Atlassian’s redesigned Marketplace arrived in ${monthLabel(state.trailsBreak)}, broad queries such as “automation” and “jira” took a much larger share, so these shares are not directly comparable with later months.` : `Shares before ${monthLabel(state.trailsBreak)} are not directly comparable with later months: the biggest queries drop sharply that month.` : '';
         // A partial report is shown as published, with a word on why its shares look different.
         const partialText = (state.partialPopular||new Set()).has(months[i]) ? `Atlassian’s ${monthLabel(months[i])} report is partial: it lists fewer queries than the usual 500, so its shares are not comparable with other months.` : '';
         $('#raceNote').textContent = [partialText, breakText].filter(Boolean).join(' ');
@@ -1420,7 +1422,7 @@
         // With picked queries, the month-by-month charts shrink to fit them instead of keeping room for ten bars.
         { const n = state.keywordFilter.length; document.body.classList.toggle('filtered', n > 0); const h = n ? Math.max(140, Math.min(n, 20)*40 + 60) + 'px' : ''; ['race'].concat(state.zeroMode === 'keywords' ? ['zeros'] : []).forEach(id=>{ const el = document.getElementById(id); if(!fullscreenState.chartEl && el.style.height !== h){ el.style.height = h; state.charts[id]?.resize(); } }); if(state.zeroMode !== 'keywords'){ const z = document.getElementById('zeros'); if(z.style.height){ z.style.height = ''; state.charts.zeros?.resize(); } } }
         const { months: allMonths, topByMonth } = groupByMonthTop(state.sourceRaw, 'percentage', state.topN, state.keywordFilter);
-        // Drop leading partial reports so every chart starts at the first full month.
+        // Partial reports stay in; gapsPopular is empty for the published files, so this only skips months with no report.
         let first = 0; while(first < allMonths.length-1 && state.gapsPopular.has(allMonths[first])) first++;
         const months = allMonths.slice(first);
         if(JSON.stringify(state.months) !== JSON.stringify(months)) state.heatTimeRangeInitialized = false;
@@ -1446,7 +1448,7 @@
           if(odd.length) $('#zerosNote').textContent = `${skipped.length ? `The ${skipped.join(' and ')} zero-result ${skipped.length===1?'report is':'reports are'} partial; t` : 'T'}otals for ${odd.join(' and ').replace(/ and (?=.* and )/g, ', ')} are unusually low in Atlassian’s reports (hollow dots).`;
         }
         if(state.zeroMode === 'totals' && !state.keywordFilter.length) $('#zerosNote').textContent = (MK.ZERO_NOTE + ' ' + $('#zerosNote').textContent).trim();
-        if(state.zerosPhoneNote && state.trailsBreak) $('#zerosNote').textContent += ` Grey band: no data. Dashed line: ${breakIsMarketplace() ? 'the new Marketplace' : 'the report change'}, ${monthLabel(state.trailsBreak,{month:'short', year:'numeric'})}.`;
+        if(state.zerosPhoneNote && state.trailsBreak) $('#zerosNote').textContent += ` Dashed line: ${breakIsMarketplace() ? 'the new Marketplace' : 'the sharp drop'}, ${monthLabel(state.trailsBreak,{month:'short', year:'numeric'})}.`;
         if(state.zeroMode === 'totals'){
           $('#zerosTitle').textContent = 'Searches that found no apps';
           let totals;
@@ -1476,7 +1478,7 @@
         $('#trailsTitle').textContent = state.keywordFilter.length ? 'Share of searches for the picked queries' : 'Share of searches for the biggest queries';
         $('#raceTitle').textContent = state.keywordFilter.length ? 'Picked queries by share of searches' : 'Top queries by share of searches';
         { const hint = document.querySelector('.filterbar .hint'); if(hint) hint.textContent = state.keywordFilter.length ? `Every chart below shows only the ${state.keywordFilter.length} picked ${state.keywordFilter.length===1?'query':'queries'}.` : 'Pick queries to focus every chart below on them.'; }
-        $('#trailsDesc').textContent = state.keywordFilter.length ? 'Share of all Marketplace searches for the picked queries. Point at or tap a line to isolate it.' : `The queries with the highest typical monthly share${state.trailsBreak ? (breakIsMarketplace() ? ` since ${monthLabel(state.trailsBreak)}, when Atlassian’s redesigned Marketplace arrived` : ` since the ${monthLabel(state.trailsBreak)} report change`) : ''}. Point at or tap a line to isolate it.`;
+        $('#trailsDesc').textContent = state.keywordFilter.length ? 'Share of all Marketplace searches for the picked queries. Point at or tap a line to isolate it.' : `The queries with the highest typical monthly share${state.trailsBreak ? (breakIsMarketplace() ? ` since ${monthLabel(state.trailsBreak)}, when Atlassian’s redesigned Marketplace arrived` : ` since the ${monthLabel(state.trailsBreak)} drop`) : ''}. Point at or tap a line to isolate it.`;
         safeSetOption('trails', buildTrailsOption(tMonths, trailSeries, { breakMonth: recent ? null : state.trailsBreak, allYears: state.trailsRange === 'all' }));
         { const notes = [];
           if(state.trailsBreak && state.trailsRange === 'all'){
@@ -1486,7 +1488,7 @@
             const after = new Map(latestRanking(state.sourceRaw, 'percentage', state.trailsBreak).map(r=>[r.keyword, r.value]));
             const fell = before.filter(r=> (after.get(r.keyword) || 0) < r.value*0.4).map(r=>r.keyword);
             const who = fell.length ? fell.slice(0,3).join(', ').replace(/, (?=[^,]*$)/, ' and ') : 'several of the biggest queries';
-            notes.push(`In ${monthLabel(state.trailsBreak)} the shares of ${who} fall at once, ${breakIsMarketplace() ? 'as Atlassian rolled out its redesigned Marketplace with autocomplete and new categories' : 'which points to a change in the report rather than a loss of interest'}, so the two periods are best read separately.`);
+            notes.push(`In ${monthLabel(state.trailsBreak)} the shares of ${who} fall at once, ${breakIsMarketplace() ? 'as Atlassian rolled out its redesigned Marketplace with autocomplete and new categories' : 'a sharp drop across the biggest queries at once'}, so the two periods are best read separately.`);
           }
           { const pm = tMonths.filter(m=> (state.partialPopular||new Set()).has(m)).map(m=>monthLabel(m,{month:'short', year:'numeric'})); if(pm.length) notes.push(`The ${pm.join(' and ')} report is partial, so its shares are not comparable with other months.`); }
           if(state.trailsBridged) notes.push('Dotted segments bridge months a query spent outside the top 500.');
@@ -1717,8 +1719,6 @@
         {month:'2023-10-01', keyword:'rpa', count:60},
         {month:'2023-10-01', keyword:'okrs', count:40},
         {month:'2023-12-01', keyword:'okrs', count:200}
-      ], zeroTotals:[
-        {month:'2023-08', value:1719}, {month:'2023-09', value:1481}, {month:'2023-10', value:554}, {month:'2023-11', value:2}, {month:'2023-12', value:730}
       ] };
 
       document.getElementById('btn-load-defaults').addEventListener('click', async ()=>{
@@ -1733,7 +1733,7 @@
         state.sourceAll = null; state.zeroAll = null;
         state.sourceRaw = demo.sourceRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
         state.zeroRaw = demo.zeroRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
-        state.zeroTotals = demo.zeroTotals.slice();
+        state.zeroTotals = cleanZeroTotals(null, state.zeroRaw);
         updateFileStatus('source-display', 'Demo data loaded');
         updateFileStatus('zero-display', 'Demo data loaded');
         renderAll(); startPlay();
@@ -1755,7 +1755,7 @@
         state.sourceAll = null; state.zeroAll = null;
         state.sourceRaw = demo.sourceRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
         state.zeroRaw = demo.zeroRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
-        state.zeroTotals = demo.zeroTotals.slice();
+        state.zeroTotals = cleanZeroTotals(null, state.zeroRaw);
         try{ renderAll(); const race = ensureChart('race'); const zeros = ensureChart('zeros'); const trails = ensureChart('trails'); const heat = ensureChart('heatmap'); ok('race chart instance created', !!race); ok('zeros chart instance created', !!zeros); ok('trails chart instance created', !!trails); ok('heatmap chart instance created', !!heat); }catch(e){ ok('render with demo data succeeds', false); }
         ok('page title rendered', !!document.getElementById('pageTitle'));
         const s = document.getElementById('heatTimeStart'); const e = document.getElementById('heatTimeEnd');

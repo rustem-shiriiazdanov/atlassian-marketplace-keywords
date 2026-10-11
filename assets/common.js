@@ -165,6 +165,8 @@
     const junk = { popular: rawData.popular.filter(r=>r.junk), zero: rawData.zero.filter(r=>r.junk) };
     const D = build(rawData.popular.filter(keep), rawData.zero.filter(keep), rawData.summary);
     D.hideJunk = hide; D.junk = junk;
+    // Rows per month as Atlassian published them, whatever the switch says.
+    D.reportRows = new Map(); for(const r of rawData.popular) D.reportRows.set(r.month, (D.reportRows.get(r.month) || 0) + 1);
     return D;
   }
 

@@ -536,7 +536,8 @@
 
     function setStatus(text, ready=false){ const el=$('#status'); el.textContent=text; el.classList.toggle('ready',ready); }
     function toast(message){ const el=$('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toast.timer); toast.timer=setTimeout(()=>el.classList.remove('show'),2200); }
-    function normalize(value){ return String(value ?? '').trim().toLocaleLowerCase(); }
+    // Same folding as every other page (case, odd spaces, < and >), so links from This month and Archive always match.
+    function normalize(value){ return MK.cleanKeyword(value); }
     function keywordText(value){ return String(value ?? '').trim(); }
     function number(value){ const n=Number(value); return Number.isFinite(n)?n:0; }
     function formatShare(value){ return `${number(value).toFixed(2)}%`; }
@@ -598,7 +599,9 @@
       state.months=Array.from(new Set([...state.popular.map(row=>row.month),...state.zero.map(row=>row.month)])).filter(Boolean).sort();
       // Partial reports (fewer rows than usual) are kept and shown as Atlassian publishes them.
       { const c=new Map(); state.popular.forEach(r=>c.set(r.month,(c.get(r.month)||0)+1)); const v=[...c.values()].sort((a,b)=>a-b); const med=v[Math.floor(v.length/2)]||0;
-        state.partialMonths=new Set(state.months.filter(m=>(c.get(m)||0) < med*0.8)); }
+        state.partialMonths=new Set(state.months.filter(m=>(c.get(m)||0) < med*0.8));
+        const zt=new Map(); state.zero.forEach(r=>zt.set(r.month,(zt.get(r.month)||0)+(r.count||0))); const zv=[...zt.values()].filter(v=>v>0).sort((a,b)=>a-b); const zmed=zv[Math.floor(zv.length/2)]||0;
+        state.partialZero=new Set([...zt.entries()].filter(([,v])=>v<zmed*0.15).map(([m])=>m)); }
       const names=new Map(); for(const row of [...state.popular,...state.zero]) if(!names.has(normalize(row.keyword))) names.set(normalize(row.keyword),row.keyword);
       state.allKeywords=Array.from(names.values()).sort((a,b)=>a.localeCompare(b));
       if(!state.urlHadSelection&&!state.selections.length){
@@ -608,7 +611,7 @@
         state.selections=state.selections.map(item=>names.get(normalize(item))||item).filter((item,index,array)=>array.findIndex(x=>normalize(x)===normalize(item))===index);
       }
       state.loadFailed=false; $('#loadAlert').hidden=true; $('#keywordInput').disabled=false; $('#status').classList.remove('error'); document.body.classList.remove('load-failed');
-      { // The month when the shares of the biggest queries collapse at once: a change in the report, not in demand.
+      { // The month when the shares of the biggest queries collapse at once (Nov 2024: Atlassian's redesigned Marketplace), not a loss of interest.
         const tot=new Map(); state.popular.forEach(r=>tot.set(normalize(r.keyword),(tot.get(normalize(r.keyword))||0)+r.percentage));
         const big=new Set([...tot.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k])=>k)); const by=state.months.map(m=>0); const idx=new Map(state.months.map((m,i)=>[m,i]));
         state.popular.forEach(r=>{ if(big.has(normalize(r.keyword))&&idx.has(r.month)) by[idx.get(r.month)]+=r.percentage; });
@@ -735,7 +738,9 @@
     const tipAt=(top=8,minLeft=4)=>(point,params,dom,rect,size)=>{ const x=point[0],w=size.contentSize[0],W=size.viewSize[0]; if(x+14+w<=W-4) return [x+14,top]; if(x-14-w>=2) return [x-14-w,top]; return [Math.max(2,Math.min(W-w-2,x+14)),top]; };
     function monthLong(key){ const m=/^(\d{4})-(\d{2})/.exec(String(key||'')); return m?new Date(Date.UTC(+m[1],+m[2]-1,1)).toLocaleString('en-US',{month:'long',year:'numeric',timeZone:'UTC'}):String(key||''); }
     const lineSeries=(def,values,n,months)=>({name:def.label,type:'line',data:values,smooth:false,connectNulls:false,showSymbol:months.length<=24&&n<=4,symbol:'circle',symbolSize:7,itemStyle:{color:def.color,borderColor:T().surface,borderWidth:2},lineStyle:{width:def.group?3:2.5,color:def.color},emphasis:{focus:'series'},blur:{lineStyle:{opacity:.2},itemStyle:{opacity:.2}}});
-    function breakSeries(months,inverse=false){ const bi=state.reportBreak?months.indexOf(state.reportBreak):-1; return bi>0?[{name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:inverse?'start':'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,formatter:state.reportBreak===MK.REPORT_BREAK?'New Marketplace':'Report change'},data:[{xAxis:bi}]}}]:[]; }
+    function breakSeries(months,inverse=false){ const bi=state.reportBreak?months.indexOf(state.reportBreak):-1; return bi>0?[{name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:inverse?'start':'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,formatter:state.reportBreak===MK.REPORT_BREAK?'New Marketplace':'Sharp drop'},data:[{xAxis:bi}]}}]:[]; }
+    // A sentence naming partial reports inside the shown period; they are shown as published.
+    function partialNote(months,set,what){ const ms=months.filter(m=>set&&set.has(m)).map(monthShort); return ms.length?` The ${ms.join(' and ')} ${what}${ms.length===1?' is':'s are'} partial, shown as published.`:''; }
     function renderShareChart(definitions,months){
       if(!definitions.length){disposeChart('shareChart','');return;}
       const series=definitions.map(def=>{let values=aggregate(state.popular,'percentage',def,months);if(!def.group){const r=ranksFor(def.keywords[0],months);values=values.map((v,i)=>r[i]==null&&!v?null:v);}if(state.smooth)values=movingAverage(values);return lineSeries(def,values,definitions.length,months);});
@@ -745,10 +750,11 @@
       option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${param.value==null?'not in top 500':formatShare(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
       const smoothNote=state.smooth?' Lines show a 3-month average; the summary and table use monthly values.':'';
       $('#shareCard .description').textContent=(definitions.some(d=>d.group)?(state.matchMode==='contains'?'Combined share of all Marketplace searches for the matching queries.':'Combined share of all Marketplace searches for the picked queries.'):'Percentage of all Marketplace searches. Gaps mean the query was outside the top 500 that month.')+smoothNote;
-      // Atlassian changed how the report counts searches; mark it so the drop is not read as lost interest.
+      // Mark the break so the drop is not read as lost interest.
       const bi=state.reportBreak?months.indexOf(state.reportBreak):-1;
-      if(bi>0) $('#shareCard .description').textContent+=` The dashed line marks ${monthShort(state.reportBreak)}, when Atlassian changed how searches are counted.`;
-      if(bi>0) series.push({name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,formatter:state.reportBreak===MK.REPORT_BREAK?'New Marketplace':'Report change'},data:[{xAxis:bi}]}});
+      if(bi>0) $('#shareCard .description').textContent+=state.reportBreak===MK.REPORT_BREAK?` The dashed line marks ${monthShort(state.reportBreak)}, when Atlassian rolled out its redesigned Marketplace with autocomplete; broad queries lost most of their share at once.`:` The dashed line marks ${monthShort(state.reportBreak)}, when the biggest queries drop sharply at once.`;
+      $('#shareCard .description').textContent+=partialNote(months,state.partialMonths,'popular-search report');
+      if(bi>0) series.push({name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,formatter:state.reportBreak===MK.REPORT_BREAK?'New Marketplace':'Sharp drop'},data:[{xAxis:bi}]}});
       option.legend.data=definitions.map(d=>d.label);
       option.series=series; drawChart('shareChart',option);
     }
@@ -758,6 +764,7 @@
       if(!definitions.length){card.classList.add('collapsed');disposeChart('rankChart','');return;}
       card.classList.remove('collapsed');
       $('#rankCard .description').textContent=(state.compareMode==='group'?'Per query, as rank can’t be combined. Log scale; gaps mean outside the top 500.':'Monthly rank on a log scale; gaps mean the query was outside the top 500.')+(state.smooth?' Not averaged.':'');
+      $('#rankCard .description').textContent+=partialNote(months,state.partialMonths,'popular-search report');
       const series=definitions.map(def=>({def,ranks:ranksFor(def.keywords[0],months)}));
       const seen=series.flatMap(x=>x.ranks).filter(Number.isFinite);
       // Fit the log scale to the ranks on show: from the power of two at or above the best rank to the one at or below the worst.
@@ -774,6 +781,7 @@
       const plural=definitions.length>1||definitions.some(d=>d.keywords.length>1);
       const avgNote=state.smooth?' Lines show a 3-month average.':'';
       $('#zeroCard .description').textContent=(plural?'How many times the matching queries found no apps: a count of searches, not a rate.':'How many times the query found no apps: a count of searches, not a rate.')+avgNote;
+      $('#zeroCard .description').textContent+=partialNote(months,state.partialZero,'zero-result report');
       const series=definitions.map(def=>{let values=aggregate(state.zero,'count',def,months);if(state.smooth)values=movingAverage(values);return lineSeries(def,values,definitions.length,months);});
       const option=commonOption(months,'zeroChart',series);
       option.yAxis={type:'value',min:0,minInterval:1,splitNumber:4,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>Number(value).toLocaleString('en-US')},splitLine:{lineStyle:{color:T().grid}}};
