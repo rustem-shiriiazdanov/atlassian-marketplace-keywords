@@ -1373,14 +1373,15 @@
         // While playing, drawRace slides rows to their new places; scrubbing and the first frame are drawn at once.
         const mode = !state.timelinePlaying ? 'static' : fromChart === 'play' ? 'play' : 'prep';
         drawRace('race', state.raceFrame, i, mode, i-1);
-        // A full-screen table follows the month while scrubbing (playback pauses when the table is open).
-        if(!state.timelinePlaying) refreshFullscreenTable();
         const breakText = state.trailsBreak && months[i] < state.trailsBreak ? breakIsMarketplace() ? `Before Atlassian’s redesigned Marketplace arrived in ${monthLabel(state.trailsBreak)}, broad queries such as “automation” and “jira” took a much larger share, so these shares are not directly comparable with later months.` : `Shares before ${monthLabel(state.trailsBreak)} are not directly comparable with later months: the biggest queries drop sharply that month.` : '';
         // A partial report is shown as published, with a word on why its shares look different.
         const partialText = (state.partialPopular||new Set()).has(months[i]) ? `Atlassian’s ${monthLabel(months[i])} report is partial: it lists fewer queries than the usual 500, so its shares are not comparable with other months.` : '';
         $('#raceNote').textContent = [partialText, breakText].filter(Boolean).join(' ');
         if(state.zeroMode==='keywords' && state.zeroFrame){ const zi = (state.zeroRaceMonths||[]).indexOf(months[i]); if(zi>=0){ drawRace('zeros', state.zeroFrame, zi, mode, zi-1); $('#zerosDesc').textContent = `Empty searches per query in ${when}.`; } else { $('#zerosDesc').textContent = `No zero-result report for ${when}.`; } }
         if(state.zeroMode==='totals' && state.zeroTotalsCache){ safeSetOption('zeros', buildZerosOption(state.months, state.zeroTotalsCache, months[i], state.gapsZero, state.keywordFilter.length > 0)); $('#zerosDesc').textContent = zerosDescText(months[i]); }
+        // A full-screen table (race or zero-result) follows the month while scrubbing, once both charts are updated;
+        // playback pauses when a table opens.
+        if(!state.timelinePlaying) refreshFullscreenTable();
       }
       function stopPlay(){ const was = state.timelinePlaying; clearInterval(state.playTimer); state.playTimer = null; state.timelinePlaying = false; const b=$('#btn-play'); b.textContent='▶ Play'; b.setAttribute('aria-label','Play'); if(was) setRaceIndex(state.raceIndex); }
       function startPlay(){
