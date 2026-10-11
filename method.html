@@ -33,7 +33,6 @@
     .removed{margin:8px 0 18px;padding:0;list-style:none;border-top:1px solid var(--rule)}
     .removed li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:10px 0;border-bottom:1px solid var(--rule2);font-size:14px}
     .removed li span:last-child{color:var(--muted);white-space:nowrap}
-    .wait{display:inline-block;min-width:3ch}
     @media (max-width:900px){ .layout{grid-template-columns:1fr;gap:24px} .toc{position:static;flex-direction:row;flex-wrap:wrap;gap:8px 18px} .toc .kicker{flex-basis:100%} }
     @media (max-width:640px){ .sheets{grid-template-columns:1fr} .sheets > div + div{border-left:0;border-top:1px solid var(--rule);padding-left:0} dl.terms div{grid-template-columns:1fr;gap:4px} .doc h2{font-size:28px} .doc p{font-size:16px} .removed li{grid-template-columns:1fr;gap:2px} }
   </style>
@@ -135,7 +134,6 @@
   function render(D){
     $('#range').textContent = `${monthLong(D.issues[0])} to ${monthLong(D.issues.at(-1))}`;
     $('#nPop').textContent = fmtInt(D.popular.length); $('#nZero').textContent = fmtInt(D.zero.length);
-    $('#nPop').classList.remove('wait'); $('#nZero').classList.remove('wait');
     $('#countNote').textContent = D.hideJunk ? 'Row counts leave out meaningless queries, as you chose.' : 'Row counts include every query.';
     const j = D.junk;
     $('#removedLine').textContent = `${fmtInt(j.popular.length)} rows of the popular-search report and ${fmtInt(j.zero.length)} of the zero-result report count as meaningless. The largest ones, as they appear in the reports:`;

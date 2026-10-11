@@ -549,9 +549,17 @@
       if(typeof value==='number'&&window.XLSX?.SSF){ const d=XLSX.SSF.parse_date_code(value); if(d) return `${d.y}-${String(d.m).padStart(2,'0')}`; }
       const text=String(value??'').trim();
       const match=text.match(/^(\d{4})[-/]?(\d{2})/); if(match) return `${match[1]}-${match[2]}`;
-      const parsed=new Date(text); return Number.isNaN(parsed.getTime())?'':parsed.toISOString().slice(0,7);
+      // Text dates are parsed in local time, so the month is read in local time too.
+      const parsed=new Date(text); return Number.isNaN(parsed.getTime())?'':`${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,'0')}`;
     }
-    function movingAverage(values,size=3){ return values.map((_,i)=>{ const slice=values.slice(Math.max(0,i-size+1),i+1); return slice.reduce((sum,v)=>sum+number(v),0)/slice.length; }); }
+    // Three-month average: a month without a value stays a gap, and gaps are left out of their neighbours' averages.
+    function movingAverage(values,size=3){ return values.map((v,i)=>{ if(v==null) return null; const w=values.slice(Math.max(0,i-size+1),i+1).filter(x=>x!=null); return w.reduce((sum,x)=>sum+x,0)/w.length; }); }
+    // Averaged over every month, then cut to the period, so the first month shown is averaged with the months before it.
+    function seriesValues(def,list,field,months){
+      const all=state.smooth?state.months:months; let values=aggregate(list,field,def,all);
+      if(field==='percentage'&&!def.group){ const r=ranksFor(def.keywords[0],all); values=values.map((v,i)=>r[i]==null&&!v?null:v); }
+      if(!state.smooth) return values; const avg=movingAverage(values); return months.map(m=>avg[state.months.indexOf(m)]);
+    }
     function loadScriptSeq(urls,globalName){
       return new Promise((resolve,reject)=>{ let index=0; const next=()=>{ if(index>=urls.length){reject(new Error(`Unable to load ${globalName}`));return;} const url=urls[index++]; const script=document.createElement('script'); script.src=url; script.async=true; script.crossOrigin='anonymous'; script.referrerPolicy='no-referrer'; script.onload=()=>window[globalName]?resolve(window[globalName]):next(); script.onerror=next; document.head.appendChild(script); }; next(); });
     }
@@ -563,7 +571,7 @@
       self.onmessage=(e)=>{ try{ if(!self.XLSX) throw new Error('no xlsx'); const wb=XLSX.read(e.data,{type:'array'}); const sh=wb.Sheets.Raw; if(!sh) throw new Error('The workbook has no Raw sheet'); const rows=XLSX.utils.sheet_to_json(sh,{defval:null}).map(r=>{ if(typeof r.month==='number'){ const d=XLSX.SSF.parse_date_code(r.month); r.month=d.y+'-'+String(d.m).padStart(2,'0'); } return r; }); self.postMessage({rows}); }catch(err){ self.postMessage({error:String(err&&err.message||err)}); } };`;
     function workbookRowsOnPage(buffer){ return ensureXLSX().then(()=>{ const workbook=XLSX.read(buffer,{type:'array'}); const sheet=workbook.Sheets.Raw; if(!sheet) throw new Error('The workbook has no Raw sheet'); return XLSX.utils.sheet_to_json(sheet,{defval:null}); }); }
     function workbookRows(buffer){ return new Promise((resolve,reject)=>{ let w=null; try{ w=new Worker(URL.createObjectURL(new Blob([WORKER_SRC],{type:'text/javascript'}))); }catch(e){} if(!w){ workbookRowsOnPage(buffer).then(resolve,reject); return; } const copy=buffer.slice(0); w.onmessage=(e)=>{ w.terminate(); if(e.data&&e.data.rows) resolve(e.data.rows); else if(e.data&&/Raw sheet/.test(e.data.error||'')) reject(new Error(e.data.error)); else workbookRowsOnPage(buffer).then(resolve,reject); }; w.onerror=()=>{ w.terminate(); workbookRowsOnPage(buffer).then(resolve,reject); }; w.postMessage(copy,[copy]); }); }
-    // Same meaningless-query rule as every other page, so they all count the same rowss.
+    // Same meaningless-query rule as every other page, so they all count the same rows.
     // Meaningless queries (bot noise, test strings, pasted links, injection attempts) are judged on the raw text; see assets/common.js.
     function isJunkQuery(k){ return MK.isJunkQuery(k); }
     async function parsePopular(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),percentage:number(row.percentage),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
@@ -584,8 +592,10 @@
     function updateUrl(){
       const params=new URLSearchParams(); state.selections.forEach(item=>params.append('q',item));
       params.set('mode',state.matchMode); if(state.matchMode==='contains') params.set('logic',state.containsLogic);
-      if(state.matchMode==='exact') params.set('compare',state.compareMode);
-      if(state.months[state.from]) params.set('from',state.months[state.from]); if(state.months[state.to]) params.set('to',state.months[state.to]);
+      params.set('compare',state.compareMode);
+      // Until the reports are in, the period from the address is kept as it was.
+      const from=state.dataReady?state.months[state.from]:state.urlFrom, to=state.dataReady?state.months[state.to]:state.urlTo;
+      if(from) params.set('from',from); if(to) params.set('to',to);
       if(state.smooth) params.set('smooth','1');
       const query=params.toString(); history.replaceState(null,'',`${location.pathname}${query?'?'+query:''}`);
     }
@@ -597,6 +607,9 @@
       state.allNorm=state.allKeywords.map(normalize);
     }
     function finalizeData(){
+      // A reload or an uploaded file keeps the period the reader had chosen.
+      if(state.dataReady&&state.months.length){ state.urlFrom=state.months[state.from]; state.urlTo=state.months[state.to]; }
+      $('#examples').textContent='';
       state.months=Array.from(new Set([...state.popular.map(row=>row.month),...state.zero.map(row=>row.month)])).filter(Boolean).sort();
       // Partial reports (fewer rows than usual) are kept and shown as Atlassian publishes them.
       { const c=new Map(); state.popular.forEach(r=>c.set(r.month,(c.get(r.month)||0)+1)); const v=[...c.values()].sort((a,b)=>a-b); const med=v[Math.floor(v.length/2)]||0;
@@ -611,7 +624,7 @@
       } else if(state.matchMode==='exact'){
         state.selections=state.selections.map(item=>names.get(normalize(item))||item).filter((item,index,array)=>array.findIndex(x=>normalize(x)===normalize(item))===index);
       }
-      state.loadFailed=false; $('#loadAlert').hidden=true; $('#keywordInput').disabled=false; $('#status').classList.remove('error'); document.body.classList.remove('load-failed');
+      state.loadFailed=false; $('#loadAlert').hidden=true; $('#keywordInput').disabled=false; $('.focus').classList.remove('off'); $('#status').classList.remove('error'); document.body.classList.remove('load-failed');
       { // The month when the shares of the biggest queries collapse at once (Nov 2024: Atlassian's redesigned Marketplace), not a loss of interest.
         const tot=new Map(); state.popular.forEach(r=>tot.set(normalize(r.keyword),(tot.get(normalize(r.keyword))||0)+r.percentage));
         const big=new Set([...tot.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k])=>k)); const by=state.months.map(m=>0); const idx=new Map(state.months.map((m,i)=>[m,i]));
@@ -623,7 +636,7 @@
       const from=$('#fromMonth'),to=$('#toMonth'); from.textContent='';to.textContent='';
       state.months.forEach((month,index)=>{ for(const select of [from,to]){ const option=document.createElement('option'); option.value=String(index);option.textContent=new Date(Date.UTC(+month.slice(0,4),+month.slice(5,7)-1,1)).toLocaleString('en-US',{month:'short',year:'numeric',timeZone:'UTC'});select.appendChild(option); } });
       const fromUrl=state.months.indexOf(state.urlFrom),toUrl=state.months.indexOf(state.urlTo);
-      state.to=toUrl>=0?toUrl:Math.max(0,state.months.length-1); state.from=fromUrl>=0?fromUrl:Math.max(0,state.to-11);
+      state.to=toUrl>=0?toUrl:Math.max(0,state.months.length-1); state.from=fromUrl>=0?fromUrl:Math.max(0,state.to-11); if(state.from>state.to) state.from=state.to;
       from.value=String(state.from);to.value=String(state.to); syncPresetButtons();
     }
     function showLoadError(error){
@@ -636,12 +649,17 @@
       const [popularResult,zeroResult]=await Promise.allSettled([fetchFirst(DEFAULT_SOURCE).then(parsePopular),fetchFirst(DEFAULT_ZERO).then(parseZero)]);
       if(popularResult.status==='fulfilled'){ state.popularAll=popularResult.value; applyJunk(); $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`; }
       if(zeroResult.status==='fulfilled'){ state.zeroAll=zeroResult.value; applyJunk(); $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`; }
+      else $('#zeroFileStatus').textContent='Not loaded';
       if(!state.popular.length){ MK.loadFailed(); throw new Error(zeroResult.status==='fulfilled'?'The popular-searches report could not be loaded':'Neither report could be loaded'); } finalizeData(); MK.loadDone();
+      if(zeroResult.status!=='fulfilled') setStatus('The zero-result report could not be loaded, so empty searches show as 0. Reload repository data to try again.');
     }
     async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); if(type==='popular'){state.popularAll=await parsePopular(buffer);applyJunk();$('#popularFileStatus').textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zeroAll=await parseZero(buffer);applyJunk();$('#zeroFileStatus').textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
     function canonicalKeyword(input){ return state.canon?state.canon.get(normalize(input)):state.allKeywords.find(item=>normalize(item)===normalize(input)); }
-    function addSelection(input){
-      const parts=String(input).split(/[\n,]+/).map(keywordText).filter(Boolean); let added=0;
+    // A query picked from the list (or an example) is added whole: many real queries contain commas.
+    // Typed text is split on commas and new lines, unless it is itself a query in the reports.
+    function addSelection(input,whole=false){
+      const text=String(input), isQuery=state.matchMode==='exact'&&canonicalKeyword(keywordText(text));
+      const parts=(whole||isQuery?[text]:text.split(/[\n,]+/)).map(keywordText).filter(Boolean); let added=0;
       for(let part of parts){ if(state.matchMode==='exact'){ part=canonicalKeyword(part); if(!part) continue; } if(!state.selections.some(item=>normalize(item)===normalize(part))){state.selections.push(part);added++;} }
       if(!added){toast(state.matchMode==='exact'?'Choose a query from the Marketplace data.':'Enter a word or phrase.');return;}
       $('#keywordInput').value=''; closeSuggestions(); renderControls(); scheduleRender();
@@ -664,17 +682,19 @@
     function aggregate(rows,field,definition,months){ const index=rows===state.popular?state.popByKey:rows===state.zero?state.zeroByKey:null; const sums=new Map(months.map(month=>[month,0])); const add=(row)=>{ if(sums.has(row.month)) sums.set(row.month,sums.get(row.month)+number(row[field])); };
       if(index){ for(const k of new Set(definition.keywords.map(normalize))) for(const row of (index.get(k)||[])) add(row); } else { const wanted=new Set(definition.keywords.map(normalize)); for(const row of rows) if(wanted.has(normalize(row.keyword))) add(row); }
       return months.map(month=>sums.get(month)||0); }
-    function ranksFor(keyword,months){ const map=new Map(); for(const row of (state.popByKey?.get(normalize(keyword))||[])){ if(row.rank>=1&&row.rank<=500) map.set(row.month,row.rank); } return months.map(month=>map.get(month)||null); }
+    function ranksFor(keyword,months){ const map=new Map(); for(const row of (state.popByKey?.get(normalize(keyword))||[])){ if(row.rank>=1&&row.rank<=500&&!(map.get(row.month)<=row.rank)) map.set(row.month,row.rank); } return months.map(month=>map.get(month)||null); }
     function summaryFor(definition,months){
       let share=aggregate(state.popular,'percentage',definition,months),zero=aggregate(state.zero,'count',definition,months); const rawShare=share.slice();
-      const latest=rawShare.at(-1)||0,previous=rawShare.length>1?rawShare.at(-2):0,peak=Math.max(0,...rawShare),peakIndex=rawShare.indexOf(peak);
+      // With a one-month period the change is against the month before it; with none before, there is no change to show.
+      const before=state.months[state.months.indexOf(months[0])-1];
+      const latest=rawShare.at(-1)||0,previous=rawShare.length>1?rawShare.at(-2):before?aggregate(state.popular,'percentage',definition,[before])[0]:null,peak=Math.max(0,...rawShare),peakIndex=rawShare.indexOf(peak);
       const rank=definition.keywords.length===1?ranksFor(definition.keywords[0],months):[]; const ranked=rank.filter(Number.isFinite);
-      return {definition,share,zero,latest,delta:Math.abs(latest-previous)<0.005?0:latest-previous,peak,peakMonth:peak>0&&peakIndex>=0?monthShort(months[peakIndex]):'—',currentRank:rank.length?rank.at(-1):null,bestRank:ranked.length?Math.min(...ranked):null,zeroTotal:zero.reduce((sum,value)=>sum+value,0)};
+      return {definition,share,zero,latest,delta:previous==null?null:Math.abs(latest-previous)<0.005?0:latest-previous,peak,peakMonth:peak>0&&peakIndex>=0?monthShort(months[peakIndex]):'—',currentRank:rank.length?rank.at(-1):null,bestRank:ranked.length?Math.min(...ranked):null,zeroTotal:zero.reduce((sum,value)=>sum+value,0)};
     }
     function renderControls(){
       $('#matchMode').value=state.matchMode;$('#containsLogic').value=state.containsLogic;$('#compareMode').value=state.compareMode;$('#smoothSeries').checked=state.smooth;
       $('#containsLogicField').style.display=state.matchMode==='contains'&&state.selections.length>1?'flex':'none';$('#compareModeField').style.display=state.matchMode==='exact'?'flex':'none';
-      const tiny=window.innerWidth<520;$('#keywordInput').placeholder=state.loadFailed?'No data loaded':state.matchMode==='exact'?'Search queries…':'Add words, then press Enter…';$('#clearSelection').hidden=!state.selections.length;
+      $('#keywordInput').placeholder=state.loadFailed?'No data loaded':state.matchMode==='exact'?'Search queries…':'Add words, then press Enter…';$('#clearSelection').hidden=!state.selections.length;
       const chips=$('#selectedChips');chips.textContent='';state.selections.forEach((item,index)=>{ const chip=document.createElement('span');chip.className='selected-chip'; const dot=document.createElement('span');dot.className='dot';if(state.matchMode==='exact'){dot.style.background=colorOf(item);}else{dot.hidden=true;} const text=document.createElement('span');text.className='text';text.textContent=item; const remove=document.createElement('button');remove.type='button';remove.setAttribute('aria-label',`Remove ${item}`);remove.textContent='×';remove.addEventListener('click',()=>removeSelection(index));chip.append(dot,text,remove);chips.appendChild(chip); });
       const matches=selectedMatches(); const exact=state.matchMode==='exact';
       const details=$('#matchDetails'); details.hidden=exact||!matches.length;
@@ -697,7 +717,7 @@
       const box=$('#suggestions'),term=normalize($('#keywordInput').value); box.textContent=''; if(!term||!state.dataReady){closeSuggestions();return;}
       const popularSet=state.popularSet,zeroSet=state.zeroSet;
       const found=state.allKeywords.filter((keyword,i)=>state.allNorm[i].includes(term)).sort((a,b)=>Number(!normalize(a).startsWith(term))-Number(!normalize(b).startsWith(term))||a.localeCompare(b)); const results=found.slice(0,60);
-      results.forEach(keyword=>{ const button=document.createElement('button');button.type='button';button.className='suggestion';button.setAttribute('role','option'); const text=document.createElement('span');{const k=keyword,lk=normalize(k),at=lk.indexOf(term);text.innerHTML=at>=0?escapeHtml(k.slice(0,at))+'<b>'+escapeHtml(k.slice(at,at+term.length))+'</b>'+escapeHtml(k.slice(at+term.length)):escapeHtml(k);} const badges=document.createElement('span');badges.className='badges'; const key=normalize(keyword); if(popularSet.has(key)){const badge=document.createElement('span');badge.className='badge popular';badge.textContent='Top 500';badges.appendChild(badge);} if(zeroSet.has(key)){const badge=document.createElement('span');badge.className='badge zero';badge.textContent='Found no apps';badges.appendChild(badge);} button.append(text,badges);button.addEventListener('click',()=>addSelection(state.matchMode==='exact'?keyword:$('#keywordInput').value));box.appendChild(button); });
+      results.forEach(keyword=>{ const button=document.createElement('button');button.type='button';button.className='suggestion';button.setAttribute('role','option'); const text=document.createElement('span');{const k=keyword,lk=normalize(k),at=lk.indexOf(term);text.innerHTML=at>=0?escapeHtml(k.slice(0,at))+'<b>'+escapeHtml(k.slice(at,at+term.length))+'</b>'+escapeHtml(k.slice(at+term.length)):escapeHtml(k);} const badges=document.createElement('span');badges.className='badges'; const key=normalize(keyword); if(popularSet.has(key)){const badge=document.createElement('span');badge.className='badge popular';badge.textContent='Top 500';badges.appendChild(badge);} if(zeroSet.has(key)){const badge=document.createElement('span');badge.className='badge zero';badge.textContent='Found no apps';badges.appendChild(badge);} button.append(text,badges);button.addEventListener('click',()=>state.matchMode==='exact'?addSelection(keyword,true):addSelection($('#keywordInput').value));box.appendChild(button); });
       if(!results.length&&state.matchMode==='contains'){const button=document.createElement('button');button.type='button';button.className='suggestion';button.textContent=`Add “${$('#keywordInput').value.trim()}” as a contains filter`;button.addEventListener('click',()=>addSelection($('#keywordInput').value));box.appendChild(button);}
       if(results.length){const foot=document.createElement('div');foot.className='sug-foot';foot.textContent=found.length>results.length?`Showing ${results.length} of ${found.length.toLocaleString('en-US')} matches. Keep typing to narrow down.`:`${found.length} ${found.length===1?'match':'matches'}`;box.appendChild(foot);}
       box.classList.toggle('open',box.childElementCount>0);box.querySelector('.suggestion')?.classList.add('active');
@@ -715,7 +735,7 @@
       // The legend wraps instead of paging; its height decides where the plot starts.
       let rows=0; if(many){ const avail=W-48; let x=0; rows=1; for(const n of names){ const w=9+6+measure(n)+16; if(x+w>avail&&x>0){rows++;x=0;} x+=w; } }
       const left=56,right=24, px=Math.max(60,W-left-right)/Math.max(1,months.length-1);
-      return {backgroundColor:'transparent',animationDuration:350,textStyle:{fontFamily:FONT},
+      return {backgroundColor:'transparent',animation:!matchMedia('(prefers-reduced-motion: reduce)').matches,animationDuration:350,textStyle:{fontFamily:FONT},
         legend:{show:many,data:names,type:'plain',top:14,left:18,width:Math.max(120,W-48),icon:'circle',itemWidth:9,itemHeight:9,itemGap:16,textStyle:{color:t.ink2,fontSize:13,fontFamily:FONT},inactiveColor:t.line},
         grid:{left,right,top:many?14+rows*22+22:24,bottom:34,containLabel:false},
         tooltip:{trigger:'axis',confine:true,position:tipAt(many?14+rows*22+10:8,left),backgroundColor:t.tipBg,borderColor:t.ink,borderWidth:1,padding:innerWidth<560?[6,8]:[8,10],textStyle:{color:t.tipInk,fontFamily:FONT,fontSize:innerWidth<560?12:13},extraCssText:'border-radius:0;box-shadow:0 8px 20px rgba(0,0,0,.12);',axisPointer:{lineStyle:{color:t.line}}},
@@ -744,7 +764,7 @@
     function partialNote(months,set,what){ const ms=months.filter(m=>set&&set.has(m)).map(monthShort); return ms.length?` The ${ms.join(' and ')} ${what}${ms.length===1?' is':'s are'} partial, shown as published.`:''; }
     function renderShareChart(definitions,months){
       if(!definitions.length){disposeChart('shareChart','');return;}
-      const series=definitions.map(def=>{let values=aggregate(state.popular,'percentage',def,months);if(!def.group){const r=ranksFor(def.keywords[0],months);values=values.map((v,i)=>r[i]==null&&!v?null:v);}if(state.smooth)values=movingAverage(values);return lineSeries(def,values,definitions.length,months);});
+      const series=definitions.map(def=>{const values=seriesValues(def,state.popular,'percentage',months);return lineSeries(def,values,definitions.length,months);});
       const option=commonOption(months,'shareChart',series);
       const ymax=Math.max(0,...series.flatMap(x=>x.data.filter(v=>v!=null))), ax=niceAxis(ymax*1.05,4);
       option.yAxis={type:'value',min:0,max:ax.max,interval:ax.interval,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>value===0?'0%':`${value.toFixed(ax.decimals)}%`},splitLine:{lineStyle:{color:T().grid}}};
@@ -783,7 +803,7 @@
       const avgNote=state.smooth?' Lines show a 3-month average.':'';
       $('#zeroCard .description').textContent=(plural?'How many times the matching queries found no apps: a count of searches, not a rate.':'How many times the query found no apps: a count of searches, not a rate.')+avgNote;
       $('#zeroCard .description').textContent+=partialNote(months,state.partialZero,'zero-result report');
-      const series=definitions.map(def=>{let values=aggregate(state.zero,'count',def,months);if(state.smooth)values=movingAverage(values);return lineSeries(def,values,definitions.length,months);});
+      const series=definitions.map(def=>{const values=seriesValues(def,state.zero,'count',months);return lineSeries(def,values,definitions.length,months);});
       const option=commonOption(months,'zeroChart',series);
       option.yAxis={type:'value',min:0,minInterval:1,splitNumber:4,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>Number(value).toLocaleString('en-US')},splitLine:{lineStyle:{color:T().grid}}};
       option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${formatCount(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
@@ -791,13 +811,13 @@
     }
     function renderKpis(definitions,months){
       const matches=selectedMatches(),aggregateDefinition=matches.length?{label:'Combined selection',keywords:matches}:null,summary=aggregateDefinition?summaryFor(aggregateDefinition,months):null;
-      const last=months.at(-1), prev=months.at(-2);
+      const last=months.at(-1), prev=months.length>1?months.at(-2):state.months[state.months.indexOf(months[0])-1];
       const inLatest=matches.length>1?new Set(state.popular.filter(r=>r.month===last).map(r=>normalize(r.keyword))):null;
       const liveCount=inLatest?matches.filter(k=>inLatest.has(normalize(k))).length:0;
       $('#kpiShare').textContent=summary?formatShare(summary.latest):'—';
       $('#kpiShareNote').textContent=matches.length<2?`of all searches, ${monthShort(last)}`:state.matchMode==='contains'?`${liveCount.toLocaleString('en-US')} ${liveCount===1?'query':'queries'} in the ${monthShort(last)} top 500`:`${matches.length} queries · ${monthShort(last)}`;
       $('#kpiShareLabel').textContent=matches.length>1?'Combined share':'Latest search share';$('#kpiPeakLabel').textContent=matches.length>1?'Combined peak':'Peak search share';
-      $('#kpiDelta').innerHTML=summary?`<span class="${summary.delta>0?'positive':summary.delta<0?'negative':''}">${summary.delta>0?'+':summary.delta<0?'−':''}${Math.abs(summary.delta).toFixed(2)} pp</span>`:'—';$('#kpiDelta').className='value';
+      $('#kpiDelta').innerHTML=summary&&summary.delta!=null?`<span class="${summary.delta>0?'positive':summary.delta<0?'negative':''}">${summary.delta>0?'+':summary.delta<0?'−':''}${Math.abs(summary.delta).toFixed(2)} pp</span>`:'—';$('#kpiDelta').className='value';
       $('#kpiDeltaNote').textContent=prev?`vs ${monthShort(prev)}`:'vs previous month';
       $('#kpiRankLabel').textContent=matches.length>1?'Top rank now':'Current rank';
       if(state.matchMode==='exact'&&matches.length){const ranked=matches.map(k=>({k,r:ranksFor(k,months).at(-1)})).filter(x=>Number.isFinite(x.r)).sort((a,b)=>a.r-b.r);const best=ranked[0];$('#kpiRank').textContent=best?formatRank(best.r):'Outside 500';$('#kpiRankNote').textContent=matches.length===1?monthShort(last):best?best.k:'None in the top 500';}else{$('#kpiRank').textContent='—';$('#kpiRankNote').textContent=matches.length?'Not ranked as a group':'Pick a query';}
@@ -821,22 +841,31 @@
       $('#tableNote').textContent=contains?'All queries that match your words, counted together.':hasGroup?'Rank is shown per query and never combined across a group.':`Latest values are for ${monthLong(months.at(-1))}; empty searches are summed over the period.`;
       $('.table-panel').classList.toggle('single-row',definitions.length<2);
       const HEAD=[contains?'Queries (all reports)':'Queries','Latest share',$('#thDelta').textContent,'Current rank','Best rank','Peak share','Empty searches'];
-      definitions.forEach(def=>{const summary=summaryFor(def,months),row=document.createElement('tr');const d=summary.delta;const values=[def.group?def.keywords.length.toLocaleString('en-US'):'',formatShare(summary.latest),`${d>0?'+':d<0?'−':''}${Math.abs(d).toFixed(2)} pp`,def.group?'—':formatRank(summary.currentRank),def.group?'—':formatRank(summary.bestRank),`${formatShare(summary.peak)} · ${summary.peakMonth}`,formatCount(summary.zeroTotal)];const first=document.createElement('td');const cell=document.createElement('div');cell.className='keyword-cell'+(def.member?' member':'');if(def.group&&hasGroup&&!contains)row.className='group-row';const dot=document.createElement('span');dot.className='dot';dot.style.background=def.color;const text=document.createElement('span');text.textContent=def.label;text.title=def.label;cell.append(dot,text);first.appendChild(cell);row.appendChild(first);values.forEach((value,index)=>{const td=document.createElement('td');td.dataset.label=HEAD[index];td.textContent=String(value);if((index===3||index===4)&&String(value).includes('Outside'))td.className='outside';if(index===2&&d>0)td.className='positive';if(index===2&&d<0)td.className='negative';row.appendChild(td);});body.appendChild(row);});
+      definitions.forEach(def=>{const summary=summaryFor(def,months),row=document.createElement('tr');const d=summary.delta;const values=[def.group?def.keywords.length.toLocaleString('en-US'):'',formatShare(summary.latest),d==null?'—':`${d>0?'+':d<0?'−':''}${Math.abs(d).toFixed(2)} pp`,def.group?'—':formatRank(summary.currentRank),def.group?'—':formatRank(summary.bestRank),`${formatShare(summary.peak)} · ${summary.peakMonth}`,formatCount(summary.zeroTotal)];const first=document.createElement('td');const cell=document.createElement('div');cell.className='keyword-cell'+(def.member?' member':'');if(def.group&&hasGroup&&!contains)row.className='group-row';const dot=document.createElement('span');dot.className='dot';dot.style.background=def.color;const text=document.createElement('span');text.textContent=def.label;text.title=def.label;cell.append(dot,text);first.appendChild(cell);row.appendChild(first);values.forEach((value,index)=>{const td=document.createElement('td');td.dataset.label=HEAD[index];td.textContent=String(value);if((index===3||index===4)&&String(value).includes('Outside'))td.className='outside';if(index===2&&d>0)td.className='positive';if(index===2&&d<0)td.className='negative';row.appendChild(td);});body.appendChild(row);});
     }
     function renderEmpty(){
       const empty=state.dataReady&&!state.selections.length; document.body.classList.toggle('empty',empty); $('#emptyPanel').hidden=!empty;
       if(empty&&!$('#examples').childElementCount){ const latest=state.months.at(-1); const top=state.popular.filter(r=>r.month===latest&&r.rank>=1).sort((a,b)=>a.rank-b.rank).slice(0,8);
-        top.forEach(r=>{ const b=document.createElement('button'); b.type='button'; b.textContent=r.keyword; b.addEventListener('click',()=>{ if(state.matchMode!=='exact'){state.matchMode='exact';} addSelection(r.keyword); }); $('#examples').appendChild(b); }); }
+        top.forEach(r=>{ const b=document.createElement('button'); b.type='button'; b.textContent=r.keyword; b.addEventListener('click',()=>{ if(state.matchMode!=='exact'){state.matchMode='exact';} addSelection(r.keyword,true); }); $('#examples').appendChild(b); }); }
     }
     let renderQueued=false;
     function scheduleRender(){ if(renderQueued) return; renderQueued=true; requestAnimationFrame(()=>setTimeout(()=>{ renderQueued=false; renderAll(); },0)); }
-    function renderAll(){ if(!state.dataReady)return; renderEmpty(); if(state.from>state.to)state.from=state.to;const months=visibleMonths(),definitions=seriesDefinitions(),rankDefs=rankDefinitions();renderKpis(definitions,months);renderShareChart(definitions,months);renderRankChart(rankDefs,months);renderZeroChart(definitions,months);renderTable(months);echarts.connect('keywordExplorer');updateUrl(); }
+    // Picked queries that are not in the reports (an old link, words with no match, or meaningless queries while
+    // they are hidden) get a plain message instead of empty charts.
+    function renderNoMatch(months){
+      const hidden=MK.hideJunk()&&state.selections.some(q=>MK.isJunkQuery(q));
+      const msg=state.matchMode==='contains'?'No query in the reports contains these words.':hidden?'These queries count as meaningless and are hidden. Untick “Hide meaningless queries” to see them.':'None of the picked queries appear in the reports.';
+      ['shareChart','rankChart','zeroChart'].forEach(id=>disposeChart(id,msg)); renderKpis([],months);
+      const body=$('#summaryBody'); body.textContent=''; const row=document.createElement('tr'),cell=document.createElement('td'); cell.colSpan=8; cell.className='empty-state'; cell.textContent=msg; row.appendChild(cell); body.appendChild(row);
+    }
+    function renderAll(){ if(!state.dataReady)return; renderEmpty(); if(state.from>state.to)state.from=state.to; if(state.selections.length&&!selectedMatches().length){ renderNoMatch(visibleMonths()); updateUrl(); return; } const months=visibleMonths(),definitions=seriesDefinitions(),rankDefs=rankDefinitions();renderKpis(definitions,months);renderShareChart(definitions,months);renderRankChart(rankDefs,months);renderZeroChart(definitions,months);renderTable(months);echarts.connect('keywordExplorer');updateUrl(); }
     function syncPresetButtons(){ const length=state.to-state.from+1;let any=false;document.querySelectorAll('.preset').forEach(button=>{const value=button.dataset.months;if(value==='custom')return;const on=!state.customRange&&(value==='all'?state.from===0&&state.to===state.months.length-1:Number(value)===length&&state.to===state.months.length-1);button.classList.toggle('active',on);any=any||on;});if(!any)state.customRange=true;document.querySelector('.preset[data-months="custom"]').classList.toggle('active',!!state.customRange);document.querySelector('.date-selects').hidden=!state.customRange; }
     function setPreset(value){ if(value==='custom'){state.customRange=true;syncPresetButtons();return;} state.customRange=false; state.to=Math.max(0,state.months.length-1);state.from=value==='all'?0:Math.max(0,state.to-Number(value)+1);$('#fromMonth').value=String(state.from);$('#toMonth').value=String(state.to);syncPresetButtons();scheduleRender(); }
-    function csvEscape(value){const text=String(value??'');return /[",\n]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;}
+    // Text starting with = + - @ (or a tab/return) is prefixed with ' so spreadsheet apps don't run it as a formula.
+    function csvEscape(value){let text=String(value??'');if(typeof value==='string'&&/^[=+\-@\t\r]/.test(text))text="'"+text;return /[",\n\r]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;}
     function exportCsv(){
       const months=visibleMonths(),definitions=seriesDefinitions();if(!definitions.length){toast('Select keywords before exporting.');return;}const rows=[['month','series','search_share_percentage','marketplace_top_500_rank','zero_result_count']];
-      for(const def of definitions){const shares=aggregate(state.popular,'percentage',def,months),zeros=aggregate(state.zero,'count',def,months),ranks=def.keywords.length===1?ranksFor(def.keywords[0],months):months.map(()=>null);months.forEach((month,index)=>rows.push([month,def.label,shares[index],ranks[index]||'Outside top 500',zeros[index]]));}
+      for(const def of definitions){const shares=aggregate(state.popular,'percentage',def,months),zeros=aggregate(state.zero,'count',def,months),ranks=def.keywords.length===1?ranksFor(def.keywords[0],months):months.map(()=>null);const single=def.keywords.length===1;months.forEach((month,index)=>rows.push([month,def.label,Number(Number(shares[index]||0).toFixed(4)),single?(ranks[index]||'Outside top 500'):'',zeros[index]]));}
       const csv=rows.map(row=>row.map(csvEscape).join(',')).join('\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='keyword-explorer.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('CSV export started.');
     }
     function downloadChart(id){const chart=state.charts[id];if(!chart){toast('This chart has no data to download.');return;}const link=document.createElement('a');link.href=chart.getDataURL({type:'png',pixelRatio:2,backgroundColor:T().surface});link.download=`${id}.png`;document.body.appendChild(link);link.click();link.remove();toast('PNG export started.');}
@@ -849,7 +878,8 @@
     function bindEvents(){
       $('#keywordInput').addEventListener('input',renderSuggestions);$('#keywordInput').addEventListener('keydown',event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){const items=[...document.querySelectorAll('#suggestions .suggestion')];if(items.length){event.preventDefault();let i=items.findIndex(x=>x.classList.contains('active'));items[i]?.classList.remove('active');i=(i+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items[i].classList.add('active');items[i].scrollIntoView({block:'nearest'});}}if(event.key==='Enter'){event.preventDefault();const first=$('#suggestions .suggestion.active')||$('#suggestions .suggestion');if(state.matchMode==='exact'&&first)first.click();else addSelection(event.currentTarget.value);}if(event.key==='Escape')closeSuggestions();});
       document.addEventListener('click',event=>{if(!event.target.closest('.picker'))closeSuggestions();});
-      $('#matchMode').addEventListener('change',event=>{state.matchMode=event.target.value;if(state.matchMode==='contains')state.compareMode='group';renderControls();scheduleRender();});
+      // Containing words always draws one combined line; the Show as choice is kept for when Exact query comes back.
+      $('#matchMode').addEventListener('change',event=>{state.matchMode=event.target.value;renderControls();scheduleRender();});
       $('#containsLogic').addEventListener('change',event=>{state.containsLogic=event.target.value;renderControls();scheduleRender();});
       $('#compareMode').addEventListener('change',event=>{state.compareMode=event.target.value;renderControls();scheduleRender();});
       $('#smoothSeries').addEventListener('change',event=>{state.smooth=event.target.checked;scheduleRender();});
@@ -864,16 +894,17 @@
       document.querySelectorAll('[data-chart-action]').forEach(button=>button.addEventListener('click',()=>button.dataset.chartAction==='download'?downloadChart(button.dataset.chart):toggleFullscreen(button.dataset.chart)));
       document.addEventListener('keydown',event=>{if(event.key==='Escape')closeFullscreen();});
       document.addEventListener('mousedown',event=>{const card=document.querySelector('.chart-card.is-fullscreen');if(card&&!card.contains(event.target))closeFullscreen();});
-      $('#retryLoad').addEventListener('click',async()=>{ $('#retryLoad').disabled=true; try{ await loadDefaults(); }catch(error){ showLoadError(error); } $('#retryLoad').disabled=false; });
+      $('#retryLoad').addEventListener('click',async()=>{ $('#retryLoad').disabled=true; await start(); $('#retryLoad').disabled=false; });
       window.addEventListener('resize',()=>Object.values(state.charts).forEach(chart=>chart?.resize?.()));
       const dq=window.matchMedia('(prefers-color-scheme: dark)'),onScheme=()=>{COLORS=T().series;renderControls();renderAll();};dq.addEventListener?dq.addEventListener('change',onScheme):dq.addListener(onScheme);
       if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>renderAll());
     }
     function exposeDiagnostics(){window.KeywordExplorer={getState:()=>({popularRows:state.popular.length,zeroRows:state.zero.length,months:state.months.slice(),selections:state.selections.slice(),matchMode:state.matchMode,compareMode:state.compareMode,matchedQueries:selectedMatches().length,chartIds:Object.entries(state.charts).filter(([,chart])=>chart&&!chart.isDisposed?.()).map(([id])=>id)}),runSmokeTests:()=>({dataLoaded:state.popular.length>0,rankFieldPresent:state.popular.some(row=>row.rank>=1&&row.rank<=500),monthsLoaded:state.months.length>0,selectionPresent:state.selections.length>0,chartsRendered:['shareChart','rankChart','zeroChart'].every(id=>state.charts[id]&&!state.charts[id].isDisposed?.())})};}
-    async function boot(){
-      hydrateUrl();bindEvents();renderControls();
-      try{setStatus('Loading chart and spreadsheet libraries…');await (window.echarts?Promise.resolve():loadScriptSeq(ECHARTS_URLS,'echarts'));await loadDefaults();exposeDiagnostics();}catch(error){console.warn(error);showLoadError(error);}
+    // Loads the chart library, then the reports; Retry runs the same steps, so a failed library load can recover too.
+    async function start(){
+      try{setStatus('Loading chart and spreadsheet libraries…');await (window.echarts?Promise.resolve():loadScriptSeq(ECHARTS_URLS,'echarts'));await loadDefaults();exposeDiagnostics();}catch(error){console.warn(error);MK.loadFailed();showLoadError(error);}
     }
+    async function boot(){ hydrateUrl();bindEvents();renderControls(); await start(); }
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
   })();
   </script>
