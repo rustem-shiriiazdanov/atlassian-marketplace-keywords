@@ -49,8 +49,10 @@
   .also{margin:16px 0 0;font-size:14px;line-height:1.6;color:var(--ink2)}
 
   .heat-tools{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
-  .legend{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
-  .legend i{display:inline-block;width:18px;height:12px}
+  .legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;min-width:0;max-width:100%;font-size:12px;color:var(--ink2)}
+  .legend .lg-title{font-weight:600;color:var(--ink)}
+  .legend .lg-item{display:inline-flex;align-items:center;gap:6px}
+  .legend i{display:inline-block;width:14px;height:12px}
   .heat-wrap{overflow-x:auto;margin:0 -2px;padding:0 2px}
   table.heat{border-collapse:separate;border-spacing:3px;width:100%;min-width:720px;font-size:13px}
   .heat th{font-weight:500;color:var(--muted);text-align:center;padding:4px 2px;white-space:nowrap}
@@ -160,7 +162,7 @@
       </div>
       <div class="heat-tools">
         <label class="check"><input type="checkbox" id="showValues" checked> Show values</label>
-        <div class="legend" aria-label="Colour scale: empty searches per month"><span>Empty searches</span><i style="background:var(--heat0)"></i><i style="background:var(--heat1)"></i><i style="background:var(--heat2)"></i><i style="background:var(--heat3)"></i><i style="background:var(--heat4)"></i><i style="background:var(--heat5)"></i><span>0 → 50+</span></div>
+        <div class="legend" aria-label="Colour key: empty searches per month"><span class="lg-title">Empty searches per month</span><span class="lg-item"><i style="background:var(--heat0)"></i>0 / not listed</span><span class="lg-item"><i style="background:var(--heat1)"></i>1–4</span><span class="lg-item"><i style="background:var(--heat2)"></i>5–9</span><span class="lg-item"><i style="background:var(--heat3)"></i>10–19</span><span class="lg-item"><i style="background:var(--heat4)"></i>20–49</span><span class="lg-item"><i style="background:var(--heat5)"></i>50+</span></div>
       </div>
     </div>
     <div class="heat-wrap"><div class="heat-ghost" data-ghost="heat" data-label="Queries that found nothing"></div><table class="heat" id="heat"><caption class="sr-only">Empty searches per month for the queries that most often found no apps</caption></table></div>

@@ -368,7 +368,7 @@
     escapeHtml, fmtInt, fmtPct, cleanKeyword, isJunkQuery, num, REPORT_BREAK, BREAK_NOTE, NOISE_NOTE, ZERO_NOTE,
     attachLookup, lookupIndex, tokens, HEAT_BINS, heatBin, isSpike, inkOn };
 
-  // Fill links that are configured above; hide the ones that are not.
+  // On every page: the hide switches and the loading placeholders.
   const ready = ()=>{ bindJunkToggles(); fillGhosts(); };
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready); else ready();
 })();

@@ -123,6 +123,7 @@ h3.sub{margin:0;font-size:17px;font-weight:700;line-height:1.3}
 .btn.accent:hover{color:var(--on-accent);opacity:.92}
 .btn:disabled,.seg button:disabled,.sel:disabled{opacity:.5;cursor:not-allowed}
 .check{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500;cursor:pointer}
+.check.off{opacity:.45;cursor:default}
 .check input{width:16px;height:16px;margin:0;accent-color:var(--ink)}
 
 /* Numbers row */

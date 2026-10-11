@@ -102,6 +102,7 @@
     .heat-legend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:4px 20px 18px;font-size:13px;color:var(--ink-2)}
     .heat-legend .lg-title{font-weight:600;color:var(--ink);margin-right:4px}
     .heat-legend .lg-item{display:inline-flex;align-items:center;gap:6px}
+    .heat-legend .lg-note{color:var(--muted)}
     .heat-legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
     .heat-legend .lg-item:nth-of-type(2) i{box-shadow:inset 0 0 0 1px var(--line)}
     .sel-note{display:inline-flex;align-items:center;height:32px;color:var(--muted);font-size:14px;font-weight:500}
@@ -465,6 +466,7 @@
         <div class="card-controls">
           <div class="seg" role="group" aria-label="Heatmap period" id="heatPresets"><button type="button" data-range="report" aria-pressed="false">Since Nov 2024</button><button type="button" data-range="12" aria-pressed="true">12 months</button><button type="button" data-range="all" aria-pressed="false">All years</button><button type="button" data-range="custom" aria-pressed="false">Custom</button></div>
           <div class="ctrl"><label for="heatTopK">Show</label><span class="sel-note" hidden></span><select id="heatTopK" class="select-sm"><option value="10">10 queries</option><option value="15" selected>15 queries</option><option value="20">20 queries</option><option value="30">30 queries</option></select><span id="heatTopKVal" hidden>15</span></div>
+          <label class="check" id="heatValuesWrap"><input type="checkbox" id="heatValues" checked> Show values</label>
           <div class="ctrl" id="heatTimeRangeChip" hidden><label for="heatTimeStart">From</label><select id="heatTimeStart" class="select-sm"></select><label for="heatTimeEnd">to</label><select id="heatTimeEnd" class="select-sm"></select><span id="heatTimeStartVal" hidden></span><span id="heatTimeEndVal" hidden></span></div>
         </div>
         <div class="card-body"><div id="heatmap" class="chart heat" data-testid="heatmap"><div class="placeholder" data-ghost="heat" data-rows="12" data-label="Queries that most often found no apps"></div></div></div>
@@ -571,7 +573,7 @@
         return {
           ink:v('--ink'), ink2:v('--ink-2'), muted:v('--muted'), line:v('--line'), grid:v('--grid'), surface:v('--surface'), paper:v('--paper'),
           blue:v('--blue'), blueSoft:v('--blue-soft'), coral:v('--coral'), tipBg:v('--tip-bg'), tipInk:v('--tip-ink'),
-          heat:[v('--heat-0'),v('--heat-1'),v('--heat-2'),v('--heat-3'),v('--heat-4')], heatNone:v('--heat-none'),
+          heat:[v('--heat-0'),v('--heat-1'),v('--heat-2'),v('--heat-3'),v('--heat-4')], heatNone:v('--heat-none'), heatInkLight:v('--heat-ink-light'), heatInkDark:v('--heat-ink-dark'),
           series:v('--series').split(',').map(x=>x.trim()).filter(Boolean)
         };
       }
@@ -613,7 +615,7 @@
         months: [],
         zeroMode: 'totals',
         topN: 10, playInterval: 1200, timelinePlaying: false,
-        trailsN: 6, heatTopK: 15,
+        trailsN: 6, heatTopK: 15, heatValues: true,
         keywordFilter: [],
         heatTimeStartIdx: 0, heatTimeEndIdx: 0, heatTimeRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
         manualSource: false, manualZero: false, defaultsTried: false,
@@ -1342,23 +1344,35 @@
         let lo = 1;
         br.forEach((hi,i)=>{ pieces.push({ gte:lo, lte:hi, label: lo===hi ? `${lo}` : `${lo}–${hi}`, color:ramp[i] }); lo = hi+1; });
         pieces.push({ gte:lo, label:`${lo}+`, color:ramp[4] });
+        // Values sit in the cells, as on This month, whenever a cell is wide enough to hold a number.
+        const hostW = document.getElementById('heatmap')?.clientWidth || 800;
+        const fits = (hostW - labW - 16) / Math.max(1, months.length) >= 24;
+        const box = document.getElementById('heatValues'), wrap = document.getElementById('heatValuesWrap');
+        if(box){ box.disabled = !fits; wrap.classList.toggle('off', !fits); wrap.title = fits ? '' : 'Pick a shorter period to show the values'; }
+        const showVals = fits && state.heatValues;
+        const colorOf = (v)=> !v ? t.heatNone : ramp[Math.min(4, br.findIndex(hi=> v <= hi) < 0 ? 4 : br.findIndex(hi=> v <= hi))];
+        // Partial reports get a * on the month, as on This month.
+        const partial = state.partialZero || new Set();
+        const tick = smartTicks(months, Math.max(60, hostW - labW - 16) / Math.max(1, months.length), 48);
         return {
           backgroundColor:'transparent', textStyle:{ fontFamily:FONT }, animation:false,
           grid:{ left: labW + 12, right:4, top:30, bottom:4, containLabel:false },
           tooltip:{ ...tooltipStyle(t), formatter:(p)=>{
             const kw = yCats[p.value[1]]; const m = months[p.value[0]]; const v = p.value[2];
-            return `<b>${escapeHtml(kw)}</b><br/>${monthLabel(m)}: ${v ? v.toLocaleString('en-US')+' empty '+(v===1?'search':'searches') : 'not listed (0)'}`;
+            return `<b>${escapeHtml(kw)}</b><br/>${monthLabel(m)}: ${v ? v.toLocaleString('en-US')+' empty '+(v===1?'search':'searches') : 'not listed (0)'}${partial.has(m) ? '<br/>Partial report' : ''}`;
           } },
-          xAxis:{ type:'category', position:'top', data: months, splitArea:{ show:false }, axisLabel:{ color:t.muted, fontSize:12, interval:0, hideOverlap:true, formatter: smartTicks(months, Math.max(60, (document.getElementById('heatmap')?.clientWidth || 800) - labW - 16) / Math.max(1, months.length), 48) }, axisLine:{ show:false }, axisTick:{ show:false } },
+          xAxis:{ type:'category', position:'top', data: months, splitArea:{ show:false }, axisLabel:{ color:t.muted, fontSize:12, interval:0, hideOverlap:true, formatter:(v, i)=>{ const s = tick(v, i); return s && partial.has(v) ? s + '*' : s; } }, axisLine:{ show:false }, axisTick:{ show:false } },
           yAxis:{ type:'category', data: yCats, inverse:true, splitArea:{ show:false }, axisLabel:{ color:t.ink, fontSize: small ? 12 : 13, fontWeight:500, margin:10, width: labW, overflow: small ? 'break' : 'truncate', lineHeight: small ? 13 : undefined, ellipsis:'…' }, axisLine:{ show:false }, axisTick:{ show:false } },
           visualMap:{ type:'piecewise', show:false, dimension:2, pieces },
-          series:[{ name:'Zero results', type:'heatmap', data, itemStyle:{ borderColor:t.paper || t.surface, borderWidth: small ? 1 : 2, borderRadius:0 }, emphasis:{ itemStyle:{ borderColor:t.ink, borderWidth:2 } } }],
-          _legend: pieces
+          series:[{ name:'Zero results', type:'heatmap', data: showVals ? data.map(d=>({ value:d, label:{ color: MK.inkOn(colorOf(d[2]), t.heatInkLight, t.heatInkDark) } })) : data,
+            label:{ show: showVals, fontFamily:FONT, fontSize: small ? 11 : 12, formatter:(p)=> p.value[2] ? Number(p.value[2]).toLocaleString('en-US') : '·' }, itemStyle:{ borderColor:t.paper || t.surface, borderWidth: small ? 1 : 2, borderRadius:0 }, emphasis:{ itemStyle:{ borderColor:t.ink, borderWidth:2 } } }],
+          _legend: pieces, _partial: months.filter(m=> partial.has(m)).map(m=> monthLabel(m,{month:'short', year:'numeric'}))
         };
       }
-      function renderHeatLegend(pieces){
+      function renderHeatLegend(pieces, partial){
         const el = document.getElementById('heatLegend'); if(!el) return;
-        el.innerHTML = '<span class="lg-title">Empty searches per month</span>' + pieces.map(p=>`<span class="lg-item"><i style="background:${p.color}"></i>${p.label}</span>`).join('');
+        el.innerHTML = '<span class="lg-title">Empty searches per month</span>' + pieces.map(p=>`<span class="lg-item"><i style="background:${p.color}"></i>${p.label}</span>`).join('')
+          + (partial && partial.length ? `<span class="lg-note">* The ${partial.join(' and ')} ${partial.length === 1 ? 'report is' : 'reports are'} partial.</span>` : '');
       }
 
       // --- Data transforms ---
@@ -1559,7 +1573,7 @@
           const hEl = document.getElementById('heatmap');
           if(!fullscreenState.chartEl){ hEl.style.height = Math.max(110, yCats.length*(narrow('heatmap') ? 34 : 30) + 44) + 'px'; state.charts.heatmap?.resize(); }
           const hOpt = buildHeatmapOption(rangeMonths, yCats, matrix, state.gapsZero);
-          renderHeatLegend(hOpt._legend); delete hOpt._legend;
+          renderHeatLegend(hOpt._legend, hOpt._partial); delete hOpt._legend; delete hOpt._partial;
           safeSetOption('heatmap', hOpt);
         }
         refreshFullscreenTable();
@@ -1571,6 +1585,7 @@
       $('#speed').addEventListener('change', e=>{ state.playInterval = +e.target.value; $('#speedVal').textContent = (state.playInterval/1000).toFixed(1)+"s"; if(state.timelinePlaying) startPlay(); });
       $('#trailsN').addEventListener('change', e=>{ state.trailsN = +e.target.value; $('#trailsNVal').textContent = e.target.value; scheduleRender(); });
       $('#heatTopK').addEventListener('change', e=>{ state.heatTopK = +e.target.value; $('#heatTopKVal').textContent = e.target.value; scheduleRender(); });
+      $('#heatValues').addEventListener('change', e=>{ state.heatValues = e.target.checked; scheduleRender(); });
       document.querySelectorAll('#heatPresets button').forEach(b=> b.addEventListener('click', ()=>{ state.heatPreset = b.dataset.range; scheduleRender(); }));
       $('#heatTimeStart').addEventListener('change', e=>{ state.heatTimeStartIdx = +e.target.value; if(state.heatTimeStartIdx>state.heatTimeEndIdx) state.heatTimeEndIdx = state.heatTimeStartIdx; renderAll(); });
       $('#heatTimeEnd').addEventListener('change', e=>{ state.heatTimeEndIdx = +e.target.value; if(state.heatTimeEndIdx<state.heatTimeStartIdx) state.heatTimeStartIdx = state.heatTimeEndIdx; renderAll(); });
