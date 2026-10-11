@@ -108,10 +108,10 @@
   <section class="issue" aria-labelledby="headline">
     <div class="left">
       <div class="issue-line"><span id="issueName">This month’s issue</span><span class="dash" aria-hidden="true"></span><a href="./archive.html" id="issueLink">Earlier issues</a></div>
-      <h1 id="headline"><span class="wait">Reading the latest report…</span></h1>
+      <h1 id="headline" data-ghost="text" data-rows="2" data-label="This month’s headline"></h1>
     </div>
     <div class="right">
-      <p class="dek" id="dek"><span class="wait" data-load-note>Getting Atlassian’s latest reports…</span></p>
+      <p class="dek" id="dek" data-ghost="text" data-rows="4" data-card="0"></p>
       <p class="source" id="source">From Atlassian’s monthly Marketplace search reports.</p>
       <div class="issue-tools">
         <div class="issue-nav" id="issueNav" hidden></div>
@@ -121,20 +121,20 @@
   </section>
 
   <section class="kpis" aria-label="By the numbers" id="kpis">
-    <div class="kpi"><span class="big num wait">—</span><span class="what">of all searches went to the #1 query</span></div>
-    <div class="kpi"><span class="big num wait">—</span><span class="what">places climbed by the biggest mover</span></div>
-    <div class="kpi"><span class="big accent num wait">—</span><span class="what">searches found no apps, as Atlassian reports them</span></div>
-    <div class="kpi"><span class="big word wait">—</span><span class="what">was the most frequent empty search</span></div>
+    <div class="kpi"><span class="big num" data-ghost="num"></span><span class="what">of all searches went to the #1 query</span></div>
+    <div class="kpi"><span class="big num" data-ghost="num"></span><span class="what">places climbed by the biggest mover</span></div>
+    <div class="kpi"><span class="big accent num" data-ghost="num"></span><span class="what">searches found no apps, as Atlassian reports them</span></div>
+    <div class="kpi"><span class="big word" data-ghost="num"></span><span class="what">was the most frequent empty search</span></div>
   </section>
 
   <section class="block two" aria-label="Top queries and climbers">
     <div>
       <div class="block-head"><div class="titles"><span class="kicker">1 · The top ten</span><h2 class="sec" id="topTitle">Share of all searches</h2></div></div>
-      <ol class="topten" id="topTen" data-ghost="list" data-rows="10"></ol>
+      <ol class="topten" id="topTen" data-ghost="list" data-rows="10" data-label="Top ten queries"></ol>
     </div>
     <div>
       <div class="block-head"><div class="titles"><span class="kicker">2 · Climbers</span><h2 class="sec">New in the top 100, and who jumped furthest</h2></div></div>
-      <ul class="climb" id="climbers" data-ghost="list" data-rows="6"></ul>
+      <ul class="climb" id="climbers" data-ghost="list" data-rows="6" data-label="Climbers"></ul>
       <p class="also" id="also"></p>
     </div>
   </section>
@@ -147,7 +147,7 @@
       </div>
       <div class="tools"><div class="seg" role="group" aria-label="Period" id="zeroRange"><button type="button" data-n="12" aria-pressed="false">12 months</button><button type="button" data-n="24" aria-pressed="true">24 months</button><button type="button" data-n="all" aria-pressed="false">All years</button></div></div>
     </div>
-    <div id="zeroChart" data-ghost="line" role="img" aria-label="Line chart of searches that found no apps per month"></div>
+    <div id="zeroChart" data-ghost="line" data-label="Empty searches per month" role="img" aria-label="Line chart of searches that found no apps per month"></div>
     <p class="note chart-note" id="zeroNote">A count of searches, not a rate. <a href="./month-by-month.html">All charts, month by month</a></p>
   </section>
 
@@ -163,7 +163,7 @@
         <div class="legend" aria-label="Colour scale: empty searches per month"><span>Empty searches</span><i style="background:var(--heat0)"></i><i style="background:var(--heat1)"></i><i style="background:var(--heat2)"></i><i style="background:var(--heat3)"></i><i style="background:var(--heat4)"></i><i style="background:var(--heat5)"></i><span>0 → 50+</span></div>
       </div>
     </div>
-    <div class="heat-wrap"><div class="heat-ghost" data-ghost="heat"></div><table class="heat" id="heat"><caption class="sr-only">Empty searches per month for the queries that most often found no apps</caption></table></div>
+    <div class="heat-wrap"><div class="heat-ghost" data-ghost="heat" data-label="Queries that found nothing"></div><table class="heat" id="heat"><caption class="sr-only">Empty searches per month for the queries that most often found no apps</caption></table></div>
   </section>
 
   <section class="foot-cols" aria-label="About this site">
@@ -428,7 +428,7 @@
       renderIssue(); MK.loadDone();
       // For checks: the written headline and summary of any issue.
       window.MKIssue = { headline:(m)=> headline(facts(m)), dek:(m)=> dek(facts(m)), issues: D.issues };
-    }).catch(err=>{ console.error(err); MK.loadFailed(); document.querySelectorAll('.skel, .heat-ghost').forEach(g=> g.remove()); $('#loadAlert').hidden = false; $('#headline').textContent = 'The reports could not be loaded.'; $('#dek').textContent = ''; });
+    }).catch(err=>{ console.error(err); MK.loadFailed(); $('#loadAlert').hidden = false; $('#headline').textContent = 'The reports could not be loaded.'; $('#dek').textContent = ''; });
   }
   $('#retry').addEventListener('click', start);
   start();
