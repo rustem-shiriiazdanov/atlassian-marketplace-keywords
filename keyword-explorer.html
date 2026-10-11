@@ -486,8 +486,8 @@
       <h2 id="dataTitle">Use your own data</h2>
       <p>The page loads the latest reports from this repository. You can open your own exports instead; files are read in your browser and never uploaded.</p>
       <div class="data-grid">
-        <div class="file-tile"><div><strong>Popular search keywords</strong><span>Raw sheet with month, keyword, percentage, rank</span><em id="popularFileStatus" class="file-status"><span class="file-loading"><span data-ghost="num"></span> Loading from the repository…</span></em></div><input id="popularFile" type="file" accept=".xlsx,.xls" /><button id="popularFileButton" class="btn ghost small" type="button">Choose file</button></div>
-        <div class="file-tile"><div><strong>Zero-result keywords</strong><span>Raw sheet with month, keyword, count</span><em id="zeroFileStatus" class="file-status"><span class="file-loading"><span data-ghost="num"></span> Loading from the repository…</span></em></div><input id="zeroFile" type="file" accept=".xlsx,.xls" /><button id="zeroFileButton" class="btn ghost small" type="button">Choose file</button></div>
+        <div class="file-tile"><div><strong>Popular search keywords</strong><span>Raw sheet with month, keyword, percentage, rank</span><em id="popularFileStatus" class="file-status" data-ghost="file"></em></div><input id="popularFile" type="file" accept=".xlsx,.xls" /><button id="popularFileButton" class="btn ghost small" type="button">Choose file</button></div>
+        <div class="file-tile"><div><strong>Zero-result keywords</strong><span>Raw sheet with month, keyword, count</span><em id="zeroFileStatus" class="file-status" data-ghost="file"></em></div><input id="zeroFile" type="file" accept=".xlsx,.xls" /><button id="zeroFileButton" class="btn ghost small" type="button">Choose file</button></div>
       </div>
       <div class="data-actions"><span id="status" class="status" role="status">Loading libraries…</span><button id="reloadDefaults" class="link-btn" type="button">Reload repository data</button></div>
     </section>
@@ -894,7 +894,7 @@
       document.querySelectorAll('[data-chart-action]').forEach(button=>button.addEventListener('click',()=>button.dataset.chartAction==='download'?downloadChart(button.dataset.chart):toggleFullscreen(button.dataset.chart)));
       document.addEventListener('keydown',event=>{if(event.key==='Escape')closeFullscreen();});
       document.addEventListener('mousedown',event=>{const card=document.querySelector('.chart-card.is-fullscreen');if(card&&!card.contains(event.target))closeFullscreen();});
-      $('#retryLoad').addEventListener('click',async()=>{ $('#retryLoad').disabled=true; await start(); $('#retryLoad').disabled=false; });
+      $('#retryLoad').addEventListener('click',async()=>{ $('#retryLoad').disabled=true; MK.refillGhosts(); await start(); $('#retryLoad').disabled=false; });
       window.addEventListener('resize',()=>Object.values(state.charts).forEach(chart=>chart?.resize?.()));
       const dq=window.matchMedia('(prefers-color-scheme: dark)'),onScheme=()=>{COLORS=T().series;renderControls();renderAll();};dq.addEventListener?dq.addEventListener('change',onScheme):dq.addListener(onScheme);
       if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>renderAll());

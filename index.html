@@ -432,7 +432,7 @@
       window.MKIssue = { headline:(m)=> headline(facts(m)), dek:(m)=> dek(facts(m)), issues: D.issues };
     }).catch(err=>{ console.error(err); MK.loadFailed(); $('#loadAlert').hidden = false; $('#headline').textContent = 'The reports could not be loaded.'; $('#dek').textContent = ''; });
   }
-  $('#retry').addEventListener('click', start);
+  $('#retry').addEventListener('click', ()=>{ MK.refillGhosts(); start(); });
   start();
 })();
 </script>

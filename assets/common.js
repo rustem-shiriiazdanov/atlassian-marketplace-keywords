@@ -125,14 +125,20 @@
     document.querySelectorAll('[data-load-bar]').forEach(n=>{ n.style.width = pct; });
     document.querySelectorAll('.load-card').forEach(c=> c.classList.toggle('failed', load.failed));
     // Figures that a page leaves empty once the reports are in show a dash instead of spinning on.
-    if(load.done || load.failed){ document.querySelectorAll('.file-loading').forEach(m=> m.replaceWith(load.failed ? 'Not loaded' : 'Loaded')); document.querySelectorAll('.mini-load').forEach(m=> m.replaceWith('—')); }
+    // Once the page is drawn, markers a page left in place become plain text. After a failure they stay in place
+    // in a failed state, so a retry can show them loading again.
+    if(load.done){ document.querySelectorAll('.file-loading').forEach(m=> m.replaceWith('Loaded')); document.querySelectorAll('.mini-load').forEach(m=> m.replaceWith('—')); }
+    else {
+      document.querySelectorAll('.mini-load').forEach(m=> m.classList.toggle('failed', load.failed));
+      document.querySelectorAll('.file-loading').forEach(m=>{ m.classList.toggle('failed', load.failed); const t = m.querySelector('.fl-text'); if(t) t.textContent = load.failed ? 'Not loaded' : 'Loading from the repository…'; });
+    }
   }
   // Pages call this once the first view is drawn; the line fills up and fades out.
   function loadDone(){ if(load.done) return; load.done = true; paintLoad(); }
   function loadFailed(){ load.failed = true; paintLoad(); }
   // Fetches the first file that exists, counting bytes as they arrive for the progress line.
   async function fetchFirst(urls){
-    const key = urls[0]; load.failed = false; load.done = false;
+    const key = urls[0]; load.failed = false; load.done = false; paintLoad();
     for(const u of urls){
       try{
         const res = await fetch(u, {cache:'no-cache'}); if(!res.ok) continue;
@@ -162,6 +168,7 @@
     const wrap = (inner, tag = 'div')=> `<${tag} class="skel-wrap">${inner}${card ? loadCardHTML(label) : ''}</${tag}>`;
     const rows = (k, f)=> Array.from({length:k}, (_, i)=> f(i)).join('');
     if(kind === 'num') return `<span class="mini-load"><span class="spin"></span><span class="sr-only">Loading</span></span>`;
+    if(kind === 'file') return `<span class="file-loading"><span class="mini-load"><span class="spin"></span></span><span class="fl-text">Loading from the repository…</span></span>`;
     if(kind === 'text'){ n = n || 3; return wrap(`<span class="skel g-text" aria-hidden="true">${rows(n, i=> `<b style="width:${i === n-1 ? 58 : 96 - (i*7)%14}%"></b>`)}</span>`, 'span'); }
     if(kind === 'bars'){ n = n || 10; return wrap(`<div class="skel g-bars" aria-hidden="true">${rows(n, i=> `<span><b style="width:${40 + (i*37)%45}%"></b><i style="width:${W[i] || 18}%"></i></span>`)}</div>`); }
     if(kind === 'line'){ const pts = [62,58,66,55,60,48,52,44,50,41,46,38,42,36,40,33,30,34,28,26].map((y,i)=> `${(i/19*100).toFixed(1)},${y}`).join(' ');
@@ -172,6 +179,8 @@
     if(kind === 'cards'){ n = n || 12; return wrap(`<div class="skel g-cards" aria-hidden="true">${rows(n, i=> `<span><b style="width:${35 + (i*17)%30}%"></b><i style="width:${55 + (i*13)%35}%"></i><i style="width:${30 + (i*11)%25}%"></i></span>`)}</div>`); }
     return '';
   }
+  // Before a retry: every element that still waits for data (or shows the failure) gets its loading state back.
+  function refillGhosts(root){ load.failed = false; load.done = false; load.files.clear(); (root || document).querySelectorAll('[data-ghost]').forEach(el=>{ delete el.dataset.ghosted; }); fillGhosts(root); }
   function fillGhosts(root){
     (root || document).querySelectorAll('[data-ghost]').forEach(el=>{
       if(el.dataset.ghosted) return; el.dataset.ghosted = '1';
@@ -366,7 +375,7 @@
   const HEAT_BINS = [0, 1, 5, 10, 20, 50];
   const heatBin = (n)=>{ let b = 0; for(let i=0;i<HEAT_BINS.length;i++) if(n >= HEAT_BINS[i]) b = i; return n > 0 ? Math.max(1, b) : 0; };
 
-  window.MK = { XLSX_URLS, ECHARTS_URLS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, loadDone, loadFailed, fillGhosts, ghostHTML, loadCardHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
+  window.MK = { XLSX_URLS, ECHARTS_URLS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, loadDone, loadFailed, fillGhosts, refillGhosts, ghostHTML, loadCardHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
     toMonthKey, monthLabel, monthLong, monthShort, monthName, monthAbbr, addMonths, monthsBetween,
     escapeHtml, fmtInt, fmtPct, cleanKeyword, isJunkQuery, num, REPORT_BREAK, ZERO_NOTE,
     attachLookup, lookupIndex, tokens, HEAT_BINS, heatBin, isSpike, inkOn };

@@ -470,12 +470,12 @@
       </div>
       <div class="data-grid">
         <div class="file-tile">
-          <div><strong>Popular search keywords</strong><span>Raw sheet with month, keyword, percentage, rank</span><em id="source-display" class="file-status"><span class="file-loading"><span data-ghost="num"></span> Loading from the repository…</span></em></div>
+          <div><strong>Popular search keywords</strong><span>Raw sheet with month, keyword, percentage, rank</span><em id="source-display" class="file-status" data-ghost="file"></em></div>
           <input id="file-source" type="file" accept=".xlsx,.xls" />
           <button id="source-open" class="btn ghost small" type="button">Choose file</button>
         </div>
         <div class="file-tile">
-          <div><strong>Zero-result keywords</strong><span>Raw sheet with month, keyword, count</span><em id="zero-display" class="file-status"><span class="file-loading"><span data-ghost="num"></span> Loading from the repository…</span></em></div>
+          <div><strong>Zero-result keywords</strong><span>Raw sheet with month, keyword, count</span><em id="zero-display" class="file-status" data-ghost="file"></em></div>
           <input id="file-zero" type="file" accept=".xlsx,.xls" />
           <button id="zero-open" class="btn ghost small" type="button">Choose file</button>
         </div>
@@ -1666,7 +1666,7 @@
           state.heroSrc = null;
         }
       }
-      $('#btn-retry').addEventListener('click', async ()=>{ $('#btn-retry').disabled = true; await loadDefaults(true); $('#btn-retry').disabled = false; });
+      $('#btn-retry').addEventListener('click', async ()=>{ $('#btn-retry').disabled = true; MK.refillGhosts(); await loadDefaults(true); $('#btn-retry').disabled = false; });
 
       async function autoLoadDefaults(){
         if(state.defaultsTried) return;

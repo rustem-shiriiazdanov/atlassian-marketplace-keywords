@@ -107,7 +107,7 @@
     $('#loadAlert').hidden = true;
     MK.loadData().then(D=>{ loaded = true; render(D); MK.loadDone(); }).catch(err=>{ console.error(err); MK.loadFailed(); $('#loadAlert').hidden = false; $('#archive').innerHTML = ''; });
   }
-  $('#retry').addEventListener('click', start);
+  $('#retry').addEventListener('click', ()=>{ MK.refillGhosts(); start(); });
   start();
 })();
 </script>
