@@ -1148,12 +1148,19 @@
           } };
       }
       // Race colours: a query keeps its colour for the whole race, and no two queries on screen at once share one.
-      // Eight series colours plus a lighter tint of each; a query that leaves and comes back keeps its colour if it is free.
+      // A query that leaves and comes back keeps its colour if it is free.
       function raceColorFrames(months, topByMonth, t){
         const mix = (a, b, k)=>{ const h = (c)=> { const x = c.replace('#',''); const f = x.length === 3 ? x.split('').map(y=>y+y).join('') : x; return [0,2,4].map(i=> parseInt(f.slice(i,i+2),16)); };
           try{ const A = h(a), B = h(b); if(A.some(isNaN) || B.some(isNaN)) return a; return '#' + A.map((v,i)=> Math.round(v*(1-k) + B[i]*k).toString(16).padStart(2,'0')).join(''); }catch(e){ return a; } };
         const base = t.series.length ? t.series : [t.ink];
-        const pal = base.concat(base.map(c=> mix(c, t.paper, .5)));
+        // As many distinct colours as rows can show at once (Top 20 included): the series colours, then lighter
+        // tints and deeper shades of them, skipping any that come out the same.
+        const rows = Math.max(1, ...months.map(m=> (topByMonth[m] || []).length));
+        const pal = [], seen = new Set();
+        for(const [to, k] of [[null, 0], [t.paper, .5], [t.ink, .3], [t.paper, .75], [t.paper, .25], [t.ink, .55]]){
+          for(const c of base){ const v = (to ? mix(c, to, k) : c).toLowerCase(); if(!seen.has(v)){ seen.add(v); pal.push(v); } }
+          if(pal.length >= Math.max(rows, base.length*2)) break;
+        }
         const own = new Map(), frames = [];
         for(let i = 0; i < months.length; i++){
           const rows = topByMonth[months[i]] || [], taken = new Map(), out = new Map();
