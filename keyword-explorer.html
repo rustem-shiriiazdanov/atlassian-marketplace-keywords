@@ -7,52 +7,25 @@
   <meta name="color-scheme" content="light dark" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <title>Keyword Explorer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/site.css" />
+  <title>Marketplace Keywords — Keyword Explorer</title>
   <style>
+    /* This page's own token names, mapped onto the shared design system (assets/site.css). */
     :root{
-      --paper:#F4F5F7; --surface:#FFFFFF; --sunken:#EEF0F3;
-      --ink:#172B4D; --ink-2:#44546F; --muted:#626F86; --line:#DCDFE4; --grid:#E9ECF0;
-      --blue:#1D5BD8; --blue-ink:#FFFFFF; --blue-soft:#E8EFFC;
-      --coral:#C9372C; --coral-soft:#FBEAE8;
-      --up:#1F845A; --down:#C9372C;
-      --tip-bg:#172B4D; --tip-ink:#FFFFFF;
-      --series:#1D5BD8,#1F9D8B,#D9930D,#B8467F,#5D8F2E,#7B4FD6,#0891B2,#8C5A2B;
-      --heat-0:#F7CFC9; --heat-1:#EFA195; --heat-2:#E0675A; --heat-3:#BF3A2E; --heat-4:#8E1F16; --heat-none:#EEF0F3;
-      --search-shadow:0 1px 2px rgba(23,43,77,.08),0 12px 32px -12px rgba(23,43,77,.28);
-      --group:#334155; --raised:#FFFFFF; --pop-shadow:0 12px 32px rgba(15,23,42,.18);
-      --font:'Schibsted Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
-    }
-    @media (prefers-color-scheme: dark){
-      :root:not([data-theme="light"]){
-        --paper:#0F1726; --surface:#162133; --sunken:#121C2C;
-        --ink:#E3E8F0; --ink-2:#B6C0D0; --muted:#8C9BB0; --line:#27354C; --grid:#223047;
-        --blue:#7AA7FF; --blue-ink:#0F1726; --blue-soft:#1B2B49;
-        --coral:#FF8070; --coral-soft:#3B1E25;
-        --up:#4CC38A; --down:#FF8070;
-        --tip-bg:#E3E8F0; --tip-ink:#0F1726;
-        --series:#7AA7FF,#3FCFB7,#F2B74A,#E47FB1,#9CCB63,#B99BFF,#22D3EE,#D3A27A;
-        --heat-0:#55222C; --heat-1:#7E2F35; --heat-2:#A83F3F; --heat-3:#D35B4E; --heat-4:#F59A84; --heat-none:#1E2636;
-        --search-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 36px -14px rgba(0,0,0,.7);
-        --group:#CBD5E1; --raised:#1E2A44; --pop-shadow:0 8px 24px rgba(0,0,0,.5);
-      }
-    }
-    :root[data-theme="dark"]{
-      --paper:#0F1726; --surface:#162133; --sunken:#121C2C;
-      --ink:#E3E8F0; --ink-2:#B6C0D0; --muted:#8C9BB0; --line:#27354C; --grid:#223047;
-      --blue:#7AA7FF; --blue-ink:#0F1726; --blue-soft:#1B2B49;
-      --coral:#FF8070; --coral-soft:#3B1E25;
-      --up:#4CC38A; --down:#FF8070;
-      --tip-bg:#E3E8F0; --tip-ink:#0F1726;
-      --series:#7AA7FF,#3FCFB7,#F2B74A,#E47FB1,#9CCB63,#B99BFF,#22D3EE,#D3A27A;
-      --heat-0:#55222C; --heat-1:#7E2F35; --heat-2:#A83F3F; --heat-3:#D35B4E; --heat-4:#F59A84; --heat-none:#1E2636;
-      --search-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 36px -14px rgba(0,0,0,.7);
-      --group:#CBD5E1; --raised:#1E2A44; --pop-shadow:0 8px 24px rgba(0,0,0,.5);
+      --ink-2:var(--ink2); --line:var(--rule); --grid:var(--rule2);
+      --blue:var(--ink); --blue-ink:var(--paper); --blue-soft:var(--sunken);
+      --coral:var(--accent); --coral-soft:var(--accent-soft);
+      --up:var(--pos); --down:var(--neg);
+      --tip-bg:var(--surface); --tip-ink:var(--ink);
+      --series:var(--s1),var(--s2),var(--s3),var(--s4),var(--s5),var(--s6),var(--s7),var(--s8);
+      --search-shadow:0 12px 28px rgba(0,0,0,.14);
+      --group:var(--ink2); --raised:var(--surface); --pop-shadow:0 12px 28px rgba(0,0,0,.16);
+      --font:var(--sans);
     }
 
     *{box-sizing:border-box}
     html{-webkit-text-size-adjust:100%}
-    body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
     a{color:var(--blue)}
     h1,h2,h3{text-wrap:balance}
     [hidden]{display:none !important}
@@ -63,25 +36,8 @@
     button,input,select{font:inherit;color:inherit}
     :focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
     .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-    .wrap{max-width:1240px;margin:0 auto;padding:0 24px}
-    @media (min-width:1600px){.wrap{max-width:1380px}}
 
-    .topbar{border-bottom:1px solid var(--line);background:var(--surface)}
-    .topbar .wrap{display:flex;align-items:center;gap:24px;min-height:60px}
-    .brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:800;font-size:17px;letter-spacing:-.01em;white-space:nowrap}
-    .brand svg{width:22px;height:22px;color:var(--blue)}
-    .site-tabs{display:flex;gap:4px;align-self:stretch}
-    .site-tabs a{display:flex;align-items:center;padding:0 12px;color:var(--ink-2);font-weight:600;font-size:15px;text-decoration:none;border-bottom:3px solid transparent;margin-bottom:-1px}
-    .site-tabs a:hover{color:var(--ink)}
-    .site-tabs a.active{color:var(--ink);border-bottom-color:var(--blue)}
-    .top-links{margin-left:auto;margin-right:-10px;display:flex;align-items:center;gap:6px}
-    .icon-link{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 10px;border-radius:8px;color:var(--ink-2);text-decoration:none;font-size:14px;font-weight:600;background:none;border:0;cursor:pointer}
-    .icon-link:hover{background:var(--sunken);color:var(--ink)}
-    .icon-link svg{width:18px;height:18px}
 
-    .page-head{padding:40px 0 24px}
-    .page-head h1{margin:0 0 8px;font-size:clamp(30px,3.6vw,44px);line-height:1.08;letter-spacing:-.025em;font-weight:800}
-    .page-head p{margin:0;color:var(--ink-2);max-width:70ch;font-size:17px}
 
     /* Focus panel: the search is the hero of this page */
     .focus{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
@@ -124,7 +80,6 @@
     .preset:last-child{border-right:0}
     .preset:hover{background:var(--sunken)}
     .preset.active{background:var(--ink);color:var(--surface)}
-    @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .preset.active{background:#2B4A8A;color:#FFFFFF;box-shadow:none} }
     .date-selects{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
     .date-selects .select{width:100%}
     .options{align-items:flex-start}
@@ -247,10 +202,6 @@
     .status.error{color:var(--coral);font-weight:600}
     .status.ready{color:var(--ink-2)}
 
-    footer{margin-top:56px;border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:14px}
-    footer .wrap{display:flex;gap:12px 24px;flex-wrap:wrap;justify-content:space-between;align-items:center}
-    footer a{color:var(--ink-2);text-decoration:none;display:inline-flex;align-items:center;gap:8px}
-    footer img{height:18px;width:18px}
     .toast{position:fixed;left:50%;bottom:24px;z-index:2000;transform:translate(-50%,20px);opacity:0;padding:10px 16px;border-radius:10px;background:var(--tip-bg);color:var(--tip-ink);font-size:14px;font-weight:600;transition:.2s;pointer-events:none}
     .toast.show{transform:translate(-50%,0);opacity:1}
 
@@ -279,12 +230,6 @@
     }
     @media(max-width:720px){
       .wrap{padding:0 16px}
-      .topbar .wrap{gap:12px;flex-wrap:wrap;padding-top:8px}
-      .site-tabs{order:3;width:100%;min-height:44px}
-      .site-tabs a{padding:0 10px}
-      .icon-link .lbl{display:none}
-      .page-head{padding:28px 0 18px}
-      .page-head p{font-size:16px}
       .focus{padding:16px}
       .chart-head{padding:16px 16px 0}
       .table-head{padding:16px 16px 12px}
@@ -312,51 +257,143 @@
       .data-block h2{font-size:20px}
       .status{width:100%;margin-left:0}
     }
+    /* Editorial look (shared with every page): rules instead of cards, square controls, serif titles. */
+    a{color:var(--ink)}
+    :focus-visible{border-radius:0}
+    input[type="checkbox"]{border-radius:0;border-color:var(--ink)}
+    input[type="checkbox"]:checked{background:var(--ink);border-color:var(--ink)}
+    input[type="checkbox"]:checked::after{border-color:var(--paper)}
+    .focus{background:transparent;border:0;border-top:3px solid var(--ink);border-radius:0;padding:18px 0 20px}
+    .focus-label{display:block;margin:0 0 10px}
+    .search-field{flex-wrap:wrap;gap:8px;min-height:56px;padding:8px 12px;border:1px solid var(--ink);border-radius:0}
+    .search-field:focus-within{box-shadow:0 0 0 3px var(--rule2);border-color:var(--ink)}
+    .search-field input{flex:1 1 180px;height:38px;font-size:17px;font-weight:500}
+    .search-field .selected-chips{display:contents}
+    .selected-chip{border-radius:0;border:0;background:var(--sunken);padding:6px 6px 6px 12px;font-size:15px}
+    .selected-chip .dot{border-radius:50%}
+    .selected-chip button{border-radius:0}
+    #clearSelection{margin-left:auto;color:var(--accent);text-decoration:underline;text-underline-offset:3px;font-weight:600;font-size:14px}
+    .suggestions{border:1px solid var(--ink);border-radius:0}
+    .suggestion{border-radius:0}
+    .suggestion.active{background:var(--sunken);box-shadow:inset 3px 0 0 var(--ink)}
+    .badge{border-radius:0}
+    .options{border-top:0;padding-top:0;margin-top:16px}
+    .field label,.field .flabel{font-size:13px;font-weight:500;color:var(--muted)}
+    .select{height:40px;border:1px solid var(--ink);border-radius:0;font-size:14px;font-weight:600}
+    .preset-row{border:1px solid var(--ink);border-radius:0}
+    .preset{color:var(--ink);font-size:13px;font-weight:600}
+    .preset.active{background:var(--sel-bg);color:var(--sel-ink)}
+    .toggle{font-size:14px;font-weight:500;color:var(--ink)}
+    .match-details summary{color:var(--ink)}
+    .match-list{border-radius:0;border-color:var(--rule)}
+    .link-btn{color:var(--ink);text-decoration:underline;text-underline-offset:3px;font-weight:600}
+    .btn{border-radius:0;font-size:14px}
+    .btn.ghost{border-color:var(--ink)}
+    #exportCsv{background:var(--sel-bg);color:var(--sel-ink);border-color:var(--sel-bg);height:40px}
+    .kpi-grid{margin:8px 0 0;padding:0;background:transparent;border:0;border-top:1px solid var(--ink);border-bottom:1px solid var(--rule);border-radius:0}
+    .kpi{padding:18px 20px}
+    .kpi:first-child{padding-left:0}
+    .kpi + .kpi:not([hidden]),.kpi[hidden] + .kpi{border-left:1px solid var(--rule)}
+    .kpi .label{font-size:13px;font-weight:500;color:var(--muted)}
+    .kpi .value{font-family:var(--serif);font-weight:500;font-size:40px;line-height:1.05;letter-spacing:-.01em}
+    .kpi .note{font-size:13px}
+    .negative{color:var(--neg)}
+    .charts{grid-template-columns:minmax(0,1fr);gap:0;margin-top:28px}
+    .chart-card,#shareCard,.chart-card.collapsed,#rankCard.collapsed + #zeroCard{grid-column:auto}
+    .chart-card{background:transparent;border:0;border-top:1px solid var(--ink);border-radius:0;padding:0 0 28px}
+    .chart-head{padding:14px 0 0}
+    .chart-head h3{font-family:var(--serif);font-weight:500;font-size:28px;line-height:1.12;letter-spacing:-.005em}
+    .chart-head .description{font-size:13px}
+    .icon-btn{width:36px;height:36px;border:1px solid var(--rule);border-radius:0;background:var(--surface);color:var(--ink)}
+    .icon-btn:hover{border-color:var(--ink);background:var(--surface)}
+    .chart-actions{gap:8px}
+    .chart-card.collapsed .chart-placeholder{padding:4px 0 8px}
+    .chart-card.is-fullscreen{background:var(--paper);border:1px solid var(--ink);padding:0 20px}
+    .empty-panel{background:transparent;border:0;border-top:1px solid var(--ink);border-radius:0;padding:24px 0}
+    .empty-panel h2{font-family:var(--serif);font-weight:500;font-size:28px}
+    .examples button{border-radius:0;border-color:var(--ink)}
+    .examples button:hover{border-color:var(--ink);color:var(--ink);background:var(--sunken)}
+    .table-panel{margin-top:20px;background:transparent;border:0;border-top:1px solid var(--ink);border-radius:0}
+    .table-head{padding:14px 0 14px}
+    .table-head h3{font-family:var(--serif);font-weight:500;font-size:28px;line-height:1.12}
+    .table-head p{font-size:13px}
+    .table-wrap{border-radius:0}
+    th,td{border-top:1px solid var(--rule2)}
+    th:first-child,td:first-child{padding-left:0}
+    th:last-child,td:last-child{padding-right:0}
+    th{background:var(--paper);color:var(--ink);font-size:13px;font-weight:600;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink)}
+    tbody tr:hover{background:var(--sunken)}
+    tr.group-row{background:var(--sunken)}
+    .data-block{margin-top:40px;padding-top:40px;border-top:1px solid var(--rule)}
+    .data-block h2{font-family:var(--serif);font-weight:500;font-size:34px;letter-spacing:-.01em}
+    .data-grid{gap:0;border-top:1px solid var(--ink);border-bottom:1px solid var(--rule);margin-bottom:20px}
+    .file-tile{background:transparent;border:0;border-radius:0;padding:18px 0;align-items:center}
+    .file-tile + .file-tile{border-left:1px solid var(--rule);padding-left:24px}
+    .data-grid .file-tile:first-child{padding-right:24px}
+    .file-status{color:var(--pos)}
+    .data-actions{justify-content:space-between}
+    .alert{border-radius:0}
+    .toast{border-radius:0;border:1px solid var(--ink)}
+    @media(max-width:900px){
+      .kpi-grid{gap:0;background:transparent}
+      .kpi-grid .kpi,.kpi-grid .kpi + .kpi,.kpi-grid .kpi[hidden] + .kpi{background:transparent;border:0;border-bottom:1px solid var(--rule2);padding:14px 12px 14px 0}
+      .kpi .value{font-size:32px}
+    }
+    @media(max-width:860px){
+      .table-wrap tr{padding:14px 0}
+    }
+    @media(max-width:720px){
+      .chart-head{padding:14px 0 0}
+      .table-head{padding:14px 0 12px}
+      .chart-head h3,.table-head h3,.empty-panel h2{font-size:24px}
+      .data-block h2{font-size:28px}
+      .data-grid{grid-template-columns:1fr}
+      .file-tile + .file-tile{border-left:0;border-top:1px solid var(--rule);padding-left:0}
+      .kpi .value{font-size:28px}
+      .focus{padding:16px 0}
+    }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="wrap">
-      <a class="brand" href="./index.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
-        Marketplace Keywords
-      </a>
-      <nav class="site-tabs" aria-label="Primary navigation">
-        <a href="./index.html">Overview</a>
-        <a class="active" href="./keyword-explorer.html" aria-current="page">Keyword Explorer</a>
+<header class="site-header">
+  <div class="wrap">
+    <div class="left">
+      <a class="brand" href="./index.html">Marketplace Keywords</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="./index.html">This month</a>
+        <a href="./month-by-month.html">Month by month</a>
+        <a href="./keyword-explorer.html" aria-current="page">Keyword Explorer</a>
+        <a href="./archive.html">Archive</a>
+        <a href="./method.html">Method</a>
+        <a href="./about.html">About</a>
       </nav>
-      <div class="top-links">
-        <a class="icon-link" href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12z"/></svg>
-          <span class="lbl">GitHub</span>
-        </a>
-        <button id="sharePage" class="icon-link" type="button" aria-label="Copy a link to this view">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          <span class="lbl">Share</span>
-        </button>
-      </div>
     </div>
-  </header>
+    <div class="head-actions">
+      <a class="btn-quiet" data-link="github" href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12z"/></svg><span class="lbl">GitHub</span></a>
+      <button id="sharePage" class="btn-quiet" type="button" aria-label="Copy a link to this view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span class="lbl">Share</span></button>
+    </div>
+  </div>
+</header>
 
   <main class="wrap">
     <div class="page-head">
       <h1>Keyword Explorer</h1>
-      <p>Follow one search query, or compare a few, month by month: how much of all Marketplace search it gets, where it ranks in the top 500, and how often it finds no apps.</p>
+      <p class="lede">Follow one search query, or compare a few, month by month: how much of all Marketplace search it gets, where it ranks in the top 500, and how often it finds no apps.</p>
     </div>
 
     <div id="loadAlert" class="alert" role="alert" hidden><strong>Couldn’t load the Marketplace reports.</strong><span>Check your connection and try again, or open your own exports below.</span><button id="retryLoad" class="btn small" type="button">Retry</button><a class="btn ghost small" href="#dataTitle">Open your own files</a></div>
 
     <section class="focus" aria-labelledby="focusTitle">
-      <h2 id="focusTitle" class="visually-hidden">Choose queries</h2>
+      <h2 id="focusTitle" class="kicker focus-label" style="color:var(--ink)">Choose queries</h2>
       <div class="picker">
         <label for="keywordInput" class="visually-hidden">Search queries</label>
         <div class="search-field">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>
+          <div id="selectedChips" class="selected-chips" aria-live="polite"></div>
           <input id="keywordInput" type="text" autocomplete="off" placeholder="Search queries, then press Enter…" />
+          <button id="clearSelection" class="link-btn" type="button">Clear all</button>
         </div>
         <div id="suggestions" class="suggestions" role="listbox" aria-label="Query suggestions"></div>
       </div>
-      <div class="chip-row"><div id="selectedChips" class="selected-chips" aria-live="polite"></div><button id="clearSelection" class="link-btn" type="button">Clear all</button></div>
       <div id="matchInfo" class="match-info" hidden></div>
       <details id="matchDetails" class="match-details" hidden>
         <summary id="matchSummary">Matched queries</summary>
@@ -400,6 +437,7 @@
           </div>
         </div>
         <label class="toggle"><input id="smoothSeries" type="checkbox" /> 3-month average</label>
+        <label class="toggle"><input type="checkbox" data-junk-toggle /> Hide meaningless queries</label>
       </div>
     </section>
 
@@ -455,15 +493,11 @@
     </section>
   </main>
 
-  <footer>
-    <div class="wrap">
-      <span>Data: Atlassian Marketplace search reports. Not affiliated with Atlassian.</span>
-      <a href="https://actonic.de/en/" target="_blank" rel="noopener noreferrer"><img src="img/actonic.svg" alt="" aria-hidden="true">Powered by Actonic</a>
-    </div>
-  </footer>
+<footer class="site-foot"><div class="wrap"><span>Data: Atlassian Marketplace search reports. Not affiliated with or endorsed by Atlassian. <a href="./method.html">Method</a></span><a class="powered" href="https://www.actonic.de" data-link="actonic" target="_blank" rel="noopener noreferrer"><img src="img/actonic.svg" alt="" width="14" height="17">Powered by Actonic</a></div></footer>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <script src="assets/common.js"></script>
   <script>
   (function(){
     const ECHARTS_URLS = [
@@ -478,13 +512,13 @@
     ];
     const DEFAULT_SOURCE = ['./data/source_search_keywords_marketplace.xlsx','./source_search_keywords_marketplace.xlsx'];
     const DEFAULT_ZERO = ['./data/zero_result_keywords_marketplace.xlsx','./zero_result_keywords_marketplace.xlsx'];
-    const FONT = "'Schibsted Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif";
+    const FONT = "'Public Sans', 'Helvetica Neue', Arial, sans-serif";
     function T(){
       const s=getComputedStyle(document.documentElement),v=(n)=>s.getPropertyValue(n).trim();
       return {ink:v('--ink'),ink2:v('--ink-2'),muted:v('--muted'),line:v('--line'),grid:v('--grid'),surface:v('--surface'),blue:v('--blue'),blueSoft:v('--blue-soft'),coral:v('--coral'),group:v('--group'),tipBg:v('--tip-bg'),tipInk:v('--tip-ink'),series:v('--series').split(',').map(x=>x.trim()).filter(Boolean)};
     }
     let COLORS = T().series;
-    // Same rule as the Overview: a query's colour comes from its place in the latest report, then the next free slot.
+    // Same rule as Month by month: a query's colour comes from its place in the latest report, then the next free slot.
     function colorOf(keyword){
       if(!state.colorRank){ const latest=state.months[state.months.length-1]; state.colorRank=new Map(state.popular.filter(r=>r.month===latest).sort((a,b)=>(a.rank||1e9)-(b.rank||1e9)).map((r,i)=>[normalize(r.keyword),i])); }
       const sel=state.matchMode==='exact'?state.selections.map(canonicalKeyword).filter(Boolean):[];
@@ -495,14 +529,15 @@
     }
     const $ = (selector)=>document.querySelector(selector);
     const state = {
-      popular:[], zero:[], months:[], allKeywords:[], selections:[],
+      popular:[], zero:[], popularAll:[], zeroAll:[], months:[], allKeywords:[], selections:[],
       matchMode:'exact', containsLogic:'any', compareMode:'separate', smooth:false,
       from:0, to:0, charts:{}, urlHadSelection:false, dataReady:false
     };
 
     function setStatus(text, ready=false){ const el=$('#status'); el.textContent=text; el.classList.toggle('ready',ready); }
     function toast(message){ const el=$('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toast.timer); toast.timer=setTimeout(()=>el.classList.remove('show'),2200); }
-    function normalize(value){ return String(value ?? '').trim().toLocaleLowerCase(); }
+    // Same folding as every other page (case, odd spaces, < and >), so links from This month and Archive always match.
+    function normalize(value){ return MK.cleanKeyword(value); }
     function keywordText(value){ return String(value ?? '').trim(); }
     function number(value){ const n=Number(value); return Number.isFinite(n)?n:0; }
     function formatShare(value){ return `${number(value).toFixed(2)}%`; }
@@ -527,10 +562,15 @@
       self.onmessage=(e)=>{ try{ if(!self.XLSX) throw new Error('no xlsx'); const wb=XLSX.read(e.data,{type:'array'}); const sh=wb.Sheets.Raw; if(!sh) throw new Error('The workbook has no Raw sheet'); const rows=XLSX.utils.sheet_to_json(sh,{defval:null}).map(r=>{ if(typeof r.month==='number'){ const d=XLSX.SSF.parse_date_code(r.month); r.month=d.y+'-'+String(d.m).padStart(2,'0'); } return r; }); self.postMessage({rows}); }catch(err){ self.postMessage({error:String(err&&err.message||err)}); } };`;
     function workbookRowsOnPage(buffer){ return ensureXLSX().then(()=>{ const workbook=XLSX.read(buffer,{type:'array'}); const sheet=workbook.Sheets.Raw; if(!sheet) throw new Error('The workbook has no Raw sheet'); return XLSX.utils.sheet_to_json(sheet,{defval:null}); }); }
     function workbookRows(buffer){ return new Promise((resolve,reject)=>{ let w=null; try{ w=new Worker(URL.createObjectURL(new Blob([WORKER_SRC],{type:'text/javascript'}))); }catch(e){} if(!w){ workbookRowsOnPage(buffer).then(resolve,reject); return; } const copy=buffer.slice(0); w.onmessage=(e)=>{ w.terminate(); if(e.data&&e.data.rows) resolve(e.data.rows); else if(e.data&&/Raw sheet/.test(e.data.error||'')) reject(new Error(e.data.error)); else workbookRowsOnPage(buffer).then(resolve,reject); }; w.onerror=()=>{ w.terminate(); workbookRowsOnPage(buffer).then(resolve,reject); }; w.postMessage(copy,[copy]); }); }
-    // Same bot-noise rule as the Overview, so both pages count the same rows.
-    function isJunkQuery(k){ const t=String(k||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/[<>]/g,'').replace(/\s+/g,' ').trim(); return !/[\p{L}\p{N}]/u.test(t) || /href=|https?:\/\/|script.*\/script|\bonerror\b/i.test(t.replace(/[<>]/g,'')); }
-    async function parsePopular(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),percentage:number(row.percentage),rank:number(row.rank)})).filter(row=>row.month&&row.keyword&&!isJunkQuery(row.keyword)); }
-    async function parseZero(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),count:number(row.count),rank:number(row.rank)})).filter(row=>row.month&&row.keyword&&!isJunkQuery(row.keyword)); }
+    // Same meaningless-query rule as every other page, so they all count the same rowss.
+    // Meaningless queries (bot noise, test strings, pasted links, injection attempts) are judged on the raw text; see assets/common.js.
+    function isJunkQuery(k){ return MK.isJunkQuery(k); }
+    async function parsePopular(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),percentage:number(row.percentage),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
+    async function parseZero(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),count:number(row.count),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
+    // Every row is kept and meaningless ones are flagged; the rows shown follow the "Hide meaningless queries" setting.
+    function applyJunk(){ const hide=MK.hideJunk(); state.popular=hide?state.popularAll.filter(r=>!r.junk):state.popularAll; state.zero=hide?state.zeroAll.filter(r=>!r.junk):state.zeroAll; }
+    // Keep the chosen period when the rows change.
+    window.addEventListener('mk:junk',()=>{ if(state.dataReady){ state.urlFrom=state.months[state.from]; state.urlTo=state.months[state.to]; } applyJunk(); if(state.popular.length) finalizeData(); });
     function hydrateUrl(){
       const params=new URLSearchParams(location.search); const queries=params.getAll('q').map(keywordText).filter(Boolean);
       state.urlHadSelection=queries.length>0; state.selections=queries;
@@ -557,8 +597,11 @@
     }
     function finalizeData(){
       state.months=Array.from(new Set([...state.popular.map(row=>row.month),...state.zero.map(row=>row.month)])).filter(Boolean).sort();
+      // Partial reports (fewer rows than usual) are kept and shown as Atlassian publishes them.
       { const c=new Map(); state.popular.forEach(r=>c.set(r.month,(c.get(r.month)||0)+1)); const v=[...c.values()].sort((a,b)=>a-b); const med=v[Math.floor(v.length/2)]||0;
-        while(state.months.length>1 && (c.get(state.months[0])||0) < med*0.8) state.months.shift(); }
+        state.partialMonths=new Set(state.months.filter(m=>(c.get(m)||0) < med*0.8));
+        const zt=new Map(); state.zero.forEach(r=>zt.set(r.month,(zt.get(r.month)||0)+(r.count||0))); const zv=[...zt.values()].filter(v=>v>0).sort((a,b)=>a-b); const zmed=zv[Math.floor(zv.length/2)]||0;
+        state.partialZero=new Set([...zt.entries()].filter(([,v])=>v<zmed*0.15).map(([m])=>m)); }
       const names=new Map(); for(const row of [...state.popular,...state.zero]) if(!names.has(normalize(row.keyword))) names.set(normalize(row.keyword),row.keyword);
       state.allKeywords=Array.from(names.values()).sort((a,b)=>a.localeCompare(b));
       if(!state.urlHadSelection&&!state.selections.length){
@@ -568,11 +611,11 @@
         state.selections=state.selections.map(item=>names.get(normalize(item))||item).filter((item,index,array)=>array.findIndex(x=>normalize(x)===normalize(item))===index);
       }
       state.loadFailed=false; $('#loadAlert').hidden=true; $('#keywordInput').disabled=false; $('#status').classList.remove('error'); document.body.classList.remove('load-failed');
-      { // The month when the shares of the biggest queries collapse at once: a change in the report, not in demand.
+      { // The month when the shares of the biggest queries collapse at once (Nov 2024: Atlassian's redesigned Marketplace), not a loss of interest.
         const tot=new Map(); state.popular.forEach(r=>tot.set(normalize(r.keyword),(tot.get(normalize(r.keyword))||0)+r.percentage));
         const big=new Set([...tot.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k])=>k)); const by=state.months.map(m=>0); const idx=new Map(state.months.map((m,i)=>[m,i]));
         state.popular.forEach(r=>{ if(big.has(normalize(r.keyword))&&idx.has(r.month)) by[idx.get(r.month)]+=r.percentage; });
-        state.reportBreak=null; for(let i=1;i<by.length;i++){ if(by[i-1]>0&&by[i]<by[i-1]*0.4){ state.reportBreak=state.months[i]; break; } } }
+        state.reportBreak=null; for(let i=1;i<by.length;i++){ if(state.partialMonths.has(state.months[i])||state.partialMonths.has(state.months[i-1])) continue; if(by[i-1]>0&&by[i]<by[i-1]*0.4){ state.reportBreak=state.months[i]; break; } } }
       indexRows(); state.colorRank=null; populateDateControls(); state.dataReady=true; renderControls(); renderAll(); setStatus(`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}`,true);
     }
     function populateDateControls(){
@@ -590,11 +633,11 @@
     async function loadDefaults(){
       setStatus('Loading default Marketplace reports…');
       const [popularResult,zeroResult]=await Promise.allSettled([fetchFirst(DEFAULT_SOURCE).then(parsePopular),fetchFirst(DEFAULT_ZERO).then(parseZero)]);
-      if(popularResult.status==='fulfilled'){ state.popular=popularResult.value; $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`; }
-      if(zeroResult.status==='fulfilled'){ state.zero=zeroResult.value; $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`; }
+      if(popularResult.status==='fulfilled'){ state.popularAll=popularResult.value; applyJunk(); $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`; }
+      if(zeroResult.status==='fulfilled'){ state.zeroAll=zeroResult.value; applyJunk(); $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`; }
       if(!state.popular.length) throw new Error(zeroResult.status==='fulfilled'?'The popular-searches report could not be loaded':'Neither report could be loaded'); finalizeData();
     }
-    async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); if(type==='popular'){state.popular=await parsePopular(buffer);$('#popularFileStatus').textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zero=await parseZero(buffer);$('#zeroFileStatus').textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
+    async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); if(type==='popular'){state.popularAll=await parsePopular(buffer);applyJunk();$('#popularFileStatus').textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zeroAll=await parseZero(buffer);applyJunk();$('#zeroFileStatus').textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
     function canonicalKeyword(input){ return state.canon?state.canon.get(normalize(input)):state.allKeywords.find(item=>normalize(item)===normalize(input)); }
     function addSelection(input){
       const parts=String(input).split(/[\n,]+/).map(keywordText).filter(Boolean); let added=0;
@@ -674,7 +717,7 @@
       return {backgroundColor:'transparent',animationDuration:350,textStyle:{fontFamily:FONT},
         legend:{show:many,data:names,type:'plain',top:14,left:18,width:Math.max(120,W-48),icon:'circle',itemWidth:9,itemHeight:9,itemGap:16,textStyle:{color:t.ink2,fontSize:13,fontFamily:FONT},inactiveColor:t.line},
         grid:{left,right,top:many?14+rows*22+22:24,bottom:34,containLabel:false},
-        tooltip:{trigger:'axis',confine:true,position:tipAt(many?14+rows*22+10:8,left),backgroundColor:t.tipBg,borderWidth:0,padding:innerWidth<560?[6,8]:[8,10],textStyle:{color:t.tipInk,fontFamily:FONT,fontSize:innerWidth<560?12:13},extraCssText:'border-radius:8px;box-shadow:none;',axisPointer:{lineStyle:{color:t.line}}},
+        tooltip:{trigger:'axis',confine:true,position:tipAt(many?14+rows*22+10:8,left),backgroundColor:t.tipBg,borderColor:t.ink,borderWidth:1,padding:innerWidth<560?[6,8]:[8,10],textStyle:{color:t.tipInk,fontFamily:FONT,fontSize:innerWidth<560?12:13},extraCssText:'border-radius:0;box-shadow:0 8px 20px rgba(0,0,0,.12);',axisPointer:{lineStyle:{color:t.line}}},
         xAxis:{type:'category',boundaryGap:false,data:months,axisLabel:{color:t.muted,fontSize:12,margin:12,interval:0,hideOverlap:true,formatter:smartTicks(months,px)},axisTick:{show:false},axisLine:{lineStyle:{color:t.line}}}};
     }
     const measure=(()=>{ const c=document.createElement('canvas').getContext('2d'); return (s)=>{ c.font=`13px ${FONT}`; return c.measureText(String(s||'')).width; }; })();
@@ -695,7 +738,9 @@
     const tipAt=(top=8,minLeft=4)=>(point,params,dom,rect,size)=>{ const x=point[0],w=size.contentSize[0],W=size.viewSize[0]; if(x+14+w<=W-4) return [x+14,top]; if(x-14-w>=2) return [x-14-w,top]; return [Math.max(2,Math.min(W-w-2,x+14)),top]; };
     function monthLong(key){ const m=/^(\d{4})-(\d{2})/.exec(String(key||'')); return m?new Date(Date.UTC(+m[1],+m[2]-1,1)).toLocaleString('en-US',{month:'long',year:'numeric',timeZone:'UTC'}):String(key||''); }
     const lineSeries=(def,values,n,months)=>({name:def.label,type:'line',data:values,smooth:false,connectNulls:false,showSymbol:months.length<=24&&n<=4,symbol:'circle',symbolSize:7,itemStyle:{color:def.color,borderColor:T().surface,borderWidth:2},lineStyle:{width:def.group?3:2.5,color:def.color},emphasis:{focus:'series'},blur:{lineStyle:{opacity:.2},itemStyle:{opacity:.2}}});
-    function breakSeries(months,inverse=false){ const bi=state.reportBreak?months.indexOf(state.reportBreak):-1; return bi>0?[{name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:inverse?'start':'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,formatter:'Report change'},data:[{xAxis:bi}]}}]:[]; }
+    function breakSeries(months,inverse=false){ const bi=state.reportBreak?months.indexOf(state.reportBreak):-1; return bi>0?[{name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:inverse?'start':'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,formatter:state.reportBreak===MK.REPORT_BREAK?'New Marketplace':'Sharp drop'},data:[{xAxis:bi}]}}]:[]; }
+    // A sentence naming partial reports inside the shown period; they are shown as published.
+    function partialNote(months,set,what){ const ms=months.filter(m=>set&&set.has(m)).map(monthShort); return ms.length?` The ${ms.join(' and ')} ${what}${ms.length===1?' is':'s are'} partial, shown as published.`:''; }
     function renderShareChart(definitions,months){
       if(!definitions.length){disposeChart('shareChart','');return;}
       const series=definitions.map(def=>{let values=aggregate(state.popular,'percentage',def,months);if(!def.group){const r=ranksFor(def.keywords[0],months);values=values.map((v,i)=>r[i]==null&&!v?null:v);}if(state.smooth)values=movingAverage(values);return lineSeries(def,values,definitions.length,months);});
@@ -705,10 +750,11 @@
       option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${param.value==null?'not in top 500':formatShare(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
       const smoothNote=state.smooth?' Lines show a 3-month average; the summary and table use monthly values.':'';
       $('#shareCard .description').textContent=(definitions.some(d=>d.group)?(state.matchMode==='contains'?'Combined share of all Marketplace searches for the matching queries.':'Combined share of all Marketplace searches for the picked queries.'):'Percentage of all Marketplace searches. Gaps mean the query was outside the top 500 that month.')+smoothNote;
-      // Atlassian changed how the report counts searches; mark it so the drop is not read as lost interest.
+      // Mark the break so the drop is not read as lost interest.
       const bi=state.reportBreak?months.indexOf(state.reportBreak):-1;
-      if(bi>0) $('#shareCard .description').textContent+=` The dashed line marks ${monthShort(state.reportBreak)}, when Atlassian changed how searches are counted.`;
-      if(bi>0) series.push({name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,formatter:'Report change'},data:[{xAxis:bi}]}});
+      if(bi>0) $('#shareCard .description').textContent+=state.reportBreak===MK.REPORT_BREAK?` The dashed line marks ${monthShort(state.reportBreak)}, when Atlassian rolled out its redesigned Marketplace with autocomplete; broad queries lost most of their share at once.`:` The dashed line marks ${monthShort(state.reportBreak)}, when the biggest queries drop sharply at once.`;
+      $('#shareCard .description').textContent+=partialNote(months,state.partialMonths,'popular-search report');
+      if(bi>0) series.push({name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,formatter:state.reportBreak===MK.REPORT_BREAK?'New Marketplace':'Sharp drop'},data:[{xAxis:bi}]}});
       option.legend.data=definitions.map(d=>d.label);
       option.series=series; drawChart('shareChart',option);
     }
@@ -718,6 +764,7 @@
       if(!definitions.length){card.classList.add('collapsed');disposeChart('rankChart','');return;}
       card.classList.remove('collapsed');
       $('#rankCard .description').textContent=(state.compareMode==='group'?'Per query, as rank can’t be combined. Log scale; gaps mean outside the top 500.':'Monthly rank on a log scale; gaps mean the query was outside the top 500.')+(state.smooth?' Not averaged.':'');
+      $('#rankCard .description').textContent+=partialNote(months,state.partialMonths,'popular-search report');
       const series=definitions.map(def=>({def,ranks:ranksFor(def.keywords[0],months)}));
       const seen=series.flatMap(x=>x.ranks).filter(Number.isFinite);
       // Fit the log scale to the ranks on show: from the power of two at or above the best rank to the one at or below the worst.
@@ -734,6 +781,7 @@
       const plural=definitions.length>1||definitions.some(d=>d.keywords.length>1);
       const avgNote=state.smooth?' Lines show a 3-month average.':'';
       $('#zeroCard .description').textContent=(plural?'How many times the matching queries found no apps: a count of searches, not a rate.':'How many times the query found no apps: a count of searches, not a rate.')+avgNote;
+      $('#zeroCard .description').textContent+=partialNote(months,state.partialZero,'zero-result report');
       const series=definitions.map(def=>{let values=aggregate(state.zero,'count',def,months);if(state.smooth)values=movingAverage(values);return lineSeries(def,values,definitions.length,months);});
       const option=commonOption(months,'zeroChart',series);
       option.yAxis={type:'value',min:0,minInterval:1,splitNumber:4,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>Number(value).toLocaleString('en-US')},splitLine:{lineStyle:{color:T().grid}}};

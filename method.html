@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Marketplace Keywords — Method</title>
+  <meta name="description" content="Where the Marketplace Keywords numbers come from, what each one means, where the data has breaks, and which queries the “Hide meaningless queries” switch takes out." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/site.css" />
+  <style>
+    .layout{display:grid;grid-template-columns:240px minmax(0,760px);gap:48px;padding:32px 0 40px;border-top:3px solid var(--ink)}
+    .toc{position:sticky;top:20px;align-self:start;display:flex;flex-direction:column;gap:12px;font-size:14px}
+    .toc a{text-decoration:none;color:var(--ink2)}
+    .toc a:hover{color:var(--ink);text-decoration:underline}
+    .doc section{padding-bottom:40px;scroll-margin-top:16px}
+    .doc h2{margin:0 0 14px;font-family:var(--serif);font-weight:500;font-size:34px;line-height:1.1;letter-spacing:-.01em}
+    .doc p{margin:0 0 14px;font-size:17px;line-height:1.65;color:var(--ink2)}
+    .doc p.small{font-size:14px;line-height:1.55;color:var(--muted)}
+    .sheets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid var(--ink);border-bottom:1px solid var(--rule);margin:8px 0 20px}
+    .sheets > div{padding:18px 24px 20px 0}
+    .sheets > div + div{border-left:1px solid var(--rule);padding-left:24px;padding-right:0}
+    .sheets h3{margin:0 0 6px;font-size:15px;font-weight:700}
+    .sheets p{margin:0;font-size:15px;line-height:1.5}
+    .sheets .n{display:block;margin-top:14px;font-family:var(--serif);font-size:30px;line-height:1;color:var(--ink)}
+    dl.terms{margin:0;border-top:1px solid var(--rule)}
+    dl.terms div{display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;padding:16px 0;border-bottom:1px solid var(--rule)}
+    dl.terms dt{font-family:var(--serif);font-size:22px;line-height:1.25}
+    dl.terms dd{margin:0;font-size:16px;line-height:1.6;color:var(--ink2)}
+    dl.breaks dt{color:var(--accent)}
+    code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em;background:var(--sunken);padding:1px 5px;overflow-wrap:anywhere}
+    .removed{margin:8px 0 18px;padding:0;list-style:none;border-top:1px solid var(--rule)}
+    .removed li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:10px 0;border-bottom:1px solid var(--rule2);font-size:14px}
+    .removed li span:last-child{color:var(--muted);white-space:nowrap}
+    .wait{display:inline-block;min-width:3ch}
+    @media (max-width:900px){ .layout{grid-template-columns:1fr;gap:24px} .toc{position:static;flex-direction:row;flex-wrap:wrap;gap:8px 18px} .toc .kicker{flex-basis:100%} }
+    @media (max-width:640px){ .sheets{grid-template-columns:1fr} .sheets > div + div{border-left:0;border-top:1px solid var(--rule);padding-left:0} dl.terms div{grid-template-columns:1fr;gap:4px} .doc h2{font-size:28px} .doc p{font-size:16px} .removed li{grid-template-columns:1fr;gap:2px} }
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <div class="left">
+      <a class="brand" href="./index.html">Marketplace Keywords</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="./index.html">This month</a>
+        <a href="./month-by-month.html">Month by month</a>
+        <a href="./keyword-explorer.html">Keyword Explorer</a>
+        <a href="./archive.html">Archive</a>
+        <a href="./method.html" aria-current="page">Method</a>
+        <a href="./about.html">About</a>
+      </nav>
+    </div>
+    <div class="head-actions">
+      <a class="btn-quiet" data-link="github" href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12z"/></svg><span class="lbl">GitHub</span></a>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <div class="page-head">
+    <span class="kicker accent">How this site works</span>
+    <h1>Method</h1>
+    <p class="lede">Where the numbers come from, what each one means, and where the data has breaks you should know about before comparing months.</p>
+  </div>
+  <div class="layout">
+    <nav class="toc" aria-label="On this page">
+      <span class="kicker">On this page</span>
+      <a href="#source">1 · The source</a>
+      <a href="#numbers">2 · What the numbers mean</a>
+      <a href="#breaks">3 · Breaks in the data</a>
+      <a href="#noise">4 · Meaningless queries</a>
+      <a href="#files">5 · Your own files</a>
+    </nav>
+    <div class="doc">
+      <section id="source" aria-labelledby="h-source">
+        <h2 id="h-source">The source</h2>
+        <p>Everything here is built from Atlassian’s monthly Marketplace search reports, <span id="range">December 2021 to the latest month</span>. They come from the Marketplace reporting API that Atlassian offers to app vendors, for searches made on the Marketplace website. Each month has two reports.</p>
+        <div class="sheets">
+          <div><h3>Popular search keywords</h3><p>The top 500 queries by share of all searches. Columns: month, keyword, percentage, rank.</p><span class="n num"><span id="nPop" class="wait">–</span> rows</span></div>
+          <div><h3>Zero-result keywords</h3><p>The 500 queries that most often returned no apps, with how many times. Columns: month, keyword, count.</p><span class="n num"><span id="nZero" class="wait">–</span> rows</span></div>
+        </div>
+        <p>The files live in the <a data-link="github" href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords">GitHub repository</a>, and the site is updated monthly when a new report arrives. <span id="countNote">Row counts include every query.</span></p>
+      </section>
+
+      <section id="numbers" aria-labelledby="h-numbers">
+        <h2 id="h-numbers">What the numbers mean</h2>
+        <dl class="terms">
+          <div><dt>Share</dt><dd>The percentage of all Marketplace searches that month that used this exact query.</dd></div>
+          <div><dt>Rank</dt><dd>The query’s place in Atlassian’s top 500 that month, as Atlassian reports it (shown with #). Rank charts use a log scale, so moves near the top stay readable. With meaningless queries hidden, top-ten lists are numbered in order without them, so in a month where one of those led, the list’s 1 is Atlassian’s #2.</dd></div>
+          <div><dt>Empty searches</dt><dd>How many times a query found no apps. A count of searches, not a rate. Monthly totals add up the 500 queries in Atlassian’s zero-result report, so rarer empty searches are not included. In October and December 2023, and again since June 2026, most of those 500 queries were searched only once.</dd></div>
+          <div><dt>Climbers</dt><dd>The most places gained in the top 100 since the previous month. “New” marks a query entering the top 100 from outside the top 500.</dd></div>
+          <div><dt>Exact / containing</dt><dd>In the Keyword Explorer, Exact query matches one query as typed; Containing words gathers every query that includes those words.</dd></div>
+          <div><dt>Combined group</dt><dd>Adds the selected queries together into one line instead of showing them separately. Ranks are never added up.</dd></div>
+          <div><dt>Variants</dt><dd>Queries that differ only in capital letters or invisible characters are counted as one query.</dd></div>
+        </dl>
+      </section>
+
+      <section id="breaks" aria-labelledby="h-breaks">
+        <h2 id="h-breaks">Breaks in the data</h2>
+        <dl class="terms breaks">
+          <div><dt>Nov 2024</dt><dd>Broad queries such as “automation”, “jira” and “structure” lost most of their share in a single month (“automation” fell from 2.09% to 0.05%), while app names held steady or grew. Atlassian announced its redesigned Marketplace, with autocomplete and new categories, on <a href="https://www.atlassian.com/blog/innovation/new-atlassian-marketplace" target="_blank" rel="noopener noreferrer">15 October 2024</a> with a phased rollout, and presented the new look on <a href="https://x.com/Atlassian/status/1852320961887903963" target="_blank" rel="noopener noreferrer">1 November 2024</a>. Shares before and after are not directly comparable: the charts mark this month, and some views default to “Since Nov 2024”.</dd></div>
+          <div><dt>Jan 2026</dt><dd>A Marketplace partner’s <a href="https://community.atlassian.com/forums/App-Central-articles/Your-Search-on-the-Marketplace-is-Getting-More-Relevant/ba-p/3168801" target="_blank" rel="noopener noreferrer">post on Atlassian’s App Central</a> reported that Atlassian was moving Marketplace search to a new search engine in phases, planned to reach all users by the end of January 2026. In the same months longer queries such as “scriptrunner for jira” lost share while “scriptrunner” gained. The site shows these months as reported and does not adjust them.</dd></div>
+          <div><dt>Dec 2021</dt><dd>The first reports are partial: 382 popular queries instead of 500, and 44 empty searches. They are shown as published and marked as partial; their shares are not comparable with later months, and records and spikes do not count them.</dd></div>
+          <div><dt>Nov 2023</dt><dd>The zero-result report is partial: it counts only 2 searches. It is shown as published and marked with a hollow dot.</dd></div>
+          <div><dt>Oct, Dec 2023</dt><dd>Zero-result totals are far below the months around them in Atlassian’s reports. Charts show them as hollow dots.</dd></div>
+          <div><dt>Gaps</dt><dd>A query that drops out of the top 500 has no share or rank that month. Lines break there; on the Month by month page dotted segments bridge those months.</dd></div>
+        </dl>
+      </section>
+
+      <section id="noise" aria-labelledby="h-noise">
+        <h2 id="h-noise">Meaningless queries</h2>
+        <p>Atlassian’s reports include searches that are not real questions about apps: bot noise, test strings such as “1234”, pasted links and e-mail addresses, and attempts to inject HTML, scripts or SQL into the search box. Some of them reached the top of a month: in February 2022 “1234” alone took 28.93% of all searches. By default every page shows all queries exactly as Atlassian reports them. Tick <strong>Hide meaningless queries</strong> to leave them out; the setting applies on every page, in every chart, total and ranking, and to files you open yourself, and it is remembered in this browser.</p>
+        <p><label class="check"><input type="checkbox" data-junk-toggle> Hide meaningless queries</label></p>
+        <p>A query counts as meaningless when it has no letters or digits, is a long string of digits, contains an e-mail address, an HTML tag, a link, or a script or SQL injection pattern. Ordinary words that happen to be technical, such as “iframe”, “svg” or “xss”, and Jira smart values such as “{{issue.key}}” are kept.</p>
+        <p id="removedLine" class="small">Counting the meaningless rows…</p>
+        <ul class="removed" id="removedList" aria-label="Largest meaningless queries"></ul>
+      </section>
+
+      <section id="files" aria-labelledby="h-files">
+        <h2 id="h-files">Your own files</h2>
+        <p>The site loads the latest reports from the repository. On <a href="./month-by-month.html#own-data">Month by month</a> and in the <a href="./keyword-explorer.html">Keyword Explorer</a> you can open your own exports instead. Files are read in your browser and never uploaded.</p>
+        <p class="small">Not affiliated with or endorsed by Atlassian.</p>
+      </section>
+    </div>
+  </div>
+</main>
+<footer class="site-foot"><div class="wrap"><span>Data: Atlassian Marketplace search reports. Not affiliated with or endorsed by Atlassian. <a href="./method.html">Method</a></span><a class="powered" href="https://www.actonic.de" data-link="actonic" target="_blank" rel="noopener noreferrer"><img src="img/actonic.svg" alt="" width="14" height="17">Powered by Actonic</a></div></footer>
+<script src="assets/common.js"></script>
+<script>
+(function(){
+  'use strict';
+  const $ = (s)=> document.querySelector(s);
+  const { escapeHtml, fmtInt, fmtPct, monthLong, monthShort } = MK;
+  function render(D){
+    $('#range').textContent = `${monthLong(D.issues[0])} to ${monthLong(D.issues.at(-1))}`;
+    $('#nPop').textContent = fmtInt(D.popular.length); $('#nZero').textContent = fmtInt(D.zero.length);
+    $('#nPop').classList.remove('wait'); $('#nZero').classList.remove('wait');
+    $('#countNote').textContent = D.hideJunk ? 'Row counts leave out meaningless queries, as you chose.' : 'Row counts include every query.';
+    const j = D.junk;
+    $('#removedLine').textContent = `${fmtInt(j.popular.length)} rows of the popular-search report and ${fmtInt(j.zero.length)} of the zero-result report count as meaningless. The largest ones, as they appear in the reports:`;
+    const top = j.popular.map(x=>({ k:x.raw, m:x.month, p:+x.percentage || 0 })).sort((a,b)=> b.p - a.p).slice(0, 5);
+    const clip = (t)=> t.length > 64 ? t.slice(0, 61) + '…' : t;
+    $('#removedList').innerHTML = top.map(x=> `<li><span><code>${escapeHtml(clip(x.k))}</code></span><span class="num">${fmtPct(x.p)} · ${monthShort(x.m)}</span></li>`).join('');
+  }
+  let loaded = false;
+  window.addEventListener('mk:junk', ()=>{ if(loaded) render(MK.currentData()); });
+  MK.loadData().then(D=>{ loaded = true; render(D); }).catch(err=>{ console.error(err); $('#removedLine').textContent = 'The reports could not be loaded, so the counts are not shown.'; });
+})();
+</script>
+</body>
+</html>

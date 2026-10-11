@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Marketplace Keywords — About</title>
+  <meta name="description" content="Marketplace Keywords is a pet project by Rustem Shiriiazdanov, Team Lead and Product Owner of Report Builder for Jira at Actonic." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/site.css" />
+  <style>
+    .person{display:grid;grid-template-columns:220px minmax(0,760px);gap:48px;align-items:start;padding:56px 0 48px}
+    .avatar{width:220px;height:220px;border-radius:50%;object-fit:cover;background:var(--rule2)}
+    .initials{display:grid;place-items:center;font-family:var(--serif);font-size:72px;color:var(--muted)}
+    .person h1{margin:10px 0 16px;font-family:var(--serif);font-weight:500;font-size:clamp(40px,4.6vw,60px);line-height:1.02;letter-spacing:-.02em}
+    .person .bio{margin:0;font-size:19px;line-height:1.6;color:var(--ink2);max-width:62ch}
+    .talk{margin-top:28px;padding-top:24px;border-top:1px solid var(--ink)}
+    .talk p{margin:0 0 16px;font-family:var(--serif);font-style:italic;font-size:24px;line-height:1.3}
+    .talk .actions{display:flex;flex-wrap:wrap;gap:8px}
+    .links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:3px solid var(--ink);margin-bottom:24px}
+    .links a{display:flex;flex-direction:column;gap:6px;padding:20px 24px 24px;text-decoration:none;border-right:1px solid var(--rule)}
+    .links a:first-child{padding-left:0}
+    .links a:last-child{border-right:0}
+    .links a span:last-child{font-family:var(--serif);font-size:26px;line-height:1.15}
+    .links a:hover span:last-child{text-decoration:underline;text-underline-offset:4px}
+    @media (max-width:860px){ .person{grid-template-columns:1fr;gap:24px;padding:36px 0 32px} .avatar{width:120px;height:120px} .initials{font-size:40px} .links{grid-template-columns:1fr} .links a{padding:18px 0;border-right:0;border-bottom:1px solid var(--rule)} .links a:last-child{border-bottom:0} }
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <div class="left">
+      <a class="brand" href="./index.html">Marketplace Keywords</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="./index.html">This month</a>
+        <a href="./month-by-month.html">Month by month</a>
+        <a href="./keyword-explorer.html">Keyword Explorer</a>
+        <a href="./archive.html">Archive</a>
+        <a href="./method.html">Method</a>
+        <a href="./about.html" aria-current="page">About</a>
+      </nav>
+    </div>
+    <div class="head-actions">
+      <a class="btn-quiet" data-link="github" href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12z"/></svg><span class="lbl">GitHub</span></a>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <section class="person" aria-labelledby="name">
+    <img class="avatar" src="https://avatars.githubusercontent.com/rustem-shiriiazdanov?s=440" alt="Rustem Shiriiazdanov" width="220" height="220" onerror="this.outerHTML='<div class=&quot;avatar initials&quot; aria-hidden=&quot;true&quot;>RS</div>'">
+    <div>
+      <span class="kicker accent">About this project</span>
+      <h1 id="name">Rustem Shiriiazdanov</h1>
+      <p class="bio">Team Lead and Product Owner of <a data-link="reportBuilder" href="https://marketplace.atlassian.com/apps/1216997" target="_blank" rel="noopener noreferrer">Report Builder for Jira</a> at <a data-link="actonic" href="https://actonic.de/en/" target="_blank" rel="noopener noreferrer">Actonic</a>. This is my pet project for exploring Marketplace search data. The data is updated monthly.</p>
+      <div class="talk">
+        <p>Want to talk about data, visualizations or Jira?</p>
+        <div class="actions">
+          <a class="btn primary" data-link="bookCall" href="https://calendly.com/rustem-shiriiazdanov-actonic" target="_blank" rel="noopener noreferrer">Book a call</a>
+          <a class="btn" data-link="linkedin" href="https://www.linkedin.com/in/rustem-shiriiazdanov/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        </div>
+      </div>
+    </div>
+  </section>
+  <nav class="links" aria-label="Project links">
+    <a data-link="github" href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer"><span class="kicker">Source code and data</span><span>GitHub repository</span></a>
+    <a data-link="reportBuilder" href="https://marketplace.atlassian.com/apps/1216997" target="_blank" rel="noopener noreferrer"><span class="kicker">On the Atlassian Marketplace</span><span>Report Builder for Jira</span></a>
+    <a data-link="actonic" href="https://actonic.de/en/" target="_blank" rel="noopener noreferrer"><span class="kicker">Company</span><span>Actonic</span></a>
+  </nav>
+</main>
+<footer class="site-foot"><div class="wrap"><span>Data: Atlassian Marketplace search reports. Not affiliated with or endorsed by Atlassian. <a href="./method.html">Method</a></span><a class="powered" href="https://www.actonic.de" data-link="actonic" target="_blank" rel="noopener noreferrer"><img src="img/actonic.svg" alt="" width="14" height="17">Powered by Actonic</a></div></footer>
+<script src="assets/common.js"></script>
+</body>
+</html>

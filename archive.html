@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Marketplace Keywords — Archive</title>
+  <meta name="description" content="Every monthly issue of Marketplace Keywords: the #1 Atlassian Marketplace search and the searches that found no apps, month by month since 2022." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/site.css" />
+  <style>
+    .arch-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:20px 32px;padding-bottom:28px}
+    .arch-head .page-head{padding-bottom:0}
+    .years{margin-bottom:4px}
+    .arch-tools{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+    .arch-tools .check{font-size:13px;color:var(--muted)}
+    .year{display:grid;grid-template-columns:184px minmax(0,1fr);gap:24px;padding:28px 0 36px;border-top:3px solid var(--ink);scroll-margin-top:16px}
+    .year h2{margin:0;font-family:var(--serif);font-weight:500;font-size:44px;line-height:1}
+    .year .count{margin-top:8px;font-size:14px;color:var(--muted)}
+    .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 24px}
+    .card{display:flex;flex-direction:column;gap:2px;padding:14px 0 18px;border-top:1px solid var(--rule)}
+    .card.current{border-top:3px solid var(--accent);padding-top:12px}
+    .card .mhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+    .card h3{margin:0;font-family:var(--serif);font-weight:500;font-size:24px;line-height:1.1}
+    .card h3 a{text-decoration:none}
+    .card h3 a:hover{text-decoration:underline}
+    .card .tag{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+    .card .lbl{font-size:12px;color:var(--muted)}
+    .card .q{font-size:15px;font-weight:600;overflow-wrap:anywhere}
+    .card .share{font-size:13px;color:var(--ink2)}
+    .card .spike{color:var(--accent)}
+    .card .zero{margin-top:10px;font-size:13px;color:var(--ink2)}
+    .card .zero strong{color:var(--accent);font-weight:700}
+    .card .track{margin-top:6px;height:4px;background:var(--rule2)}
+    .card .bar{display:block;height:4px;background:var(--accent)}
+    .card .na{color:var(--muted)}
+    .empty-note{padding:32px 0;color:var(--muted)}
+    @media (max-width:1080px){ .cards{grid-template-columns:repeat(3,minmax(0,1fr))} }
+    @media (max-width:860px){ .year{grid-template-columns:1fr;gap:12px} .year h2{font-size:36px} .year .count{margin-top:4px} }
+    @media (max-width:640px){ .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px} .card h3{font-size:21px} .years .seg{width:100%} .years .seg button{flex:1 1 0;padding:0 6px} }
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <div class="left">
+      <a class="brand" href="./index.html">Marketplace Keywords</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="./index.html">This month</a>
+        <a href="./month-by-month.html">Month by month</a>
+        <a href="./keyword-explorer.html">Keyword Explorer</a>
+        <a href="./archive.html" aria-current="page">Archive</a>
+        <a href="./method.html">Method</a>
+        <a href="./about.html">About</a>
+      </nav>
+    </div>
+    <div class="head-actions">
+      <a class="btn-quiet" data-link="github" href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12z"/></svg><span class="lbl">GitHub</span></a>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <div class="alert" id="loadAlert" role="alert" hidden><strong>The reports could not be loaded.</strong><span>Check your connection and try again.</span><button class="btn" type="button" id="retry">Try again</button></div>
+  <div class="arch-head">
+    <div class="page-head">
+      <span class="kicker accent" id="kicker">All issues</span>
+      <h1>Archive</h1>
+      <p class="lede">Every monthly issue, each opening This month as it looked then. Queries are shown as Atlassian reports them; you can hide meaningless ones such as “1234”. Until Atlassian’s redesigned Marketplace arrived in late 2024, broad queries such as “automation” took a much larger share, so shares before November 2024 run much higher.</p>
+    </div>
+    <div class="arch-tools"><nav class="years" aria-label="Jump to a year"><div class="seg" id="yearNav"></div></nav><label class="check"><input type="checkbox" data-junk-toggle> Hide meaningless queries</label></div>
+  </div>
+  <div id="archive"><p class="empty-note">Loading the issues…</p></div>
+</main>
+<footer class="site-foot"><div class="wrap"><span>Data: Atlassian Marketplace search reports. Not affiliated with or endorsed by Atlassian. <a href="./method.html">Method</a></span><a class="powered" href="https://www.actonic.de" data-link="actonic" target="_blank" rel="noopener noreferrer"><img src="img/actonic.svg" alt="" width="14" height="17">Powered by Actonic</a></div></footer>
+<script src="assets/common.js"></script>
+<script>
+(function(){
+  'use strict';
+  const $ = (s)=> document.querySelector(s);
+  const { escapeHtml, fmtInt, fmtPct, monthLong, monthName } = MK;
+  function render(D){
+    const issues = D.issues.slice(), latest = issues.at(-1);
+    const zeroOf = (m)=>{ const t = D.zeroTotals.find(x=>x.month === m); return t ? t.value : null; };
+    const zMax = Math.max(1, ...D.zeroTotals.filter(t=> !D.zeroPartial.has(t.month)).map(t=>t.value));
+    const lead = (m)=> (D.byMonth.get(m) || [])[0];
+    const spike = (m)=> MK.isSpike(D, m);
+    const years = Array.from(new Set(issues.map(m=>m.slice(0,4)))).sort().reverse();
+    $('#kicker').textContent = `${issues.length} issues · ${monthLong(issues[0])} – ${monthLong(latest)}`;
+    $('#yearNav').innerHTML = years.map(y=>`<button type="button" data-y="${y}">${y}</button>`).join('');
+    $('#archive').innerHTML = years.map(y=>{
+      const ms = issues.filter(m=> m.startsWith(y)).reverse();
+      return `<section class="year" id="y${y}" aria-labelledby="h${y}"><div><h2 id="h${y}">${y}</h2><div class="count">${ms.length} ${ms.length === 1 ? 'issue' : 'issues'}</div></div><div class="cards">${ms.map(m=>{
+        const a = lead(m), z = zeroOf(m), href = m === latest ? './index.html' : `./index.html?month=${m}`;
+        const zero = z == null ? `<div class="zero na">No zero-result report for this month</div>` : `<div class="zero"><strong class="num">${fmtInt(z)}</strong> reported searches found no apps${D.zeroPartial.has(m) ? ' <span class="na">(partial report)</span>' : D.zeroLow.has(m) ? ' <span class="na">(unusually low)</span>' : ''}</div><div class="track" aria-hidden="true"><span class="bar" style="width:${Math.min(100, z/zMax*100).toFixed(1)}%"></span></div>`;
+        return `<article class="card${m === latest ? ' current' : ''}"><div class="mhead"><h3><a href="${href}">${monthName(m)}</a></h3>${m === latest ? '<span class="tag">Current</span>' : ''}</div>
+          <span class="lbl">#1 query</span>
+          ${a ? `<a class="q" href="./keyword-explorer.html?q=${encodeURIComponent(a.keyword)}">${escapeHtml(a.keyword)}</a><span class="share num">${fmtPct(a.percentage)} of searches${spike(m) ? ' · <span class="spike">unusual spike</span>' : ''}${D.popularPartial.has(m) ? ' · <span class="na">partial report</span>' : ''}</span>` : '<span class="q na">No report</span>'}
+          ${zero}</article>`;
+      }).join('')}</div></section>`;
+    }).join('');
+  }
+  $('#yearNav').addEventListener('click', e=>{ const b = e.target.closest('button'); if(!b) return; document.getElementById('y' + b.dataset.y)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); });
+  let loaded = false;
+  window.addEventListener('mk:junk', ()=>{ if(loaded) render(MK.currentData()); });
+  function start(){
+    $('#loadAlert').hidden = true;
+    MK.loadData().then(D=>{ loaded = true; render(D); }).catch(err=>{ console.error(err); $('#loadAlert').hidden = false; $('#archive').innerHTML = ''; });
+  }
+  $('#retry').addEventListener('click', start);
+  start();
+})();
+</script>
+</body>
+</html>
