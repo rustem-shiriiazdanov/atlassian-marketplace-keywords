@@ -38,6 +38,7 @@
   </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
     <div class="left">
@@ -56,7 +57,8 @@
     </div>
   </div>
 </header>
-<main class="wrap">
+<main class="wrap" id="main">
+  <div class="alert" id="loadAlert" role="alert" hidden><strong>The reports could not be loaded.</strong><span>The row counts and the list of meaningless queries need them. Check your connection and try again.</span><button class="btn" type="button" id="retry">Try again</button></div>
   <div class="page-head">
     <span class="kicker accent">How this site works</span>
     <h1>Method</h1>
@@ -143,7 +145,12 @@
   }
   let loaded = false;
   window.addEventListener('mk:junk', ()=>{ if(loaded) render(MK.currentData()); });
-  MK.loadData().then(D=>{ loaded = true; render(D); MK.loadDone(); }).catch(err=>{ console.error(err); MK.loadFailed(); $('#removedLine').textContent = 'The reports could not be loaded, so the counts are not shown.'; });
+  function start(){
+    $('#loadAlert').hidden = true;
+    MK.loadData().then(D=>{ loaded = true; render(D); MK.loadDone(); }).catch(err=>{ console.error(err); MK.loadFailed(); $('#loadAlert').hidden = false; });
+  }
+  $('#retry').addEventListener('click', ()=>{ MK.refillGhosts(); start(); });
+  start();
 })();
 </script>
 </body>

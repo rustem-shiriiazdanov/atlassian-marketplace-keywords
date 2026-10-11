@@ -42,6 +42,7 @@
   </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
     <div class="left">
@@ -60,7 +61,7 @@
     </div>
   </div>
 </header>
-<main class="wrap">
+<main class="wrap" id="main">
   <div class="alert" id="loadAlert" role="alert" hidden><strong>The reports could not be loaded.</strong><span>Check your connection and try again.</span><button class="btn" type="button" id="retry">Try again</button></div>
   <div class="arch-head">
     <div class="page-head">
@@ -94,8 +95,8 @@
         const a = lead(m), z = zeroOf(m), href = m === latest ? './index.html' : `./index.html?month=${m}`;
         const zero = z == null ? `<div class="zero na">No zero-result report for this month</div>` : `<div class="zero"><strong class="num">${fmtInt(z)}</strong> reported searches found no apps${D.zeroPartial.has(m) ? ' <span class="na">(partial report)</span>' : D.zeroLow.has(m) ? ' <span class="na">(unusually low)</span>' : ''}</div><div class="track" aria-hidden="true"><span class="bar" style="width:${Math.min(100, z/zMax*100).toFixed(1)}%"></span></div>`;
         return `<article class="card${m === latest ? ' current' : ''}"><div class="mhead"><h3><a href="${href}">${monthName(m)}</a></h3>${m === latest ? '<span class="tag">Current</span>' : ''}</div>
-          <span class="lbl">#1 query</span>
-          ${a ? `<a class="q" href="./keyword-explorer.html?q=${encodeURIComponent(a.keyword)}">${escapeHtml(a.keyword)}</a><span class="share num">${fmtPct(a.percentage)} of searches${spike(m) ? ' · <span class="spike">unusual spike</span>' : ''}${D.popularPartial.has(m) ? ' · <span class="na">partial report</span>' : ''}</span>` : '<span class="q na">No report</span>'}
+          <span class="lbl">#1 query${(()=>{ const r = D.byMonth.get(m) || []; return r[1] && r[0].percentage.toFixed(2) === r[1].percentage.toFixed(2) ? ' (a tie)' : ''; })()}</span>
+          ${a ? `${(()=>{ const b = (D.byMonth.get(m) || [])[1]; const link = (r)=> `<a class="q" href="./keyword-explorer.html?q=${encodeURIComponent(r.keyword)}">${escapeHtml(r.keyword)}</a>`; return b && b.percentage.toFixed(2) === a.percentage.toFixed(2) ? `${link(a)} <span class="tie">and</span> ${link(b)}` : link(a); })()}<span class="share num">${fmtPct(a.percentage)} of searches${spike(m) ? ' · <span class="spike">unusual spike</span>' : ''}${D.popularPartial.has(m) ? ' · <span class="na">partial report</span>' : ''}</span>` : '<span class="q na">No report</span>'}
           ${zero}</article>`;
       }).join('')}</div></section>`;
     }).join('');

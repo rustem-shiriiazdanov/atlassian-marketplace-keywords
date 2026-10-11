@@ -61,6 +61,7 @@
   .heat td.q a{text-decoration:none}
   .heat td.q a:hover{text-decoration:underline}
   .heat td.c{height:34px;min-width:44px;text-align:center;font-variant-numeric:tabular-nums}
+  @media (max-width:900px){ .heat th.q,.heat td.q{min-width:120px;max-width:180px} .heat td.c{min-width:34px} table.heat{min-width:0} }
   .heat td.c.na{background:repeating-linear-gradient(135deg,var(--rule2) 0 4px,transparent 4px 8px);color:var(--muted)}
   .heat th.t,.heat td.t{text-align:right;font-weight:600;padding-left:12px;color:var(--ink)}
   .heat.hide-values td.c{color:transparent !important}
@@ -82,6 +83,7 @@
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
     <div class="left">
@@ -204,10 +206,11 @@
     const prevRows = prevIssue ? D.byMonth.get(prevIssue) || [] : [];
     // Ranks are only compared between two full reports: a partial report's lower ranks rest on very few searches.
     const rankBase = prevIssue && !D.popularPartial.has(prevIssue) && !D.popularPartial.has(m) ? prevIssue : null;
-    const prevPos = new Map((rankBase ? prevRows : []).map(r=>[r.keyword, r.rk]));
+    // Places are counted in the list as shown (like the top ten), so hiding meaningless queries renumbers both alike.
+    const prevPos = new Map((rankBase ? prevRows : []).map(r=>[r.keyword, r.pos]));
     const top = rows.slice(0, 10);
     // Climbers: new entries and the biggest rank gains into the top 100.
-    const in100 = rankBase ? rows.filter(r=> r.rk <= 100).map(r=>({ ...r, prev: prevPos.get(r.keyword) ?? null })) : [];
+    const in100 = rankBase ? rows.filter(r=> r.pos <= 100).map(r=>({ ...r, rk: r.pos, prev: prevPos.get(r.keyword) ?? null })) : [];
     const entries = in100.filter(r=> !r.prev);
     const gains = in100.filter(r=> r.prev && r.prev > r.rk).map(r=>({ ...r, gain: r.prev - r.rk })).sort((a,b)=> b.gain - a.gain || a.rk - b.rk);
     const zRows = D.zeroByMonth.get(m) || [];
@@ -264,8 +267,11 @@
   // The summary: partial-report notes, then the headline's subject, then the other one; each subject stays in one place.
   function dek(f){
     const zs = zeroStory(f), out = [], top = [], empty = [];
-    if(D.popularPartial.has(f.m)) out.push(`Atlassian’s ${monthLong(f.m)} report is partial: it lists ${fmtInt(D.reportRows.get(f.m) || 0)} queries instead of the usual 500, so its shares are not comparable with other months.`);
-    if(f.z != null && D.zeroPartial.has(f.m)) out.push(`The zero-result report for ${monthName(f.m)} is partial: it counts only ${fmtInt(f.z)} ${f.z === 1 ? 'search' : 'searches'} that found no apps.`);
+    // Partial reports: one sentence when both of the month's reports are partial, otherwise one for the one that is.
+    const pp = D.popularPartial.has(f.m), zp = f.z != null && D.zeroPartial.has(f.m), nq = fmtInt(D.reportRows.get(f.m) || 0), ns = `${fmtInt(f.z)} ${f.z === 1 ? 'search' : 'searches'}`;
+    if(pp && zp) out.push(`Both of Atlassian’s ${monthLong(f.m)} reports are partial: the popular-search report lists ${nq} queries instead of the usual 500, so its shares are not comparable with other months, and the zero-result report counts only ${ns} that found no apps.`);
+    else if(pp) out.push(`Atlassian’s ${monthLong(f.m)} report is partial: it lists ${nq} queries instead of the usual 500, so its shares are not comparable with other months.`);
+    else if(zp) out.push(`The zero-result report for ${monthName(f.m)} is partial: it counts only ${ns} that found no apps.`);
     const [a, b, c] = f.rows;
     const same = (x, y)=> x && y && x.percentage.toFixed(2) === y.percentage.toFixed(2);
     if(same(a, b)) top.push(`Two queries share the top: ${q(a.keyword)} and ${q(b.keyword)}, ${fmtPct(a.percentage)} of all searches each${c ? (same(a, c) ? `, level with ${q(c.keyword)}` : `, just ahead of ${q(c.keyword)} at ${fmtPct(c.percentage)}`) : ''}.`);
@@ -280,7 +286,7 @@
       if(f.zPrev && far) s += `, ${dir(f.zPrev)} from ${fmtInt(f.zPrev)} in ${when(f.zPrevMonth, f.m)} and ${fmtInt(far.value)} in ${when(far.month, f.m)}`;
       else if(f.zPrev) s += `, ${dir(f.zPrev)} from ${fmtInt(f.zPrev)} in ${when(f.zPrevMonth, f.m)}`;
       else if(far) s += `, ${dir(far.value)} from ${fmtInt(far.value)} in ${when(far.month, f.m)}`;
-      if(D.zeroLow.has(f.m)) s += `, far below the months around it`;
+      if(D.zeroLow.has(f.m)) s += `, far below the full reports around it`;
       const z0 = f.zRows[0];
       empty.push(s + '.' + (z0 ? ` The most frequent empty search was ${q(z0.keyword)}, ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}${f.zRows.length && f.zRows.filter(r=> r.count === 1).length / f.zRows.length >= 0.5 ? '; most others came up only once' : ''}.` : ''));
     }
@@ -297,8 +303,8 @@
     $('#headline').textContent = headline(f);
     $('#dek').textContent = dek(f);
     const first = D.issues[0];
-    $('#source').innerHTML = isLatest ? escapeHtml(`From Atlassian’s monthly Marketplace search reports, ${monthShort(first)} – ${monthShort(latest)}. Updated monthly by Rustem Shiriiazdanov.`)
-      : escapeHtml(`This issue is rebuilt from the ${monthLong(m)} report, as it looked then.`) + (m < MK.REPORT_BREAK ? ' Shares before November 2024 run much higher than today’s; see the <a href="./method.html#breaks">method</a>.' : '');
+    $('#source').innerHTML = (badMonth ? `<strong>${escapeHtml(`There is no issue for “${badMonth}”, so this is the latest one.`)}</strong> ` : '') + (isLatest ? escapeHtml(`From Atlassian’s monthly Marketplace search reports, ${monthShort(first)} – ${monthShort(latest)}. Updated monthly by Rustem Shiriiazdanov.`)
+      : escapeHtml(`This issue is rebuilt from the ${monthLong(m)} report, as it looked then.`) + (m < MK.REPORT_BREAK ? ' Shares before November 2024 run much higher than today’s; see the <a href="./method.html#breaks">method</a>.' : ''));
     const i = D.issues.indexOf(m), prev = D.issues[i-1], next = D.issues[i+1];
     const nav = $('#issueNav');
     nav.innerHTML = [prev ? `<a href="?month=${prev}">← ${monthShort(prev)}</a>` : '', next ? `<a href="${next === latest ? './index.html' : '?month=' + next}">${next === latest ? 'Latest issue' : monthShort(next)} →</a>` : ''].filter(Boolean).join('');
@@ -344,6 +350,8 @@
 
   function renderHeat(f){
     document.querySelector('.heat-ghost')?.remove();
+    // On narrow screens the table scrolls sideways; it opens on the newest months, next to the Total column.
+    requestAnimationFrame(()=>{ const w = document.querySelector('.heat-wrap'); if(w) w.scrollLeft = w.scrollWidth; });
     // The last 12 months up to this issue; partial reports get a * and missing reports hatched cells.
     const months = []; for(let i = 11; i >= 0; i--){ const x = addMonths(f.m, -i); if(x >= D.issues[0]) months.push(x); }
     const tot = new Map();
@@ -359,7 +367,7 @@
       return `<td class="c" style="background:${tk.heat[b]};color:${MK.inkOn(tk.heat[b], tk.heatInkLight, tk.heatInkDark)}" title="${escapeHtml(k)}, ${monthShort(m)}: ${n ? fmtInt(n) + ' empty searches' : 'not listed'}${D.zeroPartial.has(m) ? ' (partial report)' : ''}">${n ? fmtInt(n) : '·'}</td>`;
     }).join('')}<td class="t num">${fmtInt(t)}</td></tr>`).join('');
     $('#heat').innerHTML = `<caption class="sr-only">Empty searches per month for the queries that most often found no apps</caption><thead><tr><th scope="col" class="q">Query</th>${head}<th scope="col" class="t">Total</th></tr></thead><tbody>${body || `<tr><td class="empty-note" colspan="${months.length + 2}">No zero-result report for these months.</td></tr>`}</tbody>`;
-    $('#heatTitle').textContent = `Queries that most often found no apps, ${monthShort(months[0])} – ${monthShort(f.m)}`;
+    $('#heatTitle').textContent = `Queries that most often found no apps, ${months[0] === f.m ? monthShort(f.m) : `${monthShort(months[0])} – ${monthShort(f.m)}`}`;
     const part = months.filter(m=> D.zeroPartial.has(m)).map(monthShort);
     $('#heatCap').textContent = 'Each cell is the number of empty searches that month. Gaps in someone’s portfolio, or an app that people expect but nobody has built.' + (part.length ? ` * The ${part.join(' and ')} report is partial.` : '');
   }
@@ -374,17 +382,23 @@
     const months = win.map(x=>x.month);
     const vals = win.map(x=> x.value);
     const usable = win.filter(x=> zeroUsable(x.month));
-    const peak = usable.reduce((a,x)=> !a || x.value > a.value ? x : a, null);
-    const low = usable.reduce((a,x)=> !a || x.value < a.value ? x : a, null);
+    // "Highest" and "lowest" need at least three full months to compare; partial reports are left out of both.
+    const peak = usable.length >= 3 ? usable.reduce((a,x)=> !a || x.value > a.value ? x : a, null) : null;
+    const low = usable.length >= 3 ? usable.reduce((a,x)=> !a || x.value < a.value ? x : a, null) : null;
     if(!win.length){ chart.clear(); $('#zeroNote').textContent = 'No zero-result report for these months.'; return; }
     const cur = win.at(-1).month === issue ? win.at(-1) : null;
     const span = 'shown';
+    // Callouts are outlined in the page colour instead of sitting in a box, so they never hide the line; near either
+    // edge they are aligned to stay inside the chart.
+    const edge = (x)=>{ const i = months.indexOf(x.month), f = i / Math.max(1, months.length - 1); return f > .7 ? 'right' : f < .3 ? 'left' : 'center'; };
     const mark = (x, text, filled, pos, below)=>({ coord:[x.month, x.value], value:x.value, symbol:'circle', symbolSize:filled ? 10 : 9,
       itemStyle:{ color: filled ? t.accent : t.paper, borderColor:t.accent, borderWidth:2 },
-      label:{ show:true, formatter:text, position: below ? 'bottom' : 'top', align:pos, distance:14, backgroundColor:t.paper, padding:[2,4], color:t.ink2, fontSize:12, lineHeight:16, fontFamily:'Public Sans', width:150, overflow:'break', rich:{ b:{ fontWeight:700, color:t.ink, fontSize:12 } } } });
+      label:{ show:true, formatter:text, position: below ? 'bottom' : 'top', align:pos, distance:12, color:t.ink2, fontSize:12, lineHeight:16, fontFamily:'Public Sans', width:150, overflow:'break', textBorderColor:t.paper, textBorderWidth:4, rich:{ b:{ fontWeight:700, color:t.ink, fontSize:12, textBorderColor:t.paper, textBorderWidth:4 } } } });
     const points = [];
-    if(peak && (!cur || peak.month !== cur.month)) points.push(mark(peak, `{b|${fmtInt(peak.value)}} in ${monthLong(peak.month)}, the highest month ${span}`, false, monthsBetween(peak.month, win.at(-1).month) < 4 ? 'right' : 'center'));
-    if(cur && cur.value != null) points.push(mark(cur, `{b|${fmtInt(cur.value)}} in ${monthName(cur.month)}${low && low.month === cur.month ? `, the lowest month ${span}` : peak && peak.month === cur.month ? `, the highest month ${span}` : ''}`, true, 'right', low && low.month === cur.month));
+    if(peak && (!cur || peak.month !== cur.month)) points.push(mark(peak, `{b|${fmtInt(peak.value)}} in ${monthLong(peak.month)}, the highest month ${span}`, false, edge(peak)));
+    // The issue's own month is a filled dot, or a hollow one when its report is partial or unusually low (as the note says).
+    const odd = cur && (D.zeroPartial.has(cur.month) || D.zeroLow.has(cur.month));
+    if(cur && cur.value != null) points.push(mark(cur, `{b|${fmtInt(cur.value)}} in ${monthName(cur.month)}${low && low.month === cur.month ? `, the lowest month ${span}` : peak && peak.month === cur.month ? `, the highest month ${span}` : ''}`, !odd, edge(cur), low && low.month === cur.month));
     const lowDots = win.filter(x=> (D.zeroLow.has(x.month) || D.zeroPartial.has(x.month)) && (!cur || x.month !== cur.month)).map(x=>({ coord:[x.month, x.value], symbol:'circle', symbolSize:8, itemStyle:{ color:t.paper, borderColor:t.accent, borderWidth:2 }, label:{ show:false } }));
     const yearOnly = months.length > 30;
     const fit = Math.max(2, Math.floor((el.clientWidth - 64) / 72)); const step = [1,2,3,4,6,12].find(k=> Math.ceil(months.length / k) <= fit) || 12;
@@ -395,7 +409,7 @@
         formatter:(ps)=>{ const p = ps[0]; const m = p.axisValue; const why = D.zeroPartial.has(m) ? 'Partial report' : D.zeroLow.has(m) ? 'Unusually low in Atlassian’s report' : ''; return `<b>${monthLong(m)}</b><br/>${p.value == null ? 'No report' : `${fmtInt(p.value)} searches found no apps (reported)${why ? '<br/><span style="color:' + t.muted + '">' + why + '</span>' : ''}`}`; } },
       xAxis:{ type:'category', data:months, boundaryGap:false, axisLine:{ lineStyle:{ color:t.ink } }, axisTick:{ show:false },
         axisLabel:{ color:t.muted, fontSize:12, hideOverlap:true, interval:(i)=> yearOnly ? months[i].endsWith('-01') : i % step === 0,
-          formatter:(v)=> yearOnly ? v.slice(0,4) : `${monthAbbr(v)} ’${v.slice(2,4)}` } },
+          formatter:(v)=> yearOnly ? v.slice(0,4) : `${monthAbbr(v)} ’${v.slice(2,4)}`, alignMinLabel:'left', alignMaxLabel:'right' } },
       yAxis:{ type:'value', min:0, splitNumber:4, axisLabel:{ color:t.muted, fontSize:12, formatter:(v)=> fmtInt(v) }, splitLine:{ lineStyle:{ color:t.rule2 } } },
       series:[{ type:'line', data:vals, connectNulls:false, symbol:'none', lineStyle:{ color:t.accent, width:2 }, areaStyle:{ color:t.accentSoft, opacity:.9 },
         markPoint:{ data:[...lowDots, ...points], animation:false, silent:true } }]
@@ -414,7 +428,7 @@
   let resizeTimer = 0;
   window.addEventListener('resize', ()=>{ clearTimeout(resizeTimer); resizeTimer = setTimeout(()=>{ if(!D) return; if(chart) chart.resize(); renderKpis(facts(issue)); renderZeroChart(); }, 120); });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', ()=>{ if(D){ renderHeat(facts(issue)); renderZeroChart(); } });
-  let index = null; MK.attachLookup($('#lookup'), ()=> index);
+  let index = null, badMonth = null; MK.attachLookup($('#lookup'), ()=> index);
   // The reader hid or showed meaningless queries: rebuild from the same reports and redraw the issue.
   window.addEventListener('mk:junk', ()=>{ if(!D) return; D = MK.currentData(); index = MK.lookupIndex(D); if(!D.issues.includes(issue)) issue = D.issues.at(-1); renderIssue(); });
 
@@ -424,6 +438,8 @@
       D = data; index = MK.lookupIndex(D);
       const want = params.get('month');
       issue = want && D.issues.includes(want) ? want : D.issues.at(-1);
+      // A ?month= that is not an issue: say so, and show the latest issue under its own address.
+      if(want && !D.issues.includes(want)){ badMonth = want; history.replaceState(null, '', location.pathname); }
       // The example in the search box is a real query, even when meaningless ones are shown.
       const lead = (D.byMonth.get(D.issues.at(-1)) || []).find(r=> !r.junk);
       if(lead) $('#lookupInput').placeholder = `e.g. ${lead.keyword}`;

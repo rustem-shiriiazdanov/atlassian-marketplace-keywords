@@ -195,6 +195,7 @@
     .file-tile strong{display:block;font-size:15px}
     .file-tile span{display:block;color:var(--muted);font-size:14px}
     .file-status{display:block;margin-top:4px;font-style:normal;font-size:13px;font-weight:600;color:var(--ink-2)}
+    .file-status.bad{color:var(--accent) !important}
     .data-range{color:var(--muted);font-size:14px}
     .file-input-display{max-width:50%;text-align:right;background:none;border:0;padding:0;color:var(--blue);font-weight:700;font-size:14px;cursor:pointer}
     .file-tile input[type="file"]{display:none}
@@ -349,6 +350,7 @@
   </script>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
     <div class="left">
@@ -392,7 +394,7 @@
     </div>
   </div>
 
-  <main class="wrap">
+  <main class="wrap" id="main">
     <div id="loadAlert" class="alert" role="alert" hidden><strong>Couldn’t load the reports from the repository.</strong><span>Check your connection and try again, or open your own exports.</span><button id="btn-retry" class="btn small" type="button">Retry</button><a class="btn ghost small" href="#data">Open your own files</a></div>
     <section class="section" id="dynamics" aria-label="Month by month charts">
       <div class="grid-75">
@@ -421,7 +423,7 @@
           <label for="raceMonth" class="visually-hidden">Month</label>
           <div class="track"><input id="raceMonth" type="range" min="0" max="0" value="0" /><div class="ticks" id="raceTicks" aria-hidden="true"></div></div>
           <span id="raceMonthVal" class="month-val" data-ghost="num"></span>
-          <div class="ctrl speed"><label for="speed" class="visually-hidden">Speed</label><select id="speed" class="select-sm"><option value="2000">0.5× speed</option><option value="1200" selected>1× speed</option><option value="600">2× speed</option></select><span id="speedVal" hidden>1.2s</span></div>
+          <div class="ctrl speed"><label for="speed" class="visually-hidden">Speed</label><select id="speed" class="select-sm"><option value="2400">0.5× speed</option><option value="1200" selected>1× speed</option><option value="600">2× speed</option></select><span id="speedVal" hidden>1.2s</span></div>
         </div>
       </div>
     </section>
@@ -795,7 +797,8 @@
           rows = [['Query', 'Total', ...xs.map(fmtCat)], ...ys.map((y,i)=>[y, grid[i].reduce((a,v)=> a + (+v||0), 0).toLocaleString('en-US'), ...grid[i].map(v=> v ? Number(v).toLocaleString('en-US') : '–')])];
         } else if(series[0]?.type === 'custom' && series[0]?.id === 'race'){
           const rowsR = (series[0].data || []).map(d=>[d.name, d.value?.[0], d.value?.[1]]).sort((x,y)=> x[2] - y[2]);
-          rows = [['#', 'Query', 'Value'], ...rowsR.map((r,k)=>[k+1, r[0], Number(r[1]).toLocaleString('en-US', { maximumFractionDigits:2 })])];
+          const pct = chart.getDom().id === 'race';
+          rows = [['#', 'Query', pct ? 'Share of all searches' : 'Empty searches'], ...rowsR.map((r,k)=>[k+1, r[0], pct ? Number(r[1]).toFixed(2) + '%' : Number(r[1]).toLocaleString('en-US')])];
         } else if(series.length){
           // Helper series (break marker, hollow dots, gap bridges) are named with a leading "_" and are not data.
           const data = series.filter(s=> !String(s.name || '').startsWith('_'));
@@ -833,6 +836,9 @@
         });
         const player = document.querySelector('.player'), home = document.getElementById('race-card')?.parentElement;
         if(player && home && player.parentElement !== home) home.appendChild(player);
+        // Keyboard focus goes back to the button that opened full screen.
+        const back = fullscreenState.chartEl && document.querySelector(`[data-toolbar-for="${fullscreenState.chartEl.id}"] [data-action="fullscreen"]`);
+        if(back && (document.activeElement === document.body || fullscreenState.chartEl.closest('.card')?.contains(document.activeElement))) back.focus({ preventScroll:true });
         const was = fullscreenState.chart;
         fullscreenState.chartEl = null; fullscreenState.chart = null; fullscreenState.btn = null;
         document.body.style.overflow = '';
@@ -995,18 +1001,7 @@
       // Bot noise in the reports: queries with no letters or digits, and HTML/URL injection probes.
       const isJunkQuery = (k)=> MK.isJunkQuery(k);
       // One colour per query everywhere: preferred slot = the query's place in the latest report, then the next free slot.
-      function queryColors(names){
-        const pal = T().series, used = new Set(), out = {};
-        const hash = (k)=>{ let h=0; for(const ch of k) h = (h*31 + ch.codePointAt(0)) >>> 0; return h; };
-        const order = names.slice().sort((a,b)=> (state.colorRank?.get(a) ?? 1e9) - (state.colorRank?.get(b) ?? 1e9));
-        for(const n of order){
-          const r = state.colorRank?.get(n);
-          let i = (r != null ? r : hash(n)) % pal.length, tries = 0;
-          while(used.has(i) && tries < pal.length){ i = (i+1) % pal.length; tries++; }
-          used.add(i); out[n] = pal[i];
-        }
-        return out;
-      }
+      function queryColors(names){ const m = colorSlots(names, chartPalette(T())); const out = {}; for(const n of names) out[n] = m.get(n); return out; }
 
       // Race gridlines: one colour per tick. ECharts adds a tick at an unrounded right edge while the scale
       // eases between months; that one is transparent, so only the labelled gridlines show and slide.
@@ -1052,55 +1047,58 @@
         return frame;
       }
       // Bars, query names and values drawn together, so a row moves as one piece. Rows below the last place fade out.
-      function raceSeries(items, { n, t, fmt, labelW, small, wrap }){
+      function raceSeries(items, { n, t, fmt, labelW, small, wrap, cap }){
         const fs = small ? 12 : 13;
         return { id:'race', type:'custom', clip:false, animation:false, encode:{ x:0, y:1 }, dimensions:['value','pos'],
           data: items.map(d=>({ name:d.name, value:[d.value, d.pos] })),
           renderItem:(params, api)=>{
             const d = items[params.dataIndex]; if(!d) return null;
             const alpha = Math.max(0, Math.min(1, (n - 0.5 - d.pos)*2)); if(alpha <= 0) return null;
-            const [x0, y] = api.coord([0, d.pos]), [x1] = api.coord([d.value, d.pos]);
+            // While the scale eases between months a bar is held at the axis end, never past it.
+            const [x0, y] = api.coord([0, d.pos]), [x1] = api.coord([cap != null ? Math.min(d.value, cap) : d.value, d.pos]);
+            // Names wrap onto two lines only when a row is tall enough to hold them (Top 20 rows are not).
             const band = api.size([0, 1])[1], h = Math.max(4, Math.min(24, band*0.58));
             return { type:'group', children:[
               { type:'rect', shape:{ x:x0, y:y - h/2, width: Math.max(0, x1 - x0), height:h }, style:{ fill:d.color, opacity:alpha } },
-              { type:'text', x:x0 - 12, y, silent:true, style:{ text:d.name, align:'right', verticalAlign:'middle', fill:t.ink, opacity:alpha, font:`600 ${fs}px ${FONT}`, width:labelW, overflow: wrap ? 'break' : 'truncate', ellipsis:'…', lineHeight: wrap ? 15 : undefined } },
+              { type:'text', x:x0 - 12, y, silent:true, style:{ text:d.name, align:'right', verticalAlign:'middle', fill:t.ink, opacity:alpha, font:`600 ${fs}px ${FONT}`, width:labelW, overflow: wrap && band >= 32 ? 'break' : 'truncate', ellipsis:'…', lineHeight: wrap && band >= 32 ? 15 : undefined } },
               { type:'text', x:x1 + 8, y, silent:true, style:{ text: d.label ?? fmt(d.value), align:'left', verticalAlign:'middle', fill:t.ink2, opacity:alpha, font:`600 12px ${FONT}`, stroke:t.surface, lineWidth:3 } }
             ] };
           } };
       }
-      // Race colours: a query keeps its colour for the whole race, and no two queries on screen at once share one.
-      // A query that leaves and comes back keeps its colour if it is free.
-      function raceColorFrames(months, topByMonth, t){
+      // One palette for every chart on the page: the eight series colours, then tints and shades of them (24 in all).
+      function chartPalette(t){
         const mix = (a, b, k)=>{ const h = (c)=> { const x = c.replace('#',''); const f = x.length === 3 ? x.split('').map(y=>y+y).join('') : x; return [0,2,4].map(i=> parseInt(f.slice(i,i+2),16)); };
           try{ const A = h(a), B = h(b); if(A.some(isNaN) || B.some(isNaN)) return a; return '#' + A.map((v,i)=> Math.round(v*(1-k) + B[i]*k).toString(16).padStart(2,'0')).join(''); }catch(e){ return a; } };
         const base = t.series.length ? t.series : [t.ink];
-        // As many distinct colours as rows can show at once (Top 20 included): the series colours, then lighter
-        // tints and deeper shades of them, skipping any that come out the same.
-        const rows = Math.max(1, ...months.map(m=> (topByMonth[m] || []).length));
         const pal = [], seen = new Set();
         for(const [to, k] of [[null, 0], [t.paper, .5], [t.ink, .3], [t.paper, .75], [t.paper, .25], [t.ink, .55]]){
           for(const c of base){ const v = (to ? mix(c, to, k) : c).toLowerCase(); if(!seen.has(v)){ seen.add(v); pal.push(v); } }
-          if(pal.length >= Math.max(rows, base.length*2)) break;
+          if(pal.length >= 24) break;
         }
-        const own = new Map(), frames = [];
+        return pal;
+      }
+      // Colours: every query has a fixed preferred colour, by its total share across all reports (meaningless queries
+      // included, so the hide switch never moves a colour); the 24 most searched each own one. Queries on screen together
+      // never share a colour: a clash goes to the next free colour, the more searched query first.
+      const hashName = (k)=>{ let h = 0; for(const ch of k) h = (h*31 + ch.codePointAt(0)) >>> 0; return h; };
+      function colorSlots(names, pal){
+        const order = state.colorOrder || new Map(), rank = (n)=> order.has(n) ? order.get(n) : 1e6 + (hashName(n) % 1e6);
+        const taken = new Set(), out = new Map();
+        for(const n of Array.from(new Set(names)).sort((a,b)=> rank(a) - rank(b) || (a < b ? -1 : 1))){
+          const r = order.get(n); let i = (r != null && r < pal.length ? r : hashName(n)) % pal.length;
+          for(let k = 0; k < pal.length && taken.has(i); k++) i = (i + 1) % pal.length;
+          taken.add(i); out.set(n, pal[i]);
+        }
+        return out;
+      }
+      // Race colours per month: assigned together with the previous month's rows, so a row leaving and a row entering
+      // in the same step never look alike.
+      function raceColorFrames(months, topByMonth, t){
+        const pal = chartPalette(t), frames = [];
         for(let i = 0; i < months.length; i++){
-          const rows = topByMonth[months[i]] || [], taken = new Map(), out = new Map();
-          // Queries already on screen last month keep their colour first, then the ones that enter.
-          const prev = i ? frames[i-1] : new Map();
-          const order = rows.map(d=>d.name).sort((a,b)=> (prev.has(b) ? 1 : 0) - (prev.has(a) ? 1 : 0));
-          const here = new Set(order), leaving = new Set(Array.from(prev.keys()).filter(k=> !here.has(k)).map(k=> own.get(k)));
-          for(const nm of order){
-            let c = own.get(nm);
-            if(c == null || taken.has(c)){ const pref = (state.colorRank?.get(nm) ?? pal.length) % base.length; c = null;
-              // A colour still on a query leaving the screen in this step is used only when nothing else is free.
-              const free = (j, soft)=> !taken.has(j) && (soft || !leaving.has(j));
-              for(const soft of [false, true]){ for(let k = 0; k < pal.length && c == null; k++){ const j = (pref + k) % pal.length; if(free(j, soft)) c = j; } }
-              if(c == null) c = own.size % pal.length; }
-            own.set(nm, c); taken.set(c, nm); out.set(nm, pal[c]);
-          }
-          frames.push(out);
+          const now = (topByMonth[months[i]] || []).map(d=> d.name), before = i ? (topByMonth[months[i-1]] || []).map(d=> d.name) : [];
+          frames.push(colorSlots(now.concat(before), pal));
         }
-        // Queries that never show keep a neutral colour (they sit off screen while the race plays).
         return frames;
       }
       function monthLookup(list, field){ const by = new Map(); for(const r of list){ const m = toMonthKey(r.month); const v = asNumber(r[field]); if(!Number.isFinite(v)) continue; if(!by.has(m)) by.set(m, new Map()); const k = String(r.keyword||'').trim(); by.get(m).set(k, (by.get(m).get(k)||0) + v); } return (m, k)=> by.get(m)?.get(k); }
@@ -1119,12 +1117,16 @@
         const from = frame(prevI);
         const R = to._race, n = R.n;
         const A = new Map(from._race.items.map(d=>[d.name, d])), B = new Map(R.items.map(d=>[d.name, d]));
-        // Leavers keep their colour and sink below the last place; entries start just below it.
-        const moves = R.items.map(d=>({ d, a: A.get(d.name) || { value:0, pos:n } }))
-          .concat(from._race.items.filter(d=> !B.has(d.name)).map(d=>({ d:{ ...d, pos:n + 0.5 }, a:d })));
+        // Entries rise from below the last place and leavers sink below it, each in its own lane so their names
+        // never pile up; a leaver's bar shrinks to fit the new scale.
+        const entering = R.items.filter(d=> !A.has(d.name)), leaving = from._race.items.filter(d=> !B.has(d.name));
+        const moves = R.items.map(d=>({ d, a: A.get(d.name) || { value:0, pos: n + entering.indexOf(d) } }))
+          .concat(leaving.map((d,k)=>({ d:{ ...d, value: Math.min(d.value, to.xAxis.max), pos: n + k }, a:d })));
         const maxA = from.xAxis.max, maxB = to.xAxis.max;
         const dur = Math.min(650, state.playInterval*0.55), t0 = performance.now();
-        const iv = to.xAxis.interval, tickFmt = to.xAxis.axisLabel.formatter;
+        // Ticks keep the coarser of the two months' steps, so a jump in scale never crowds the axis with labels.
+        const coarse = from.xAxis.interval >= to.xAxis.interval ? from.xAxis : to.xAxis;
+        const iv = coarse.interval, tickFmt = coarse.axisLabel.formatter;
         const onTick = (v)=> Math.abs(v/iv - Math.round(v/iv)) < 1e-6 ? tickFmt(v) : '';
         const t = T();
         let first = true;
@@ -1132,11 +1134,11 @@
           const p = Math.min(1, (now - t0)/dur), e = p < .5 ? 4*p*p*p : 1 - Math.pow(-2*p + 2, 3)/2;
           if(p >= 1){ c.setOption(to, { notMerge:true }); return; }
           const mx = maxA + (maxB - maxA)*e;
-          const xAxis = { ...to.xAxis, max: mx, splitLine:{ show:true, lineStyle:{ color: raceGridColors(iv, mx) } }, axisLabel:{ ...to.xAxis.axisLabel, formatter: onTick } };
+          const xAxis = { ...to.xAxis, max: mx, interval: iv, splitLine:{ show:true, lineStyle:{ color: raceGridColors(iv, mx) } }, axisLabel:{ ...to.xAxis.axisLabel, formatter: onTick } };
           // Rows further down are drawn first, so a row moving up passes over the ones it overtakes.
           const items = moves.map(({ d, a })=>{ const v = a.value + (d.value - a.value)*e; return { name:d.name, color:d.color, value:v, pos: a.pos + (d.pos - a.pos)*e }; })
             .sort((x,y)=> y.pos - x.pos);
-          const series = [ raceSeries(items, { n, t, fmt: R.fmt, labelW: R.labelW, small: R.small, wrap: R.wrap }) ];
+          const series = [ raceSeries(items, { n, t, fmt: R.fmt, labelW: R.labelW, small: R.small, wrap: R.wrap, cap: mx }) ];
           c.setOption(first ? { ...to, xAxis, series } : { xAxis, series }, { notMerge: first });
           first = false;
           tweens[id] = requestAnimationFrame(step);
@@ -1155,8 +1157,8 @@
         const el = document.getElementById('zeros'); const px = Math.max(120, (el?.clientWidth || 600) - 72) / Math.max(1, months.length-1);
         const dark = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim().toLowerCase() !== '#ffffff';
         return { backgroundColor:'transparent', textStyle:{ fontFamily:FONT }, animation:false,
-          grid:{ left:4, right:20, top:28, bottom:6, containLabel:true },
-          xAxis:{ type:'category', boundaryGap:false, data: months, axisLabel:{ color:t.muted, fontSize:12, margin:12, interval:0, formatter: smartTicks(months, px), hideOverlap:true }, axisTick:{ show:false }, axisLine:{ lineStyle:{ color:t.line } } },
+          grid:{ left:4, right:20, top:28, bottom:20, containLabel:true },
+          xAxis:{ type:'category', boundaryGap:false, data: months, axisLabel:{ color:t.muted, fontSize:12, margin:12, interval:0, formatter: smartTicks(months, px), hideOverlap:true, alignMinLabel:'left', alignMaxLabel:'right' }, axisTick:{ show:false }, axisLine:{ lineStyle:{ color:t.line } } },
           yAxis:{ type:'value', splitNumber:4, axisLabel:{ color:t.muted, fontSize:12, formatter:(v)=>Number(v).toLocaleString('en-US') }, splitLine:{ lineStyle:{ color:t.grid } } },
           tooltip:{ trigger:'axis', ...tooltipStyle(t), position: tipAt(8, 56), axisPointer:{ type:'line', lineStyle:{ color:t.line } }, formatter:(ps)=>{ const p=ps.find(x=>x.seriesName!=='_break' && x.seriesName!=='_odd')||ps[0]; return `<b>${monthLabel(p.axisValue)}</b><br/>${p.value==null ? 'No report for this month' : Math.round(p.value).toLocaleString('en-US')+' searches found no apps'}`; } },
           series:[{ name:'Searches with zero results', type:'line', smooth:false, connectNulls:false, symbol:'circle', symbolSize:6, showSymbol:false, itemStyle:{ color:t.coral }, lineStyle:{ width:2, color:t.coral, join:'round' }, areaStyle:{ color:t.coral, opacity: dark ? .06 : .08 }, data,
@@ -1196,7 +1198,8 @@
           ...s, smooth:false, symbol:'none', connectNulls:false,
           data: s.data.map(v=> v && typeof v === 'object' ? v.value : v),
           lineStyle:{ width:2, join:'round' }, color: cmap[s.name],
-          emphasis:{ focus:'series', lineStyle:{ width:3 } }, blur:{ lineStyle:{ opacity:.15 } },
+          // Pointing at the line itself (not only at a point) isolates it.
+          triggerLineEvent:true, emphasis:{ focus:'series', lineStyle:{ width:3 } }, blur:{ lineStyle:{ opacity:.15 } },
           endLabel:{ show: !legendMode, formatter:'{a}', color: cmap[s.name], fontSize:13, fontWeight:700, fontFamily:FONT, distance:8, lineHeight:20, padding:[1,0] },
           labelLayout:{ moveOverlap:'shiftY' }, labelLine:{ show:true, length2:6, smooth:false, lineStyle:{ width:1, color: cmap[s.name], opacity:.6 } }
         }));
@@ -1231,14 +1234,16 @@
         if(breakIdx > 0) extra.push({ name:'_break', type:'line', data:[], silent:true, markLine:{ silent:true, symbol:'none', lineStyle:{ color:t.muted, type:[4,4], width:1 },
           label:{ show:true, position:'end', distance:6, color:t.ink2, fontSize:12, fontWeight:600, fontFamily:FONT, formatter: `${breakIsMarketplace() ? 'New Marketplace' : 'Sharp drop'}, ${monthLabel(months[breakIdx],{month:'short', year:'numeric'})}` }, data:[{ xAxis: breakIdx }] } });
         const right = useLegend ? 12 : Math.min(300, longest + 24);
+        // The legend wraps on narrow screens; the plot starts below however many rows it takes.
+        let legendRows = 1; if(useLegend){ const avail = Math.max(120, (document.getElementById('trails')?.clientWidth || 800)); let w = 0; for(const x of tuned){ const iw = 12 + 5 + measureTextWidth(x.name) + 14; if(w && w + iw > avail){ legendRows++; w = 0; } w += iw; } }
         const el = document.getElementById('trails'); const px = Math.max(120, (el?.clientWidth || 800) - right - 48) / Math.max(1, months.length-1);
         return {
           backgroundColor:'transparent', textStyle:{ fontFamily:FONT }, animationDuration:600,
-          grid:{ left:4, right, top: useLegend ? 64 : 28, bottom:6, containLabel:true },
+          grid:{ left:4, right, top: useLegend ? 30 + legendRows*24 : 28, bottom:6, containLabel:true },
           legend: useLegend ? { top:0, left:0, right:0, data: tuned.map(x=>x.name), icon:'roundRect', itemWidth:12, itemHeight:4, itemGap:14, textStyle:{ color:t.ink2, fontFamily:FONT, fontSize:13 } } : undefined,
-          tooltip:{ trigger:'axis', ...tooltipStyle(t), position: tipAt(useLegend ? 64 : 8, 48), axisPointer:{ type:'line', lineStyle:{ color:t.line } }, order:'valueDesc',
+          tooltip:{ trigger:'axis', ...tooltipStyle(t), position: tipAt(useLegend ? 30 + legendRows*24 : 8, 48), axisPointer:{ type:'line', lineStyle:{ color:t.line } }, order:'valueDesc',
             formatter:(ps)=>`<b>${monthLabel(ps[0].axisValue)}</b><br/>` + ps.filter(p=>p.seriesType==='line' && p.seriesName!=='_break').slice().sort((a,b)=>(b.value??-1)-(a.value??-1)).map(p=>`${p.marker}${escapeHtml(p.seriesName)} <b style="float:right;margin-left:16px">${p.value==null ? 'not in top 500' : Number(p.value).toFixed(2)+'%'}</b>`).join('<br/>') },
-          xAxis:{ type:'category', boundaryGap:false, data: months, axisLabel:{ color:t.muted, fontSize:12, margin:12, interval:0, hideOverlap:true, formatter: smartTicks(months, px) }, axisLine:{ lineStyle:{ color:t.line } }, axisTick:{ show:false } },
+          xAxis:{ type:'category', boundaryGap:false, data: months, axisLabel:{ color:t.muted, fontSize:12, margin:12, interval:0, hideOverlap:true, formatter: smartTicks(months, px), alignMinLabel:'left', alignMaxLabel:'right' }, axisLine:{ lineStyle:{ color:t.line } }, axisTick:{ show:false } },
           yAxis:{ type:'value', min:0, max: ax.max, interval: ax.interval, axisLabel:{ color:t.muted, fontSize:12, formatter:(v)=> v === 0 ? '0%' : `${v.toFixed(ax.decimals)}%` }, splitLine:{ lineStyle:{ color:t.grid } } },
           series: [...tuned, ...extra]
         };
@@ -1337,7 +1342,7 @@
         return { yCats, matrix, rangeMonths };
       }
 
-      function updateFileStatus(elementId, message){ const el = document.getElementById(elementId); if(el) el.textContent = message; }
+      function updateFileStatus(elementId, message, bad=false){ const el = document.getElementById(elementId); if(el){ el.textContent = message; el.classList.toggle('bad', bad); } }
 
       // --- Render pipeline ---
       function fillMonthSelect(sel, months, value){
@@ -1409,7 +1414,8 @@
           state.partialZero = incompleteMonths(state.zeroRaw);
           state.gapsPopular = new Set(); state.gapsZero = new Set();
           const ms = Array.from(new Set(state.sourceRaw.map(r=>r.month))).sort();
-          state.colorRank = new Map(latestRanking(state.sourceRaw,'percentage',ms[ms.length-1]).map((r,i)=>[r.keyword,i]));
+          { const tot = new Map(); for(const r of (state.sourceAll || state.sourceRaw)){ const v = asNumber(r.percentage); if(Number.isFinite(v)) tot.set(r.keyword, (tot.get(r.keyword)||0) + v); }
+            state.colorOrder = new Map(Array.from(tot.entries()).sort((a,b)=> b[1]-a[1] || (a[0] < b[0] ? -1 : 1)).map(([k],i)=>[k,i])); }
           state.popLookup = monthLookup(state.sourceRaw, 'percentage'); state.zeroLookup = monthLookup(state.zeroRaw, 'count');
           // The report-change search skips partial months, whose shares are not comparable.
           const full = ms.filter(m=> !state.partialPopular.has(m));
@@ -1433,7 +1439,7 @@
         const race = ensureChart('race');
         // Only the zero-result months inside the charted range are worth a note.
         const skipped = Array.from(state.partialZero || []).filter(m=> m >= months[0]).sort().map(m=>monthLabel(m,{month:'short', year:'numeric'}));
-        $('#zerosNote').textContent = skipped.length && state.zeroMode === 'totals' ? `The ${skipped.join(' and ').replace(/ and (?=.* and )/g, ', ')} zero-result ${skipped.length===1?'report is':'reports are'} partial (hollow dots).` : '';
+        $('#zerosNote').textContent = skipped.length && state.zeroMode === 'totals' ? `The ${skipped.join(' and ').replace(/ and (?=.* and )/g, ', ')} zero-result ${skipped.length===1?'report is':'reports are'} partial${state.keywordFilter.length ? '' : ' (hollow dots)'}.` : '';
         if(state.zeroMode === 'totals' && (document.getElementById('zeros')?.clientWidth || 999) < 380) state.zerosPhoneNote = true; else state.zerosPhoneNote = false;
         if(state.zeroMode === 'totals' && !state.keywordFilter.length){
           // Months whose total is far below every neighbour look like incomplete exports; say so instead of hiding them.
@@ -1441,7 +1447,7 @@
           const oddRows = tot.filter((x,i)=>{ const near = tot.slice(Math.max(0,i-3), i).concat(tot.slice(i+1, i+4)).map(y=>y.value).filter(v=>v>0).sort((p,q)=>p-q); const med = near[Math.floor(near.length/2)]; return near.length >= 4 && x.value < med*0.5; });
           state.zeroOdd = oddRows.map(x=>x.month).concat(Array.from(state.partialZero || []));
           const odd = oddRows.map(x=>monthLabel(x.month,{month:'short', year:'numeric'}));
-          if(odd.length) $('#zerosNote').textContent = `${skipped.length ? `The ${skipped.join(' and ')} zero-result ${skipped.length===1?'report is':'reports are'} partial; t` : 'T'}otals for ${odd.join(' and ').replace(/ and (?=.* and )/g, ', ')} are unusually low in Atlassian’s reports (hollow dots).`;
+          if(odd.length) $('#zerosNote').textContent = `${skipped.length ? `The ${skipped.join(' and ')} zero-result ${skipped.length===1?'report is':'reports are'} partial; t` : 'T'}otals for ${odd.join(' and ').replace(/ and (?=.* and )/g, ', ')} are unusually low in Atlassian’s reports${state.keywordFilter.length ? '' : ' (hollow dots)'}.`;
         }
         if(state.zeroMode === 'totals' && !state.keywordFilter.length) $('#zerosNote').textContent = (MK.ZERO_NOTE + ' ' + $('#zerosNote').textContent).trim();
         if(state.zerosPhoneNote && state.trailsBreak) $('#zerosNote').textContent += ` Dashed line: ${breakIsMarketplace() ? 'the new Marketplace' : 'the sharp drop'}, ${monthLabel(state.trailsBreak,{month:'short', year:'numeric'})}.`;
@@ -1474,7 +1480,7 @@
         $('#trailsTitle').textContent = state.keywordFilter.length ? 'Share of searches for the picked queries' : 'Share of searches for the biggest queries';
         $('#raceTitle').textContent = state.keywordFilter.length ? 'Picked queries by share of searches' : 'Top queries by share of searches';
         { const hint = document.querySelector('.filterbar .hint'); if(hint) hint.textContent = state.keywordFilter.length ? `Every chart below shows only the ${state.keywordFilter.length} picked ${state.keywordFilter.length===1?'query':'queries'}.` : 'Pick queries to focus every chart below on them.'; }
-        $('#trailsDesc').textContent = state.keywordFilter.length ? 'Share of all Marketplace searches for the picked queries. Point at or tap a line to isolate it.' : `The queries with the highest typical monthly share${state.trailsBreak ? (breakIsMarketplace() ? ` since ${monthLabel(state.trailsBreak)}, when Atlassian’s redesigned Marketplace arrived` : ` since the ${monthLabel(state.trailsBreak)} drop`) : ''}. Point at or tap a line to isolate it.`;
+        $('#trailsDesc').textContent = state.keywordFilter.length ? 'Share of all Marketplace searches for the picked queries. Point at or tap a line to isolate it.' : `The queries with the highest typical monthly share${state.trailsBreak ? (breakIsMarketplace() ? ` since ${monthLabel(state.trailsBreak)}, when Atlassian’s redesigned Marketplace arrived` : ` since the ${monthLabel(state.trailsBreak)} drop`) : ''}${state.trailsRange === 'all' && state.trailsBreak ? ', followed across all years' : ''}. Point at or tap a line to isolate it.`;
         safeSetOption('trails', buildTrailsOption(tMonths, trailSeries, { breakMonth: recent ? null : state.trailsBreak, allYears: state.trailsRange === 'all' }));
         { const notes = [];
           if(state.trailsBreak && state.trailsRange === 'all'){
@@ -1482,9 +1488,12 @@
             const prevM = months[months.indexOf(state.trailsBreak)-1];
             const before = latestRanking(state.sourceRaw, 'percentage', prevM).slice(0, 10);
             const after = new Map(latestRanking(state.sourceRaw, 'percentage', state.trailsBreak).map(r=>[r.keyword, r.value]));
-            const fell = before.filter(r=> (after.get(r.keyword) || 0) < r.value*0.4).map(r=>r.keyword);
-            const who = fell.length ? fell.slice(0,3).join(', ').replace(/, (?=[^,]*$)/, ' and ') : 'several of the biggest queries';
-            notes.push(`In ${monthLabel(state.trailsBreak)} the shares of ${who} fall at once, ${breakIsMarketplace() ? 'as Atlassian rolled out its redesigned Marketplace with autocomplete and new categories' : 'a sharp drop across the biggest queries at once'}, so the two periods are best read separately.`);
+            const fellAll = before.filter(r=> (after.get(r.keyword) || 0) < r.value*0.4).map(r=>r.keyword);
+            const charted = new Set(trailSeries.map(x=> x.name)), fell = fellAll.filter(k=> charted.has(k));
+            const list = (a)=> a.slice(0,3).join(', ').replace(/, (?=[^,]*$)/, ' and ');
+            const why = breakIsMarketplace() ? 'as Atlassian rolled out its redesigned Marketplace with autocomplete and new categories' : 'a sharp drop across the biggest queries at once';
+            notes.push(fell.length ? `In ${monthLabel(state.trailsBreak)} the shares of ${list(fell)} fall at once, ${why}, so the two periods are best read separately.`
+              : `In ${monthLabel(state.trailsBreak)} broad queries${fellAll.length ? ' such as ' + list(fellAll) : ''} lost most of their share at once, ${why}; the queries shown here were not among them.`);
           }
           { const pm = tMonths.filter(m=> (state.partialPopular||new Set()).has(m)).map(m=>monthLabel(m,{month:'short', year:'numeric'})); if(pm.length) notes.push(`The ${pm.join(' and ')} report is partial, so its shares are not comparable with other months.`); }
           if(state.trailsBridged) notes.push('Dotted segments bridge months a query spent outside the top 500.');
@@ -1568,35 +1577,36 @@
       });
 
       // File inputs
+      // A file that is not a spreadsheet at all reads as a workbook without a Raw sheet; say it plainly either way.
+      const readError = (err)=> { const m = String(err && err.message || err || ''); return m && !/^Error/.test(m) ? m.charAt(0).toUpperCase() + m.slice(1) : 'This file could not be read as a spreadsheet'; };
       $('#file-source').addEventListener('change', async (e)=>{
         const f = e.target.files[0];
         if(!f) { updateFileStatus('source-display', 'Not loaded'); return; }
-        state.manualSource = true; setStatus('reading Popular Search Keywords…');
+        setStatus('reading Popular Search Keywords…');
         updateFileStatus('source-display', `Reading ${f.name}…`);
         try{
+          // A file that fails the check leaves the charts on the data they had.
           const wb = await readWorkbook(await f.arrayBuffer());
-          if(!wb.Raw) throw new Error('no Raw sheet');
-          state.sourceAll = sourceRows(wb.Raw); applyJunk();
+          state.sourceAll = sourceRows(MK.checkReport(wb, 'popular')); state.manualSource = true; applyJunk();
           setNoData(!state.sourceRaw.length);
           setStatus(`loaded Popular: ${state.sourceRaw.length} rows`);
           updateFileStatus('source-display', `${f.name} · ${state.sourceRaw.length.toLocaleString('en-US')} rows`);
           renderAll();
-        }catch(err){ console.error(err); setStatus('error reading Popular file: check that it has a Raw sheet'); updateFileStatus('source-display', 'Could not read file'); }
+        }catch(err){ console.error(err); setStatus('error reading Popular file'); updateFileStatus('source-display', `${f.name}: ${readError(err)}${state.sourceRaw.length ? '. The charts still show the previous data.' : '.'}`, true); }
       });
 
       $('#file-zero').addEventListener('change', async (e)=>{
         const f = e.target.files[0];
         if(!f) { updateFileStatus('zero-display', 'Not loaded'); return; }
-        state.manualZero = true; setStatus('reading Zero-Result Keywords…');
+        setStatus('reading Zero-Result Keywords…');
         updateFileStatus('zero-display', `Reading ${f.name}…`);
         try{
           const wb = await readWorkbook(await f.arrayBuffer());
-          if(!wb.Raw) throw new Error('no Raw sheet');
-          state.zeroAll = zeroRows(wb.Raw); state.zeroSummary = wb.Monthly_Summary || []; applyJunk();
+          state.zeroAll = zeroRows(MK.checkReport(wb, 'zero')); state.manualZero = true; state.zeroSummary = wb.Monthly_Summary || []; applyJunk();
           setStatus(`loaded Zero: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
           updateFileStatus('zero-display', `${f.name} · ${state.zeroRaw.length.toLocaleString('en-US')} rows`);
           renderAll();
-        }catch(err){ console.error(err); setStatus('error reading Zero file: check that it has a Raw sheet'); updateFileStatus('zero-display', 'Could not read file'); }
+        }catch(err){ console.error(err); setStatus('error reading Zero file'); updateFileStatus('zero-display', `${f.name}: ${readError(err)}${state.zeroRaw.length ? '. The charts still show the previous data.' : '.'}`, true); }
       });
 
       // --- Default file autoload (for GitHub Pages) ---
@@ -1609,8 +1619,8 @@
       // Reading a workbook takes about a second of CPU, so the shared loader does it in a background worker.
       function readWorkbook(buf){ return MK.readWorkbook(buf); }
       // Every row is kept and meaningless ones are flagged on the raw text; the reader decides whether to hide them.
-      const sourceRows = (rows)=> rows.map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword) || String(r.keyword ?? '').trim(), junk:isJunkQuery(r.keyword), percentage: asNumber(r.percentage), rank: asNumber(r.rank) })).filter(r=> r.keyword && r.month);
-      const zeroRows = (rows)=> rows.map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword) || String(r.keyword ?? '').trim(), junk:isJunkQuery(r.keyword), count: asNumber(r.count||0) })).filter(r=> r.keyword && r.month);
+      const sourceRows = (rows)=> rows.map(r0=> ({ ...r0, keyword: MK.fixText(r0.keyword) })).map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword) || String(r.keyword ?? '').trim(), junk:isJunkQuery(r.keyword), percentage: asNumber(r.percentage), rank: asNumber(r.rank) })).filter(r=> r.keyword && r.month);
+      const zeroRows = (rows)=> rows.map(r0=> ({ ...r0, keyword: MK.fixText(r0.keyword) })).map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword) || String(r.keyword ?? '').trim(), junk:isJunkQuery(r.keyword), count: asNumber(r.count||0) })).filter(r=> r.keyword && r.month);
       // Rows shown follow the "Hide meaningless queries" setting; totals are added up from the rows shown.
       function applyJunk(){
         const hide = MK.hideJunk();
@@ -1644,8 +1654,8 @@
         const shouldLoadZero = forceLoad || (!state.zeroRaw.length && !state.manualZero);
         // Both reports are fetched and read in parallel, and the page draws once when they are in.
         const [src, zero] = await Promise.allSettled([shouldLoadSource ? tryLoadDefaultSource() : null, shouldLoadZero ? tryLoadDefaultZero() : null]);
-        if(shouldLoadSource){ if(src.status === 'fulfilled') any = true; else { console.info('No default Popular found'); updateFileStatus('source-display', forceLoad ? 'Repository file not found' : 'Not loaded'); } }
-        if(shouldLoadZero){ if(zero.status === 'fulfilled') any = true; else { console.info('No default Zero found'); updateFileStatus('zero-display', forceLoad ? 'Repository file not found' : 'Not loaded'); } }
+        if(shouldLoadSource){ if(src.status === 'fulfilled') any = true; else { console.info('No default Popular found'); updateFileStatus('source-display', forceLoad ? 'Repository file not found' : 'Not loaded', true); } }
+        if(shouldLoadZero){ if(zero.status === 'fulfilled') any = true; else { console.info('No default Zero found'); updateFileStatus('zero-display', forceLoad ? 'Repository file not found' : 'Not loaded', true); } }
         if(any){ renderAll(); MK.loadDone(); } else MK.loadFailed();
         if(forceLoad && !any) {
           setStatus('No default files found in /data/ directory');

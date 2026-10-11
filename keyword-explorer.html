@@ -173,7 +173,8 @@
     th:first-child,td:first-child{text-align:left}
     tbody tr:hover{background:var(--sunken)}
     .keyword-cell{display:flex;align-items:center;gap:10px;max-width:440px;font-weight:600}
-    .keyword-cell span:last-child{overflow:hidden;text-overflow:ellipsis}
+    .keyword-cell span:last-child{overflow:hidden;text-overflow:ellipsis;min-width:0;overflow-wrap:anywhere}
+    .selected-chip.hidden-q .text{text-decoration:line-through;opacity:.6}
     .keyword-cell.member{padding-left:20px;font-weight:500}
     tr.group-row{background:var(--sunken)}
     .keyword-cell .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
@@ -189,6 +190,7 @@
     .file-tile span{display:block;color:var(--muted);font-size:14px}
     .file-tile input[type="file"]{display:none}
 .file-status{display:block;margin-top:4px;font-style:normal;font-size:13px;font-weight:600;color:var(--ink-2)}
+.file-status.bad{color:var(--accent) !important}
     .file-input-display{max-width:50%;text-align:right;background:none;border:0;padding:0;color:var(--blue);font-weight:700;font-size:14px;cursor:pointer}
     .data-actions{display:flex;gap:10px 16px;flex-wrap:wrap;align-items:center}
     .data-actions .link-btn{padding:0}
@@ -355,6 +357,7 @@
   </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap">
     <div class="left">
@@ -375,7 +378,7 @@
   </div>
 </header>
 
-  <main class="wrap">
+  <main class="wrap" id="main">
     <div class="page-head">
       <h1>Keyword Explorer</h1>
       <p class="lede">Follow one search query, or compare a few, month by month: how much of all Marketplace search it gets, where it ranks in the top 500, and how often it finds no apps.</p>
@@ -389,7 +392,7 @@
         <label for="keywordInput" class="visually-hidden">Search queries</label>
         <div class="search-field">
           <div id="selectedChips" class="selected-chips" aria-live="polite"></div>
-          <input id="keywordInput" type="text" autocomplete="off" placeholder="Search queries, then press Enter…" />
+          <input id="keywordInput" type="text" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="suggestions" aria-expanded="false" placeholder="Search queries, then press Enter…" />
           <button id="clearSelection" class="link-btn" type="button">Clear all</button>
         </div>
         <div id="suggestions" class="suggestions" role="listbox" aria-label="Query suggestions"></div>
@@ -517,15 +520,23 @@
       const s=getComputedStyle(document.documentElement),v=(n)=>s.getPropertyValue(n).trim();
       return {ink:v('--ink'),ink2:v('--ink-2'),muted:v('--muted'),line:v('--line'),grid:v('--grid'),surface:v('--surface'),blue:v('--blue'),blueSoft:v('--blue-soft'),coral:v('--coral'),group:v('--group'),tipBg:v('--tip-bg'),tipInk:v('--tip-ink'),series:v('--series').split(',').map(x=>x.trim()).filter(Boolean)};
     }
-    let COLORS = T().series;
-    // Same rule as Month by month: a query's colour comes from its place in the latest report, then the next free slot.
+    // 24 colours: the eight series colours, then tints and shades of them, so a dozen picked queries never share one.
+    function palette(t){
+      const hex=(c)=>{ const x=String(c).replace('#',''); const f=x.length===3?x.split('').map(y=>y+y).join(''):x; return [0,2,4].map(i=>parseInt(f.slice(i,i+2),16)); };
+      const mix=(a,b,k)=>{ const A=hex(a),B=hex(b); if(A.some(isNaN)||B.some(isNaN)) return a; return '#'+A.map((v,i)=>Math.round(v*(1-k)+B[i]*k).toString(16).padStart(2,'0')).join(''); };
+      const out=[],seen=new Set(); for(const [to,k] of [[null,0],[t.surface,.5],[t.ink,.3],[t.surface,.75],[t.surface,.25],[t.ink,.55]]){ for(const c of t.series){ const v=(to?mix(c,to,k):c).toLowerCase(); if(!seen.has(v)){seen.add(v);out.push(v);} } if(out.length>=24) break; } return out;
+    }
+    let COLORS = palette(T());
+    // Same rule as Month by month: each query prefers a fixed colour by its total share across all reports (the 24 most
+    // searched own one), and picked queries never share a colour — a clash goes to the next free one, bigger query first.
     function colorOf(keyword){
-      if(!state.colorRank){ const latest=state.months[state.months.length-1]; state.colorRank=new Map(state.popular.filter(r=>r.month===latest).sort((a,b)=>(a.rank||1e9)-(b.rank||1e9)).map((r,i)=>[normalize(r.keyword),i])); }
-      const sel=state.matchMode==='exact'?state.selections.map(canonicalKeyword).filter(Boolean):[];
-      const used=new Set(), out=new Map();
+      if(!state.colorRank){ const tot=new Map(); for(const r of (state.popularAll||state.popular)){ const k=normalize(r.keyword); tot.set(k,(tot.get(k)||0)+number(r.percentage)); } state.colorRank=new Map([...tot.entries()].sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1)).map(([k],i)=>[k,i])); }
       const hash=(k)=>{let h=0;for(const ch of k)h=(h*31+ch.codePointAt(0))>>>0;return h;};
-      for(const k of sel){ const r=state.colorRank.get(normalize(k)); let i=(r!=null?r:hash(normalize(k)))%COLORS.length,t=0; while(used.has(i)&&t<COLORS.length){i=(i+1)%COLORS.length;t++;} used.add(i); out.set(normalize(k),COLORS[i]); }
-      return out.get(normalize(keyword)) || COLORS[(state.colorRank.get(normalize(keyword)) ?? hash(normalize(keyword)))%COLORS.length];
+      const rank=(k)=> state.colorRank.has(k)?state.colorRank.get(k):1e6+hash(k)%1e6;
+      const sel=(state.matchMode==='exact'?state.selections.map(canonicalKeyword).filter(Boolean):[]).map(normalize).sort((a,b)=>rank(a)-rank(b));
+      const used=new Set(), out=new Map();
+      for(const k of sel){ const r=state.colorRank.get(k); let i=(r!=null&&r<COLORS.length?r:hash(k))%COLORS.length,t=0; while(used.has(i)&&t<COLORS.length){i=(i+1)%COLORS.length;t++;} used.add(i); out.set(k,COLORS[i]); }
+      const k=normalize(keyword); return out.get(k) || COLORS[(state.colorRank.get(k)<COLORS.length?state.colorRank.get(k):hash(k))%COLORS.length];
     }
     const $ = (selector)=>document.querySelector(selector);
     const state = {
@@ -574,15 +585,16 @@
     // Same meaningless-query rule as every other page, so they all count the same rows.
     // Meaningless queries (bot noise, test strings, pasted links, injection attempts) are judged on the raw text; see assets/common.js.
     function isJunkQuery(k){ return MK.isJunkQuery(k); }
-    async function parsePopular(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),percentage:number(row.percentage),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
-    async function parseZero(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),count:number(row.count),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
+    async function parsePopular(buffer){ return (await workbookRows(buffer)).map(r0=>({...r0,keyword:MK.fixText(r0.keyword)})).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),percentage:number(row.percentage),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
+    async function parseZero(buffer){ return (await workbookRows(buffer)).map(r0=>({...r0,keyword:MK.fixText(r0.keyword)})).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),count:number(row.count),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
     // Every row is kept and meaningless ones are flagged; the rows shown follow the "Hide meaningless queries" setting.
     function applyJunk(){ const hide=MK.hideJunk(); state.popular=hide?state.popularAll.filter(r=>!r.junk):state.popularAll; state.zero=hide?state.zeroAll.filter(r=>!r.junk):state.zeroAll; }
     // Keep the chosen period when the rows change.
     window.addEventListener('mk:junk',()=>{ if(state.dataReady){ state.urlFrom=state.months[state.from]; state.urlTo=state.months[state.to]; } applyJunk(); if(state.popular.length) finalizeData(); });
     function hydrateUrl(){
       const params=new URLSearchParams(location.search); const queries=params.getAll('q').map(keywordText).filter(Boolean);
-      state.urlHadSelection=queries.length>0; state.selections=queries;
+      // An address with q= but no query is a deliberately empty view (after Clear all).
+      state.urlHadSelection=params.has('q'); state.selections=queries;
       if(['exact','contains'].includes(params.get('mode'))) state.matchMode=params.get('mode');
       if(['any','all'].includes(params.get('logic'))) state.containsLogic=params.get('logic');
       if(['separate','group'].includes(params.get('compare'))) state.compareMode=params.get('compare');
@@ -590,7 +602,7 @@
       state.urlFrom=params.get('from'); state.urlTo=params.get('to');
     }
     function updateUrl(){
-      const params=new URLSearchParams(); state.selections.forEach(item=>params.append('q',item));
+      const params=new URLSearchParams(); state.selections.forEach(item=>params.append('q',item)); if(!state.selections.length&&state.dataReady) params.append('q','');
       params.set('mode',state.matchMode); if(state.matchMode==='contains') params.set('logic',state.containsLogic);
       params.set('compare',state.compareMode);
       // Until the reports are in, the period from the address is kept as it was.
@@ -610,7 +622,9 @@
       // A reload or an uploaded file keeps the period the reader had chosen.
       if(state.dataReady&&state.months.length){ state.urlFrom=state.months[state.from]; state.urlTo=state.months[state.to]; }
       $('#examples').textContent='';
-      state.months=Array.from(new Set([...state.popular.map(row=>row.month),...state.zero.map(row=>row.month)])).filter(Boolean).sort();
+      // Months come from the popular-searches report, so a file of your own sets the period even next to the repository's zero-result report.
+      state.months=Array.from(new Set((state.popular.length?state.popular:state.zero).map(row=>row.month))).filter(Boolean).sort();
+      state.zeroMismatch=state.popular.length&&state.zero.length&&!state.zero.some(r=>state.months.includes(r.month));
       // Partial reports (fewer rows than usual) are kept and shown as Atlassian publishes them.
       { const c=new Map(); state.popular.forEach(r=>c.set(r.month,(c.get(r.month)||0)+1)); const v=[...c.values()].sort((a,b)=>a-b); const med=v[Math.floor(v.length/2)]||0;
         state.partialMonths=new Set(state.months.filter(m=>(c.get(m)||0) < med*0.8));
@@ -630,7 +644,7 @@
         const big=new Set([...tot.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k])=>k)); const by=state.months.map(m=>0); const idx=new Map(state.months.map((m,i)=>[m,i]));
         state.popular.forEach(r=>{ if(big.has(normalize(r.keyword))&&idx.has(r.month)) by[idx.get(r.month)]+=r.percentage; });
         state.reportBreak=null; for(let i=1;i<by.length;i++){ if(state.partialMonths.has(state.months[i])||state.partialMonths.has(state.months[i-1])) continue; if(by[i-1]>0&&by[i]<by[i-1]*0.4){ state.reportBreak=state.months[i]; break; } } }
-      indexRows(); state.colorRank=null; populateDateControls(); state.dataReady=true; renderControls(); renderAll(); setStatus(`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}`,true);
+      indexRows(); state.colorRank=null; populateDateControls(); state.dataReady=true; renderControls(); renderAll(); setStatus(state.zeroMismatch?`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}. The zero-result report covers other months, so empty searches show as 0.`:`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}`,true);
     }
     function populateDateControls(){
       const from=$('#fromMonth'),to=$('#toMonth'); from.textContent='';to.textContent='';
@@ -647,13 +661,17 @@
     async function loadDefaults(){
       setStatus('Loading default Marketplace reports…');
       const [popularResult,zeroResult]=await Promise.allSettled([fetchFirst(DEFAULT_SOURCE).then(parsePopular),fetchFirst(DEFAULT_ZERO).then(parseZero)]);
-      if(popularResult.status==='fulfilled'){ state.popularAll=popularResult.value; applyJunk(); $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`; }
-      if(zeroResult.status==='fulfilled'){ state.zeroAll=zeroResult.value; applyJunk(); $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`; }
-      else $('#zeroFileStatus').textContent='Not loaded';
+      if(popularResult.status==='fulfilled'){ state.popularAll=popularResult.value; applyJunk(); $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`; $('#popularFileStatus').classList.remove('bad'); }
+      if(zeroResult.status==='fulfilled'){ state.zeroAll=zeroResult.value; applyJunk(); $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`; $('#zeroFileStatus').classList.remove('bad'); }
+      else { $('#zeroFileStatus').textContent='Not loaded'; $('#zeroFileStatus').classList.add('bad'); }
       if(!state.popular.length){ MK.loadFailed(); throw new Error(zeroResult.status==='fulfilled'?'The popular-searches report could not be loaded':'Neither report could be loaded'); } finalizeData(); MK.loadDone();
       if(zeroResult.status!=='fulfilled') setStatus('The zero-result report could not be loaded, so empty searches show as 0. Reload repository data to try again.');
     }
-    async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); if(type==='popular'){state.popularAll=await parsePopular(buffer);applyJunk();$('#popularFileStatus').textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zeroAll=await parseZero(buffer);applyJunk();$('#zeroFileStatus').textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
+    async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); const tile=type==='popular'?$('#popularFileStatus'):$('#zeroFileStatus');
+      // A file that fails the check leaves the page on the data it had and says what is wrong.
+      let rows; try{ rows=await workbookRows(buffer); MK.checkReport({Raw:rows},type==='popular'?'popularRank':'zero'); }catch(error){ const m=String(error&&error.message||error); tile.textContent=`${file.name}: ${/^The workbook has no Raw sheet/.test(m)?'there is no sheet named “Raw” (every Marketplace report export has one)':/^(no xlsx|Error)/i.test(m)||!m?'this file could not be read as a spreadsheet':m}${state.dataReady?'. The page still shows the previous data.':'.'}`; tile.classList.add('bad'); return; }
+      tile.classList.remove('bad');
+      if(type==='popular'){state.popularAll=await parsePopular(buffer);applyJunk();$('#popularFileStatus').textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zeroAll=await parseZero(buffer);applyJunk();$('#zeroFileStatus').textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
     function canonicalKeyword(input){ return state.canon?state.canon.get(normalize(input)):state.allKeywords.find(item=>normalize(item)===normalize(input)); }
     // A query picked from the list (or an example) is added whole: many real queries contain commas.
     // Typed text is split on commas and new lines, unless it is itself a query in the reports.
@@ -664,7 +682,7 @@
       if(!added){toast(state.matchMode==='exact'?'Choose a query from the Marketplace data.':'Enter a word or phrase.');return;}
       $('#keywordInput').value=''; closeSuggestions(); renderControls(); scheduleRender();
     }
-    function removeSelection(index){ state.selections.splice(index,1); renderControls(); scheduleRender(); }
+    function removeSelection(index){ state.selections.splice(index,1); renderControls(); scheduleRender(); $('#keywordInput').focus(); }
     function selectedMatches(){
       if(!state.selections.length) return [];
       if(state.matchMode==='exact') return state.selections.map(canonicalKeyword).filter(Boolean);
@@ -687,15 +705,20 @@
       let share=aggregate(state.popular,'percentage',definition,months),zero=aggregate(state.zero,'count',definition,months); const rawShare=share.slice();
       // With a one-month period the change is against the month before it; with none before, there is no change to show.
       const before=state.months[state.months.indexOf(months[0])-1];
-      const latest=rawShare.at(-1)||0,previous=rawShare.length>1?rawShare.at(-2):before?aggregate(state.popular,'percentage',definition,[before])[0]:null,peak=Math.max(0,...rawShare),peakIndex=rawShare.indexOf(peak);
       const rank=definition.keywords.length===1?ranksFor(definition.keywords[0],months):[]; const ranked=rank.filter(Number.isFinite);
-      return {definition,share,zero,latest,delta:previous==null?null:Math.abs(latest-previous)<0.005?0:latest-previous,peak,peakMonth:peak>0&&peakIndex>=0?monthShort(months[peakIndex]):'—',currentRank:rank.length?rank.at(-1):null,bestRank:ranked.length?Math.min(...ranked):null,zeroTotal:zero.reduce((sum,value)=>sum+value,0)};
+      // A single query outside the top 500 has no share that month (not 0%): it shows as a gap in the chart and "—" here.
+      const single=definition.keywords.length===1&&!definition.group, listed=(i)=>!single||rank[i]!=null||rawShare[i]>0;
+      const beforeShare=before?aggregate(state.popular,'percentage',definition,[before])[0]:null, beforeListed=before&&(!single||ranksFor(definition.keywords[0],[before])[0]!=null||beforeShare>0);
+      const n=rawShare.length, latest=n&&listed(n-1)?rawShare[n-1]:null;
+      const previous=n>1?(listed(n-2)?rawShare[n-2]:null):(beforeListed?beforeShare:null);
+      const shown=rawShare.map((v,i)=>listed(i)?v:null), peakVal=Math.max(...shown.filter(v=>v!=null),0), peak=shown.some(v=>v!=null&&v>0)?peakVal:null, peakIndex=peak==null?-1:shown.indexOf(peak);
+      return {definition,share,zero,latest,delta:previous==null||latest==null?null:Math.abs(latest-previous)<0.005?0:latest-previous,peak,peakMonth:peak!=null&&peakIndex>=0?monthShort(months[peakIndex]):'—',currentRank:rank.length?rank.at(-1):null,bestRank:ranked.length?Math.min(...ranked):null,zeroTotal:zero.reduce((sum,value)=>sum+value,0)};
     }
     function renderControls(){
       $('#matchMode').value=state.matchMode;$('#containsLogic').value=state.containsLogic;$('#compareMode').value=state.compareMode;$('#smoothSeries').checked=state.smooth;
       $('#containsLogicField').style.display=state.matchMode==='contains'&&state.selections.length>1?'flex':'none';$('#compareModeField').style.display=state.matchMode==='exact'?'flex':'none';
       $('#keywordInput').placeholder=state.loadFailed?'No data loaded':state.matchMode==='exact'?'Search queries…':'Add words, then press Enter…';$('#clearSelection').hidden=!state.selections.length;
-      const chips=$('#selectedChips');chips.textContent='';state.selections.forEach((item,index)=>{ const chip=document.createElement('span');chip.className='selected-chip'; const dot=document.createElement('span');dot.className='dot';if(state.matchMode==='exact'){dot.style.background=colorOf(item);}else{dot.hidden=true;} const text=document.createElement('span');text.className='text';text.textContent=item; const remove=document.createElement('button');remove.type='button';remove.setAttribute('aria-label',`Remove ${item}`);remove.textContent='×';remove.addEventListener('click',()=>removeSelection(index));chip.append(dot,text,remove);chips.appendChild(chip); });
+      const chips=$('#selectedChips');chips.textContent='';state.selections.forEach((item,index)=>{ const chip=document.createElement('span');chip.className='selected-chip'; const dot=document.createElement('span');dot.className='dot';if(state.matchMode==='exact'){dot.style.background=colorOf(item);}else{dot.hidden=true;} const text=document.createElement('span');text.className='text';text.textContent=item;chip.title=item; if(state.matchMode==='exact'&&MK.hideJunk()&&MK.isJunkQuery(item)){chip.classList.add('hidden-q');chip.title=`${item} — hidden: counts as a meaningless query`;} const remove=document.createElement('button');remove.type='button';remove.setAttribute('aria-label',`Remove ${item}`);remove.textContent='×';remove.addEventListener('click',()=>removeSelection(index));chip.append(dot,text,remove);chips.appendChild(chip); });
       const matches=selectedMatches(); const exact=state.matchMode==='exact';
       const details=$('#matchDetails'); details.hidden=exact||!matches.length;
       const label=`${matches.length.toLocaleString('en-US')} matching ${matches.length===1?'query':'queries'}`;
@@ -716,13 +739,18 @@
     function renderSuggestions(){
       const box=$('#suggestions'),term=normalize($('#keywordInput').value); box.textContent=''; if(!term||!state.dataReady){closeSuggestions();return;}
       const popularSet=state.popularSet,zeroSet=state.zeroSet;
-      const found=state.allKeywords.filter((keyword,i)=>state.allNorm[i].includes(term)).sort((a,b)=>Number(!normalize(a).startsWith(term))-Number(!normalize(b).startsWith(term))||a.localeCompare(b)); const results=found.slice(0,60);
+      // Best match first (the query itself, then queries that start with it, then a word that starts with it), then the more
+      // searched query; meaningless queries go last so Enter never picks one by accident.
+      colorOf(''); const pop=(k)=>state.colorRank.get(normalize(k))??1e9;
+      const score=(k)=>{ const n=normalize(k); return (MK.isJunkQuery(k)?10:0)+(n===term?0:n.startsWith(term)?1:(' '+n).includes(' '+term)?2:3); };
+      const found=state.allKeywords.filter((keyword,i)=>state.allNorm[i].includes(term)).sort((a,b)=>score(a)-score(b)||pop(a)-pop(b)||a.localeCompare(b)); const results=found.slice(0,60);
       results.forEach(keyword=>{ const button=document.createElement('button');button.type='button';button.className='suggestion';button.setAttribute('role','option'); const text=document.createElement('span');{const k=keyword,lk=normalize(k),at=lk.indexOf(term);text.innerHTML=at>=0?escapeHtml(k.slice(0,at))+'<b>'+escapeHtml(k.slice(at,at+term.length))+'</b>'+escapeHtml(k.slice(at+term.length)):escapeHtml(k);} const badges=document.createElement('span');badges.className='badges'; const key=normalize(keyword); if(popularSet.has(key)){const badge=document.createElement('span');badge.className='badge popular';badge.textContent='Top 500';badges.appendChild(badge);} if(zeroSet.has(key)){const badge=document.createElement('span');badge.className='badge zero';badge.textContent='Found no apps';badges.appendChild(badge);} button.append(text,badges);button.addEventListener('click',()=>state.matchMode==='exact'?addSelection(keyword,true):addSelection($('#keywordInput').value));box.appendChild(button); });
       if(!results.length&&state.matchMode==='contains'){const button=document.createElement('button');button.type='button';button.className='suggestion';button.textContent=`Add “${$('#keywordInput').value.trim()}” as a contains filter`;button.addEventListener('click',()=>addSelection($('#keywordInput').value));box.appendChild(button);}
       if(results.length){const foot=document.createElement('div');foot.className='sug-foot';foot.textContent=found.length>results.length?`Showing ${results.length} of ${found.length.toLocaleString('en-US')} matches. Keep typing to narrow down.`:`${found.length} ${found.length===1?'match':'matches'}`;box.appendChild(foot);}
       box.classList.toggle('open',box.childElementCount>0);box.querySelector('.suggestion')?.classList.add('active');
+      box.querySelectorAll('.suggestion').forEach((x,j)=>{x.id='sug-'+j;x.setAttribute('aria-selected',String(j===0));}); $('#keywordInput').setAttribute('aria-expanded',String(box.childElementCount>0)); if(box.querySelector('.suggestion')) $('#keywordInput').setAttribute('aria-activedescendant','sug-0'); else $('#keywordInput').removeAttribute('aria-activedescendant');
     }
-    function closeSuggestions(){ $('#suggestions').classList.remove('open'); }
+    function closeSuggestions(){ $('#suggestions').classList.remove('open'); $('#keywordInput').setAttribute('aria-expanded','false'); $('#keywordInput').removeAttribute('aria-activedescendant'); }
     function ensureChart(id){ const el=document.getElementById(id); el.querySelector('.chart-placeholder')?.remove(); if(!state.charts[id]||state.charts[id].isDisposed?.()){state.charts[id]=echarts.init(el);state.charts[id].group='keywordExplorer';} return state.charts[id]; }
     // Same picture, same size: the chart is left alone. The draw-in animation plays once; later updates appear at once.
     function drawChart(id,option){ const c=ensureChart(id); const sig=c.getWidth()+'x'+c.getHeight()+'|'+JSON.stringify(option); if(c.__sig===sig) return; if(c.__sig) option.animation=false; c.__sig=sig; c.setOption(option,true); }
@@ -758,8 +786,9 @@
     // Beside the pointer, never on top of it: right if it fits, else left (over the axis labels if it must).
     const tipAt=(top=8,minLeft=4)=>(point,params,dom,rect,size)=>{ const x=point[0],w=size.contentSize[0],W=size.viewSize[0]; if(x+14+w<=W-4) return [x+14,top]; if(x-14-w>=2) return [x-14-w,top]; return [Math.max(2,Math.min(W-w-2,x+14)),top]; };
     function monthLong(key){ const m=/^(\d{4})-(\d{2})/.exec(String(key||'')); return m?new Date(Date.UTC(+m[1],+m[2]-1,1)).toLocaleString('en-US',{month:'long',year:'numeric',timeZone:'UTC'}):String(key||''); }
-    const lineSeries=(def,values,n,months)=>({name:def.label,type:'line',data:values,smooth:false,connectNulls:false,showSymbol:months.length<=24&&n<=4,symbol:'circle',symbolSize:7,itemStyle:{color:def.color,borderColor:T().surface,borderWidth:2},lineStyle:{width:def.group?3:2.5,color:def.color},emphasis:{focus:'series'},blur:{lineStyle:{opacity:.2},itemStyle:{opacity:.2}}});
-    function breakSeries(months,inverse=false){ const bi=state.reportBreak?months.indexOf(state.reportBreak):-1; return bi>0?[{name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:inverse?'start':'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,formatter:state.reportBreak===MK.REPORT_BREAK?'New Marketplace':'Sharp drop'},data:[{xAxis:bi}]}}]:[]; }
+    // With many lines the points are hidden, except a month with no neighbour on either side: it would otherwise not show at all.
+    const lineSeries=(def,values,n,months)=>{ const many=!(months.length<=24&&n<=4); const lone=(i)=>values[i]!=null&&values[i-1]==null&&values[i+1]==null; return {name:def.label,type:'line',data:values,smooth:false,connectNulls:false,showSymbol:true,symbol:'circle',symbolSize:many?((v,p)=>lone(p.dataIndex)?7:0):7,itemStyle:{color:def.color,borderColor:T().surface,borderWidth:2},lineStyle:{width:def.group?3:2.5,color:def.color},emphasis:{focus:'series'},blur:{lineStyle:{opacity:.2},itemStyle:{opacity:.2}}}; };
+    function breakSeries(months,inverse=false){ const bi=state.reportBreak?months.indexOf(state.reportBreak):-1; return bi>0?[{name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:inverse?'start':'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,align:bi>months.length*0.8?'right':bi<months.length*0.2?'left':'center',formatter:state.reportBreak===MK.REPORT_BREAK?'New Marketplace':'Sharp drop'},data:[{xAxis:bi}]}}]:[]; }
     // A sentence naming partial reports inside the shown period; they are shown as published.
     function partialNote(months,set,what){ const ms=months.filter(m=>set&&set.has(m)).map(monthShort); return ms.length?` The ${ms.join(' and ')} ${what}${ms.length===1?' is':'s are'} partial, shown as published.`:''; }
     function renderShareChart(definitions,months){
@@ -814,8 +843,8 @@
       const last=months.at(-1), prev=months.length>1?months.at(-2):state.months[state.months.indexOf(months[0])-1];
       const inLatest=matches.length>1?new Set(state.popular.filter(r=>r.month===last).map(r=>normalize(r.keyword))):null;
       const liveCount=inLatest?matches.filter(k=>inLatest.has(normalize(k))).length:0;
-      $('#kpiShare').textContent=summary?formatShare(summary.latest):'—';
-      $('#kpiShareNote').textContent=matches.length<2?`of all searches, ${monthShort(last)}`:state.matchMode==='contains'?`${liveCount.toLocaleString('en-US')} ${liveCount===1?'query':'queries'} in the ${monthShort(last)} top 500`:`${matches.length} queries · ${monthShort(last)}`;
+      $('#kpiShare').textContent=summary&&summary.latest!=null?formatShare(summary.latest):'—';
+      $('#kpiShareNote').textContent=matches.length<2?(summary&&summary.latest==null?`outside the top 500 in ${monthShort(last)}`:`of all searches, ${monthShort(last)}`):state.matchMode==='contains'?`${liveCount.toLocaleString('en-US')} ${liveCount===1?'query':'queries'} in the ${monthShort(last)} top 500`:`${matches.length} queries · ${monthShort(last)}`;
       $('#kpiShareLabel').textContent=matches.length>1?'Combined share':'Latest search share';$('#kpiPeakLabel').textContent=matches.length>1?'Combined peak':'Peak search share';
       $('#kpiDelta').innerHTML=summary&&summary.delta!=null?`<span class="${summary.delta>0?'positive':summary.delta<0?'negative':''}">${summary.delta>0?'+':summary.delta<0?'−':''}${Math.abs(summary.delta).toFixed(2)} pp</span>`:'—';$('#kpiDelta').className='value';
       $('#kpiDeltaNote').textContent=prev?`vs ${monthShort(prev)}`:'vs previous month';
@@ -824,7 +853,7 @@
       $('#kpiRank').closest('.kpi').hidden=state.matchMode!=='exact'&&matches.length>0;
       {const tiles=[...document.querySelectorAll('#kpis .kpi')].filter(k=>!k.hidden);$('#kpis').style.setProperty('--n',tiles.length);$('#kpis').classList.toggle('k5',tiles.length===5);$('#kpis').classList.toggle('k4',tiles.length===4);document.querySelectorAll('#kpis .kpi').forEach(k=>k.classList.remove('span'));if(tiles.length%2)tiles[0].classList.add('span');}
       $('#kpiZero').textContent=summary?formatCount(summary.zeroTotal):'—';$('#kpiZeroNote').innerHTML=`<span style="white-space:nowrap">${monthShort(months[0])} – ${monthShort(last)}</span>`;
-      $('#kpiPeak').textContent=summary?formatShare(summary.peak):'—';$('#kpiPeakNote').textContent=summary&&summary.peak>0?summary.peakMonth:summary?'No share in selected period':'Within selected period';
+      $('#kpiPeak').textContent=summary&&summary.peak!=null?formatShare(summary.peak):'—';$('#kpiPeakNote').textContent=summary&&summary.peak!=null?summary.peakMonth:summary?'Not in the top 500 in this period':'Within selected period';
     }
     function tableDefinitions(){
       const matches=selectedMatches();if(!matches.length)return[];
@@ -841,7 +870,7 @@
       $('#tableNote').textContent=contains?'All queries that match your words, counted together.':hasGroup?'Rank is shown per query and never combined across a group.':`Latest values are for ${monthLong(months.at(-1))}; empty searches are summed over the period.`;
       $('.table-panel').classList.toggle('single-row',definitions.length<2);
       const HEAD=[contains?'Queries (all reports)':'Queries','Latest share',$('#thDelta').textContent,'Current rank','Best rank','Peak share','Empty searches'];
-      definitions.forEach(def=>{const summary=summaryFor(def,months),row=document.createElement('tr');const d=summary.delta;const values=[def.group?def.keywords.length.toLocaleString('en-US'):'',formatShare(summary.latest),d==null?'—':`${d>0?'+':d<0?'−':''}${Math.abs(d).toFixed(2)} pp`,def.group?'—':formatRank(summary.currentRank),def.group?'—':formatRank(summary.bestRank),`${formatShare(summary.peak)} · ${summary.peakMonth}`,formatCount(summary.zeroTotal)];const first=document.createElement('td');const cell=document.createElement('div');cell.className='keyword-cell'+(def.member?' member':'');if(def.group&&hasGroup&&!contains)row.className='group-row';const dot=document.createElement('span');dot.className='dot';dot.style.background=def.color;const text=document.createElement('span');text.textContent=def.label;text.title=def.label;cell.append(dot,text);first.appendChild(cell);row.appendChild(first);values.forEach((value,index)=>{const td=document.createElement('td');td.dataset.label=HEAD[index];td.textContent=String(value);if((index===3||index===4)&&String(value).includes('Outside'))td.className='outside';if(index===2&&d>0)td.className='positive';if(index===2&&d<0)td.className='negative';row.appendChild(td);});body.appendChild(row);});
+      definitions.forEach(def=>{const summary=summaryFor(def,months),row=document.createElement('tr');const d=summary.delta;const values=[def.group?def.keywords.length.toLocaleString('en-US'):'',summary.latest==null?'—':formatShare(summary.latest),d==null?'—':`${d>0?'+':d<0?'−':''}${Math.abs(d).toFixed(2)} pp`,def.group?'—':formatRank(summary.currentRank),def.group?'—':formatRank(summary.bestRank),summary.peak==null?'—':`${formatShare(summary.peak)} · ${summary.peakMonth}`,formatCount(summary.zeroTotal)];const first=document.createElement('td');const cell=document.createElement('div');cell.className='keyword-cell'+(def.member?' member':'');if(def.group&&hasGroup&&!contains)row.className='group-row';const dot=document.createElement('span');dot.className='dot';dot.style.background=def.color;const text=document.createElement('span');text.textContent=def.label;text.title=def.label;cell.append(dot,text);first.appendChild(cell);row.appendChild(first);values.forEach((value,index)=>{const td=document.createElement('td');td.dataset.label=HEAD[index];td.textContent=String(value);if((index===3||index===4)&&String(value).includes('Outside'))td.className='outside';if(index===2&&d>0)td.className='positive';if(index===2&&d<0)td.className='negative';row.appendChild(td);});body.appendChild(row);});
     }
     function renderEmpty(){
       const empty=state.dataReady&&!state.selections.length; document.body.classList.toggle('empty',empty); $('#emptyPanel').hidden=!empty;
@@ -865,10 +894,10 @@
     function csvEscape(value){let text=String(value??'');if(typeof value==='string'&&/^[=+\-@\t\r]/.test(text))text="'"+text;return /[",\n\r]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;}
     function exportCsv(){
       const months=visibleMonths(),definitions=seriesDefinitions();if(!definitions.length){toast('Select keywords before exporting.');return;}const rows=[['month','series','search_share_percentage','marketplace_top_500_rank','zero_result_count']];
-      for(const def of definitions){const shares=aggregate(state.popular,'percentage',def,months),zeros=aggregate(state.zero,'count',def,months),ranks=def.keywords.length===1?ranksFor(def.keywords[0],months):months.map(()=>null);const single=def.keywords.length===1;months.forEach((month,index)=>rows.push([month,def.label,Number(Number(shares[index]||0).toFixed(4)),single?(ranks[index]||'Outside top 500'):'',zeros[index]]));}
+      for(const def of definitions){const shares=aggregate(state.popular,'percentage',def,months),zeros=aggregate(state.zero,'count',def,months),ranks=def.keywords.length===1?ranksFor(def.keywords[0],months):months.map(()=>null);const single=def.keywords.length===1&&!def.group;months.forEach((month,index)=>rows.push([month,def.label,single&&!ranks[index]&&!shares[index]?'':Number(Number(shares[index]||0).toFixed(4)),single?(ranks[index]||'Outside top 500'):'',zeros[index]]));}
       const csv=rows.map(row=>row.map(csvEscape).join(',')).join('\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='keyword-explorer.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('CSV export started.');
     }
-    function downloadChart(id){const chart=state.charts[id];if(!chart){toast('This chart has no data to download.');return;}const link=document.createElement('a');link.href=chart.getDataURL({type:'png',pixelRatio:2,backgroundColor:T().surface});link.download=`${id}.png`;document.body.appendChild(link);link.click();link.remove();toast('PNG export started.');}
+    function downloadChart(id){const chart=state.charts[id];if(!chart){toast('This chart has no data to download.');return;}const link=document.createElement('a');link.href=chart.getDataURL({type:'png',pixelRatio:2,backgroundColor:T().surface});link.download=`keyword-explorer-${{shareChart:'share',rankChart:'rank',zeroChart:'empty-searches'}[id]||id}-${state.months[state.from]||''}-${state.months[state.to]||''}.png`;document.body.appendChild(link);link.click();link.remove();toast('PNG export started.');}
     const ICON_EXPAND='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
     const ICON_COLLAPSE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="14" y1="10" x2="21" y2="3"/></svg>';
     function setFullscreen(card,on){ card.classList.toggle('is-fullscreen',on); document.body.style.overflow=on?'hidden':''; const b=card.querySelector('[data-chart-action="fullscreen"]'); if(b){b.innerHTML=on?ICON_COLLAPSE:ICON_EXPAND;b.setAttribute('aria-label',on?'Exit full screen':'Open chart full screen');b.title=on?'Exit full screen':'Full screen';} const chart=card.querySelector('.chart'); setTimeout(()=>state.charts[chart.id]?.resize(),50); }
@@ -876,14 +905,15 @@
     function toggleFullscreen(id){ const card=document.getElementById(id).closest('.chart-card'); const on=!card.classList.contains('is-fullscreen'); closeFullscreen(); if(on) setFullscreen(card,true); }
     async function copyShareLink(){updateUrl();try{await navigator.clipboard.writeText(location.href);toast('Link to this view copied');}catch(error){toast('Copy the URL from the address bar.');}}
     function bindEvents(){
-      $('#keywordInput').addEventListener('input',renderSuggestions);$('#keywordInput').addEventListener('keydown',event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){const items=[...document.querySelectorAll('#suggestions .suggestion')];if(items.length){event.preventDefault();let i=items.findIndex(x=>x.classList.contains('active'));items[i]?.classList.remove('active');i=(i+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items[i].classList.add('active');items[i].scrollIntoView({block:'nearest'});}}if(event.key==='Enter'){event.preventDefault();const first=$('#suggestions .suggestion.active')||$('#suggestions .suggestion');if(state.matchMode==='exact'&&first)first.click();else addSelection(event.currentTarget.value);}if(event.key==='Escape')closeSuggestions();});
+      $('#keywordInput').addEventListener('input',renderSuggestions);$('#keywordInput').addEventListener('keydown',event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){const items=[...document.querySelectorAll('#suggestions .suggestion')];if(items.length){event.preventDefault();let i=items.findIndex(x=>x.classList.contains('active'));items[i]?.classList.remove('active');i=(i+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items[i].classList.add('active');items.forEach((x,j)=>{x.id='sug-'+j;x.setAttribute('aria-selected',String(j===i));});$('#keywordInput').setAttribute('aria-activedescendant','sug-'+i);items[i].scrollIntoView({block:'nearest'});}}if(event.key==='Enter'){event.preventDefault();const first=$('#suggestions .suggestion.active')||$('#suggestions .suggestion');if(state.matchMode==='exact'&&first)first.click();else addSelection(event.currentTarget.value);}if(event.key==='Escape')closeSuggestions();});
       document.addEventListener('click',event=>{if(!event.target.closest('.picker'))closeSuggestions();});
       // Containing words always draws one combined line; the Show as choice is kept for when Exact query comes back.
       $('#matchMode').addEventListener('change',event=>{state.matchMode=event.target.value;renderControls();scheduleRender();});
       $('#containsLogic').addEventListener('change',event=>{state.containsLogic=event.target.value;renderControls();scheduleRender();});
       $('#compareMode').addEventListener('change',event=>{state.compareMode=event.target.value;renderControls();scheduleRender();});
       $('#smoothSeries').addEventListener('change',event=>{state.smooth=event.target.checked;scheduleRender();});
-      $('#clearSelection').addEventListener('click',()=>{state.selections=[];renderControls();scheduleRender();});
+      $('#clearSelection').addEventListener('click',()=>{state.selections=[];renderControls();scheduleRender();$('#keywordInput').focus();});
+      $('#keywordInput').addEventListener('keydown',event=>{ if(event.key==='Backspace'&&!event.currentTarget.value&&state.selections.length){ removeSelection(state.selections.length-1); } });
       document.querySelectorAll('.preset').forEach(button=>button.addEventListener('click',()=>setPreset(button.dataset.months)));
       $('#fromMonth').addEventListener('change',event=>{state.from=Number(event.target.value);if(state.from>state.to){state.to=state.from;$('#toMonth').value=String(state.to);}syncPresetButtons();scheduleRender();});
       $('#toMonth').addEventListener('change',event=>{state.to=Number(event.target.value);if(state.to<state.from){state.from=state.to;$('#fromMonth').value=String(state.from);}syncPresetButtons();scheduleRender();});
@@ -896,7 +926,7 @@
       document.addEventListener('mousedown',event=>{const card=document.querySelector('.chart-card.is-fullscreen');if(card&&!card.contains(event.target))closeFullscreen();});
       $('#retryLoad').addEventListener('click',async()=>{ $('#retryLoad').disabled=true; MK.refillGhosts(); await start(); $('#retryLoad').disabled=false; });
       window.addEventListener('resize',()=>Object.values(state.charts).forEach(chart=>chart?.resize?.()));
-      const dq=window.matchMedia('(prefers-color-scheme: dark)'),onScheme=()=>{COLORS=T().series;renderControls();renderAll();};dq.addEventListener?dq.addEventListener('change',onScheme):dq.addListener(onScheme);
+      const dq=window.matchMedia('(prefers-color-scheme: dark)'),onScheme=()=>{COLORS=palette(T());renderControls();renderAll();};dq.addEventListener?dq.addEventListener('change',onScheme):dq.addListener(onScheme);
       if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>renderAll());
     }
     function exposeDiagnostics(){window.KeywordExplorer={getState:()=>({popularRows:state.popular.length,zeroRows:state.zero.length,months:state.months.slice(),selections:state.selections.slice(),matchMode:state.matchMode,compareMode:state.compareMode,matchedQueries:selectedMatches().length,chartIds:Object.entries(state.charts).filter(([,chart])=>chart&&!chart.isDisposed?.()).map(([id])=>id)}),runSmokeTests:()=>({dataLoaded:state.popular.length>0,rankFieldPresent:state.popular.some(row=>row.rank>=1&&row.rank<=500),monthsLoaded:state.months.length>0,selectionPresent:state.selections.length>0,chartsRendered:['shareChart','rankChart','zeroChart'].every(id=>state.charts[id]&&!state.charts[id].isDisposed?.())})};}
