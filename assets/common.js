@@ -52,7 +52,7 @@
   }
   function monthLabel(key, opts={month:'long', year:'numeric'}){
     const m = /^(\d{4})-(\d{2})/.exec(String(key||'')); if(!m) return String(key||'');
-    return new Date(Date.UTC(+m[1], +m[2]-1, 1)).toLocaleString('en-US', {...opts, timeZone:'UTC'}).replace(' ', ' ');
+    return new Date(Date.UTC(+m[1], +m[2]-1, 1)).toLocaleString('en-US', {...opts, timeZone:'UTC'}).replace(' ', '\u00a0');
   }
   const monthLong = (k)=> monthLabel(k);
   const monthShort = (k)=> monthLabel(k, {month:'short', year:'numeric'});
@@ -67,13 +67,14 @@
   const fmtPct = (n, d=2)=> `${(+n).toFixed(d)}%`;
   // The reports contain visually identical variants (case, zero-width or odd spaces); fold them into one query.
   function cleanKeyword(k){
-    return String(k ?? '').normalize('NFKC').replace(/[​-‍﻿]/g,'').replace(/[<>]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+    return String(k ?? '').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/[<>]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
   }
   // Meaningless queries: bot noise and security probes in Atlassian's reports, judged on the raw text before clean-up.
-  // Symbols only; long digit strings (1234, 9999…, phone numbers); e-mail addresses; HTML tags; script, SQL and URL injection; pasted links.
-  const PROBE = /script.*\/script|'\s*--|["']\s*>|<\s*["']|><|<>|[\w.+-]+@[\w-]+\.[a-z]{2,}|javascript:|vbscript:|data:text\/html|\b(?:alert|prompt|confirm|eval|atob|fromcharcode)\s*\(|\bon(?:error|load|mouseover|focus|click)\s*=|document\.(?:cookie|domain|location)|\\x[0-9a-f]{2}|\\u[0-9a-f]{4}|&(?:quot|lt|gt|#x?[0-9a-f]+);|href\s*=|https?:\/\/|\bunion\s+(?:all\s+)?select\b|'\s*or\s*'?\d+'?\s*=\s*'?\d+|\bsleep\s*\(\s*\d|\.\.\/|\$\{|\{\{.*\}\}/i;
+  // Symbols only; long digit strings (1234, 9999…, phone numbers); e-mail addresses; HTML tags; script and SQL injection; pasted links.
+  // Jira smart values such as {{issue.key}} are real searches and are kept.
+  const PROBE = /script.*\/script|'\s*--|["']\s*>|<\s*["']|><|<>|[\w.+-]+@[\w-]+\.[a-z]{2,}|javascript:|vbscript:|data:text\/html|\b(?:alert|prompt|confirm|eval|atob|fromcharcode)\s*\(|\bon(?:error|load|mouseover|focus|click)\s*=|document\.(?:cookie|domain|location)|\\x[0-9a-f]{2}|\\u[0-9a-f]{4}|&(?:quot|lt|gt|#x?[0-9a-f]+);|href\s*=|https?:\/\/|\bunion\s+(?:all\s+)?select\b|'\s*or\s*'?\d+'?\s*=\s*'?\d+|\bsleep\s*\(\s*\d|\.\.\/|\$\{jndi:/i;
   function isJunkQuery(raw){
-    const t = String(raw ?? '').normalize('NFKC').replace(/[​-‍﻿]/g,'').trim();
+    const t = String(raw ?? '').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').trim();
     if(!/[\p{L}\p{N}]/u.test(t)) return true;
     if(/^[\p{N}\s.,:;+\-–—_/()#]+$/u.test(t) && (t.match(/\p{N}/gu) || []).length >= 4) return true;
     if(/<\/?[a-z][a-z0-9]*(?:[\s>\/=]|$)/i.test(t)) return true;
@@ -175,7 +176,7 @@
     return new Set(Array.from(map.entries()).filter(([,l])=> l.length < median*0.8).map(([m])=>m));
   }
 
-  // Atlassian's new Marketplace went live in November 2024; broad one-word queries lost most of their share that month.
+  // Atlassian rolled out its redesigned Marketplace from mid-October to early November 2024; broad one-word queries lost most of their share in November.
   const REPORT_BREAK = '2024-11';
   const BREAK_NOTE = 'In November 2024 broad queries such as “automation”, “jira” and “structure” lost most of their share in a single month, while app names held steady. Atlassian rolled out its redesigned Marketplace, with autocomplete and new categories, from mid-October to early November 2024, so shares before and after are not directly comparable.';
   const NOISE_NOTE = 'Meaningless queries are removed: bot noise, test strings such as “1234”, pasted links and e-mail addresses, and HTML or script injection attempts.';
@@ -208,6 +209,7 @@
     };
     input.addEventListener('input', render);
     input.addEventListener('focus', ()=>{ if(input.value.trim()) render(); });
+    input.addEventListener('blur', close);
     input.addEventListener('keydown', e=>{
       if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ if(!items.length) return; e.preventDefault(); active = (active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length; mark(); }
       else if(e.key === 'Escape'){ close(); }
@@ -234,6 +236,19 @@
       heat:[v('--heat0'),v('--heat1'),v('--heat2'),v('--heat3'),v('--heat4'),v('--heat5')], heatInkLight:v('--heat-ink-light'), heatInkDark:v('--heat-ink-dark'),
       series:[v('--s1'),v('--s2'),v('--s3'),v('--s4'),v('--s5'),v('--s6'),v('--s7'),v('--s8')] };
   }
+  // A month's #1 at least twice the usual #1 of the surrounding year (six issues either side) is an unusual spike.
+  function isSpike(D, m){
+    const lead = (x)=> (D.byMonth.get(x) || [])[0]; const a = lead(m); if(!a) return false;
+    const near = D.issues.filter(x=> x !== m && Math.abs(monthsBetween(x, m)) <= 6).map(x=> lead(x)?.percentage).filter(Number.isFinite).sort((p,q)=>p-q);
+    const med = near[Math.floor(near.length/2)];
+    return !!med && a.percentage >= med*2;
+  }
+  // Text colour with the better contrast on a given background (WCAG relative luminance).
+  function inkOn(bg, light, dark){
+    const lum = (hex)=>{ const h = String(hex).replace('#',''); if(h.length < 6) return 0.5; const c = [0,2,4].map(i=> parseInt(h.slice(i,i+2),16)/255).map(x=> x <= 0.03928 ? x/12.92 : Math.pow((x+0.055)/1.055, 2.4)); return 0.2126*c[0] + 0.7152*c[1] + 0.0722*c[2]; };
+    const ratio = (a,b)=>{ const [x,y] = [lum(a),lum(b)].sort((p,q)=>q-p); return (x+0.05)/(y+0.05); };
+    return ratio(bg, light) >= ratio(bg, dark) ? light : dark;
+  }
   // Empty-search heat bins: 0 / not listed, 1–4, 5–9, 10–19, 20–49, 50+.
   const HEAT_BINS = [0, 1, 5, 10, 20, 50];
   const heatBin = (n)=>{ let b = 0; for(let i=0;i<HEAT_BINS.length;i++) if(n >= HEAT_BINS[i]) b = i; return n > 0 ? Math.max(1, b) : 0; };
@@ -241,10 +256,9 @@
   window.MK = { XLSX_URLS, ECHARTS_URLS, LINKS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, prepPopular, prepZero, zeroTotalsFrom, loadData, build,
     toMonthKey, monthLabel, monthLong, monthShort, monthName, monthAbbr, addMonths, monthsBetween,
     escapeHtml, fmtInt, fmtPct, cleanKeyword, isJunkQuery, num, REPORT_BREAK, BREAK_NOTE, NOISE_NOTE, ZERO_NOTE,
-    attachLookup, lookupIndex, tokens, HEAT_BINS, heatBin };
+    attachLookup, lookupIndex, tokens, HEAT_BINS, heatBin, isSpike, inkOn };
 
   // Fill links that are configured above; hide the ones that are not.
-  document.addEventListener('DOMContentLoaded', ()=>{
-    document.querySelectorAll('[data-link]').forEach(a=>{ const u = LINKS[a.dataset.link]; if(u) a.href = u; else a.hidden = true; });
-  });
+  const fillLinks = ()=> document.querySelectorAll('[data-link]').forEach(a=>{ const u = LINKS[a.dataset.link]; if(u) a.href = u; else a.hidden = true; });
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fillLinks); else fillLinks();
 })();

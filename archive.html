@@ -76,22 +76,21 @@
 (function(){
   'use strict';
   const $ = (s)=> document.querySelector(s);
-  const { escapeHtml, fmtInt, fmtPct, monthLong, monthName, monthsBetween } = MK;
+  const { escapeHtml, fmtInt, fmtPct, monthLong, monthName } = MK;
   function render(D){
     const issues = D.issues.slice(), latest = issues.at(-1);
     const zeroOf = (m)=>{ const t = D.zeroTotals.find(x=>x.month === m); return t ? t.value : null; };
     const zMax = Math.max(1, ...D.zeroTotals.filter(t=> !D.zeroPartial.has(t.month)).map(t=>t.value));
     const lead = (m)=> (D.byMonth.get(m) || [])[0];
-    // A #1 at least twice the usual #1 of the surrounding year is flagged as a spike.
-    const spike = (m)=>{ const a = lead(m); if(!a) return false; const near = issues.filter(x=> x !== m && Math.abs(monthsBetween(x, m)) <= 6).map(x=> lead(x)?.percentage).filter(Number.isFinite).sort((p,q)=>p-q); const med = near[Math.floor(near.length/2)]; return med && a.percentage >= med*2; };
+    const spike = (m)=> MK.isSpike(D, m);
     const years = Array.from(new Set(issues.map(m=>m.slice(0,4)))).sort().reverse();
     $('#kicker').textContent = `${issues.length} issues · ${monthLong(issues[0])} – ${monthLong(latest)}`;
-    $('#yearNav').innerHTML = years.map(y=>`<button type="button" data-y="${y}" aria-pressed="false">${y}</button>`).join('');
+    $('#yearNav').innerHTML = years.map(y=>`<button type="button" data-y="${y}">${y}</button>`).join('');
     $('#archive').innerHTML = years.map(y=>{
       const ms = issues.filter(m=> m.startsWith(y)).reverse();
       return `<section class="year" id="y${y}" aria-labelledby="h${y}"><div><h2 id="h${y}">${y}</h2><div class="count">${ms.length} ${ms.length === 1 ? 'issue' : 'issues'}</div></div><div class="cards">${ms.map(m=>{
         const a = lead(m), z = zeroOf(m), href = m === latest ? './index.html' : `./index.html?month=${m}`;
-        const zero = D.zeroPartial.has(m) || z == null ? `<div class="zero na">The zero-result report for this month is partial</div>` : `<div class="zero"><strong class="num">${fmtInt(z)}</strong> reported searches found no apps${D.zeroLow.has(m) ? ' <span class="na">(unusually low)</span>' : ''}</div><div class="track" aria-hidden="true"><span class="bar" style="width:${(z/zMax*100).toFixed(1)}%"></span></div>`;
+        const zero = D.zeroPartial.has(m) || z == null ? `<div class="zero na">${z == null ? 'No zero-result report for this month' : 'The zero-result report for this month is partial'}</div>` : `<div class="zero"><strong class="num">${fmtInt(z)}</strong> reported searches found no apps${D.zeroLow.has(m) ? ' <span class="na">(unusually low)</span>' : ''}</div><div class="track" aria-hidden="true"><span class="bar" style="width:${(z/zMax*100).toFixed(1)}%"></span></div>`;
         return `<article class="card${m === latest ? ' current' : ''}"><div class="mhead"><h3><a href="${href}">${monthName(m)}</a></h3>${m === latest ? '<span class="tag">Current</span>' : ''}</div>
           <span class="lbl">#1 query</span>
           ${a ? `<a class="q" href="./keyword-explorer.html?q=${encodeURIComponent(a.keyword)}">${escapeHtml(a.keyword)}</a><span class="share num">${fmtPct(a.percentage)} of searches${spike(m) ? ' · <span class="spike">unusual spike</span>' : ''}</span>` : '<span class="q na">No report</span>'}

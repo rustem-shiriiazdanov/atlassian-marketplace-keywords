@@ -160,7 +160,7 @@
   </section>
 
   <section class="foot-cols" aria-label="About this site">
-    <div><h2>Method</h2><p>Top 500 queries by share of all searches, plus every query that returned no apps, from Atlassian’s monthly reports. Meaningless queries are removed. Not affiliated with Atlassian. <a href="./method.html">Read the method</a></p></div>
+    <div><h2>Method</h2><p>The top 500 queries by share of all searches, and the 500 queries that most often returned no apps, from Atlassian’s monthly reports. Meaningless queries are removed. Not affiliated with Atlassian. <a href="./method.html">Read the method</a></p></div>
     <div><h2>Your own exports</h2><p>Open your own report files; they are read in your browser and never uploaded. <a href="./month-by-month.html#own-data">Load files</a></p></div>
     <div><h2>About</h2><p>A pet project by Rustem Shiriiazdanov, Product Owner of Report Builder for Jira at Actonic. <a href="./about.html">About the project</a></p></div>
   </section>
@@ -229,9 +229,7 @@
     const tie = b && a.percentage.toFixed(2) === b.percentage.toFixed(2);
     const prevLead = f.prevRows[0];
     // A #1 far above the usual leaders of the surrounding year is called out as a spike.
-    const leaders = D.issues.filter(x=> Math.abs(monthsBetween(x, f.m)) <= 6 && x !== f.m).map(x=> (D.byMonth.get(x)||[])[0]?.percentage).filter(Number.isFinite).sort((x,y)=>x-y);
-    const med = leaders[Math.floor(leaders.length/2)];
-    if(med && a.percentage >= med*2) return { spike:true, clause: `an unusual spike put ${q(a.keyword)} on top with ${fmtPct(a.percentage)} of all searches` };
+    if(MK.isSpike(D, f.m)) return { spike:true, clause: `an unusual spike put ${q(a.keyword)} on top with ${fmtPct(a.percentage)} of all searches` };
     if(tie) return { clause: `${q(a.keyword)} and ${q(b.keyword)} share the top spot`, alone: `At the top, ${q(a.keyword)} and ${q(b.keyword)} share first place` };
     if(!prevLead) return { clause: `${q(a.keyword)} leads`, alone: `In the first full report, ${q(a.keyword)} leads with ${fmtPct(a.percentage)} of all searches` };
     if(prevLead && prevLead.keyword !== a.keyword) return { clause: `${q(a.keyword)} takes the top spot from ${q(prevLead.keyword)}`, alone: `A new #1: ${q(a.keyword)} takes the top spot from ${q(prevLead.keyword)}` };
@@ -252,8 +250,12 @@
     if(f.z != null && !D.zeroPartial.has(f.m)){
       // Atlassian's zero-result report lists the 500 queries that most often found no apps; the total adds those up.
       let s = `Atlassian’s report counted ${zs && zs.kind === 'low' ? 'just ' : ''}${fmtInt(f.z)} searches that found no apps in ${monthName(f.m)}`;
-      if(zs && zs.ref && (zs.kind === 'low' || zs.kind === 'high') && zs.ref.month !== f.m) s += `, ${zs.kind === 'low' ? 'down' : 'up'} from ${fmtInt(zs.ref.value)} in ${when(zs.ref.month, f.m)}`;
-      else if(f.zPrev) s += `, ${f.z < f.zPrev ? 'down' : 'up'} from ${fmtInt(f.zPrev)} in ${when(f.zPrevMonth, f.m)}`;
+      // Compared with last month, and for a low or high also with the extreme of the past year.
+      const dir = (v)=> f.z < v ? 'down' : 'up';
+      const far = zs && zs.ref && (zs.kind === 'low' || zs.kind === 'high') && zs.ref.month !== f.m && zs.ref.month !== f.zPrevMonth ? zs.ref : null;
+      if(f.zPrev && far) s += `, ${dir(f.zPrev)} from ${fmtInt(f.zPrev)} in ${when(f.zPrevMonth, f.m)} and ${fmtInt(far.value)} in ${when(far.month, f.m)}`;
+      else if(f.zPrev) s += `, ${dir(f.zPrev)} from ${fmtInt(f.zPrev)} in ${when(f.zPrevMonth, f.m)}`;
+      else if(far) s += `, ${dir(far.value)} from ${fmtInt(far.value)} in ${when(far.month, f.m)}`;
       if(D.zeroLow.has(f.m)) s += `, far below the months around it`;
       out.push(s + '.');
       const once = f.zRows.filter(r=> r.count === 1).length;
@@ -274,7 +276,8 @@
     $('#headline').textContent = headline(f);
     $('#dek').textContent = dek(f);
     const first = D.issues[0];
-    $('#source').textContent = isLatest ? `From Atlassian’s monthly Marketplace search reports, ${monthShort(first)} – ${monthShort(latest)}. Updated monthly by Rustem Shiriiazdanov.` : `This issue is rebuilt from the ${monthLong(m)} report, as it looked then. Shares before November 2024 run much higher than today’s; see the method.`;
+    $('#source').innerHTML = isLatest ? escapeHtml(`From Atlassian’s monthly Marketplace search reports, ${monthShort(first)} – ${monthShort(latest)}. Updated monthly by Rustem Shiriiazdanov.`)
+      : escapeHtml(`This issue is rebuilt from the ${monthLong(m)} report, as it looked then.`) + (m < MK.REPORT_BREAK ? ' Shares before November 2024 run much higher than today’s; see the <a href="./method.html#breaks">method</a>.' : '');
     const i = D.issues.indexOf(m), prev = D.issues[i-1], next = D.issues[i+1];
     const nav = $('#issueNav');
     nav.innerHTML = [prev ? `<a href="?month=${prev}">← ${monthShort(prev)}</a>` : '', next ? `<a href="${next === latest ? './index.html' : '?month=' + next}">${next === latest ? 'Latest issue' : monthShort(next)} →</a>` : ''].filter(Boolean).join('');
@@ -317,7 +320,7 @@
 
   function renderHeat(f){
     // The last 12 months up to this issue; partial reports show as hatched cells.
-    const months = []; for(let i = 11; i >= 0; i--) months.push(addMonths(f.m, -i));
+    const months = []; for(let i = 11; i >= 0; i--){ const x = addMonths(f.m, -i); if(x >= D.issues[0]) months.push(x); }
     const tot = new Map();
     for(const m of months){ if(D.zeroPartial.has(m)) continue; for(const r of D.zeroByMonth.get(m) || []) tot.set(r.keyword, (tot.get(r.keyword)||0) + r.count); }
     const rows = Array.from(tot.entries()).sort((a,b)=> b[1]-a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, 10);
@@ -327,14 +330,14 @@
     const body = rows.map(([k, t])=> `<tr><td class="q">${qLink(k)}</td>${months.map(m=>{
       if(D.zeroPartial.has(m) || !D.zeroByMonth.has(m)) return `<td class="c na" title="${D.zeroByMonth.has(m) ? 'Partial report' : 'No report'}">–</td>`;
       const n = cell.get(m + '|' + k) || 0, b = MK.heatBin(n);
-      return `<td class="c" style="background:${tk.heat[b]};color:${b >= 3 ? tk.heatInkDark : tk.heatInkLight}" title="${escapeHtml(k)}, ${monthShort(m)}: ${n ? fmtInt(n) + ' empty searches' : 'not listed'}">${n ? fmtInt(n) : '·'}</td>`;
+      return `<td class="c" style="background:${tk.heat[b]};color:${MK.inkOn(tk.heat[b], tk.heatInkLight, tk.heatInkDark)}" title="${escapeHtml(k)}, ${monthShort(m)}: ${n ? fmtInt(n) + ' empty searches' : 'not listed'}">${n ? fmtInt(n) : '·'}</td>`;
     }).join('')}<td class="t num">${fmtInt(t)}</td></tr>`).join('');
     $('#heat').innerHTML = `<caption class="sr-only">Empty searches per month for the queries that most often found no apps</caption><thead><tr><th scope="col" class="q">Query</th>${head}<th scope="col" class="t">Total</th></tr></thead><tbody>${body || `<tr><td class="empty-note" colspan="${months.length + 2}">No zero-result report for these months.</td></tr>`}</tbody>`;
     $('#heatTitle').textContent = `Queries that most often found no apps, ${monthShort(months[0])} – ${monthShort(f.m)}`;
   }
 
   function renderZeroChart(){
-    if(!window.echarts) return;
+    if(!window.echarts){ $('#zeroChart').innerHTML = '<p class="empty-note">The chart library could not load. Refresh the page to try again.</p>'; return; }
     const el = $('#zeroChart'); chart = chart || echarts.init(el, null, { renderer:'svg' });
     const t = MK.tokens();
     const all = D.zeroTotals.filter(x=> x.month <= issue && x.month >= D.issues[0]);
@@ -347,7 +350,7 @@
     const low = usable.reduce((a,x)=> !a || x.value < a.value ? x : a, null);
     if(!win.length){ chart.clear(); $('#zeroNote').textContent = 'No zero-result report for these months.'; return; }
     const cur = win.at(-1).month === issue ? win.at(-1) : null;
-    const span = zeroRange === 'all' ? 'shown' : 'shown';
+    const span = 'shown';
     const mark = (x, text, filled, pos, below)=>({ coord:[x.month, x.value], value:x.value, symbol:'circle', symbolSize:filled ? 10 : 9,
       itemStyle:{ color: filled ? t.accent : t.paper, borderColor:t.accent, borderWidth:2 },
       label:{ show:true, formatter:text, position: below ? 'bottom' : 'top', align:pos, distance:14, backgroundColor:t.paper, padding:[2,4], color:t.ink2, fontSize:12, lineHeight:16, fontFamily:'Public Sans', width:150, overflow:'break', rich:{ b:{ fontWeight:700, color:t.ink, fontSize:12 } } } });
@@ -379,7 +382,9 @@
   // --- Wiring ---
   $('#zeroRange').addEventListener('click', e=>{ const b = e.target.closest('button'); if(!b) return; zeroRange = b.dataset.n; $('#zeroRange').querySelectorAll('button').forEach(x=> x.setAttribute('aria-pressed', String(x === b))); renderZeroChart(); });
   $('#showValues').addEventListener('change', e=> $('#heat').classList.toggle('hide-values', !e.target.checked));
-  window.addEventListener('resize', ()=>{ if(chart) chart.resize(); if(D) renderKpis(facts(issue)); });
+  // Tick spacing depends on the width, so the chart is redrawn (not just resized) when the window settles.
+  let resizeTimer = 0;
+  window.addEventListener('resize', ()=>{ clearTimeout(resizeTimer); resizeTimer = setTimeout(()=>{ if(!D) return; if(chart) chart.resize(); renderKpis(facts(issue)); renderZeroChart(); }, 120); });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', ()=>{ if(D){ renderHeat(facts(issue)); renderZeroChart(); } });
   let index = null; MK.attachLookup($('#lookup'), ()=> index);
 

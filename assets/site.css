@@ -127,14 +127,14 @@ h3.sub{margin:0;font-size:17px;font-weight:700;line-height:1.3}
 
 /* Numbers row */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid var(--rule)}
-.kpi{padding:24px;display:flex;flex-direction:column;gap:6px;border-right:1px solid var(--rule);min-width:0}
-.kpi:first-child{padding-left:0}
-.kpi:last-child{border-right:0;padding-right:0}
-.kpi .big{font-family:var(--serif);font-size:48px;line-height:1;font-weight:500;overflow-wrap:anywhere}
-.kpi .big.word{font-style:italic}
-.kpi .big.accent{color:var(--accent)}
-.kpi .what{font-size:14px;line-height:1.4}
-.kpi .what .muted{color:var(--muted)}
+.kpis .kpi{padding:24px;display:flex;flex-direction:column;gap:6px;border-right:1px solid var(--rule);min-width:0}
+.kpis .kpi:first-child{padding-left:0}
+.kpis .kpi:last-child{border-right:0;padding-right:0}
+.kpis .kpi .big{font-family:var(--serif);font-size:48px;line-height:1;font-weight:500;overflow-wrap:anywhere}
+.kpis .kpi .big.word{font-style:italic}
+.kpis .kpi .big.accent{color:var(--accent)}
+.kpis .kpi .what{font-size:14px;line-height:1.4}
+.kpis .kpi .what .muted{color:var(--muted)}
 
 /* Section rhythm */
 .block{padding:48px 0;border-bottom:1px solid var(--rule)}
@@ -174,10 +174,10 @@ h3.sub{margin:0;font-size:17px;font-weight:700;line-height:1.3}
 }
 @media (max-width:900px){
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .kpi{padding:20px 16px}
-  .kpi:nth-child(odd){padding-left:0}
-  .kpi:nth-child(even){border-right:0;padding-right:0}
-  .kpi:nth-child(-n+2){border-bottom:1px solid var(--rule)}
+  .kpis .kpi{padding:20px 16px}
+  .kpis .kpi:nth-child(odd){padding-left:0}
+  .kpis .kpi:nth-child(even){border-right:0;padding-right:0}
+  .kpis .kpi:nth-child(-n+2){border-bottom:1px solid var(--rule)}
   .foot-cols{grid-template-columns:1fr;gap:24px}
 }
 @media (max-width:720px){
@@ -189,7 +189,7 @@ h3.sub{margin:0;font-size:17px;font-weight:700;line-height:1.3}
   .page-head{padding:32px 0 22px}
   .block{padding:36px 0}
   h2.sec{font-size:24px}
-  .kpi .big{font-size:38px}
+  .kpis .kpi .big{font-size:38px}
   .site-nav{flex-wrap:wrap;overflow:visible;gap:0 18px}
   .site-nav a{padding:9px 0 7px}
   .lookup{width:100%;margin-top:8px}
@@ -198,8 +198,8 @@ h3.sub{margin:0;font-size:17px;font-weight:700;line-height:1.3}
 }
 @media (max-width:420px){
   .kpis{grid-template-columns:1fr}
-  .kpi{padding:18px 0 !important;border-right:0 !important;border-bottom:1px solid var(--rule)}
-  .kpi:last-child{border-bottom:0}
+  .kpis .kpi{padding:18px 0 !important;border-right:0 !important;border-bottom:1px solid var(--rule)}
+  .kpis .kpi:last-child{border-bottom:0}
 }
 @media print{ .site-header .head-actions,.lookup{display:none} }
 .site-foot .powered{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink2)}

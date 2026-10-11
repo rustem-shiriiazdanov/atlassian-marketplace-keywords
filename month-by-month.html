@@ -545,7 +545,6 @@
       }).catch(err=>{
         console.error(err);
         setBootStatus('error: '+ err.message);
-        const q = document.getElementById('heroInput'); if(q){ q.placeholder = 'Charts could not load'; q.disabled = true; }
         const al = document.getElementById('loadAlert'); if(al){ al.hidden = false; al.querySelector('strong').textContent = 'The chart library could not load.'; al.querySelector('span').textContent = 'Refresh the page to try again.'; al.querySelector('#btn-retry').addEventListener('click', ()=> location.reload()); }
         document.body.classList.add('no-data'); document.querySelectorAll('.chart .placeholder').forEach(p=> p.textContent = 'Charts could not load');
       });
@@ -1013,6 +1012,7 @@
         return Array.from(agg.entries()).sort((a,b)=> b[1].value-a[1].value || a[1].rank-b[1].rank)
           .map(([keyword, x], i)=>({ keyword, value:x.value, rank: field==='percentage' && Number.isFinite(x.rank) ? x.rank : i+1 }));
       }
+      // The period covered, for the page kicker and the data section.
       function renderHero(){
         if(state.heroSrc === state.sourceRaw && state.heroZero === state.zeroRaw && state.sourceRaw.length) return;
         state.heroSrc = state.sourceRaw; state.heroZero = state.zeroRaw;
@@ -1022,67 +1022,6 @@
           $('#dataRange').textContent = `Reports from ${monthLabel(first0)} to ${monthLabel(last0)}`;
           $('#pageKicker').textContent = `All charts · ${monthLabel(first0)} – ${monthLabel(last0)}`;
         }
-        const list = $('#topList');
-        if(!list) return;
-        if(!months.length){
-          list.innerHTML = '<li class="empty-note">No report loaded yet. Load the repository data or open your own file below.</li>';
-          return;
-        }
-        const latest = months[months.length-1], prev = months[months.length-2];
-        const now = latestRanking(state.sourceRaw, 'percentage', latest);
-        const prevRank = new Map(prev ? latestRanking(state.sourceRaw, 'percentage', prev).map(r=>[r.keyword, r.rank]) : []);
-        const top = now.slice(0, 10);
-        // Climbers: biggest rank gains into the top 100 (new entries count as climbing from outside the top 500).
-        const withPrev = prev ? now.slice(0, 100).map(r=>({ ...r, prev: prevRank.get(r.keyword) ?? null })) : [];
-        const entries = withPrev.filter(r=> !r.prev);
-        const climbers = [...entries.slice(0,2), ...withPrev.filter(r=> r.prev && r.prev > r.rank).map(r=>({ ...r, gain: r.prev - r.rank })).sort((a,b)=> b.gain - a.gain || a.rank - b.rank)].slice(0, 6);
-        const foot = $('#topListFoot');
-        if(foot){ const more = entries.slice(2); const link = (r)=> `<a href="./keyword-explorer.html?q=${encodeURIComponent(r.keyword)}">${escapeHtml(r.keyword)}</a> #${r.rank}`; const all = './keyword-explorer.html?' + more.map(r=>'q='+encodeURIComponent(r.keyword)).join('&'); foot.innerHTML = more.length ? `Also new: ${more.slice(0,3).map(link).join(', ')}${more.length > 3 ? `, and <a href="${all}">${more.length-3} more</a>` : ''}.` : ''; }
-        $('#topListTitle').textContent = `Biggest climbers in ${monthLabel(latest)}`;
-        $('#topListSub').textContent = prev ? `New entries and the most places gained in the top 100 since ${monthLabel(prev,{month:'long'})}.` : 'Rank changes appear once there are two months of data.';
-        list.innerHTML = climbers.length ? climbers.map(r=>{
-          const from = r.prev ? `#${r.prev}` : '<span class="new-tag">new</span>';
-          const head = r.prev ? `<strong class="gain">+${r.prev - r.rank}</strong>` : '<strong class="gain">New</strong>';
-          const sub = r.prev ? `#${r.prev} → #${r.rank}` : `entered at #${r.rank}`;
-          return `<li><span class="kw"><span>${escapeHtml(r.keyword)}</span><small>${r.value.toFixed(2)}% of searches</small></span><span class="move2">${head}<small>${sub}</small></span></li>`;
-        }).join('') : '<li class="empty-note">No climbers this month.</li>';
-
-        // Zero-result line
-        const zMonths = Array.from(new Set(state.zeroRaw.map(r=>toMonthKey(r.month)))).sort();
-        if(zMonths.length){
-          const zl = zMonths[zMonths.length-1], zp = zMonths[zMonths.length-2];
-          const zTop = latestRanking(state.zeroRaw, 'count', zl);
-          const totalFor = (m)=>{ const t = state.zeroTotals.find(x=>x.month===m); return t && Number.isFinite(t.value) && t.value>0 ? t.value : zMonths.length ? state.zeroRaw.reduce((s,r)=> toMonthKey(r.month)===m ? s+(asNumber(r.count)||0) : s, 0) : 0; };
-          const total = totalFor(zl), before = zp ? totalFor(zp) : null;
-          $('#heroZeroQuery').textContent = zTop[0]?.keyword || '—';
-          $('#heroZeroLabel').textContent = 'Most frequent empty search';
-          $('#heroZeroCount').textContent = zTop[0] ? `${zTop[0].value.toLocaleString('en-US')} times in ${monthLabel(zl,{month:'short', year:'numeric'})}` : '';
-          $('#heroZeroTotalLabel').textContent = 'Searches that found no apps';
-          $('#heroZeroTotal').textContent = Math.round(total).toLocaleString('en-US');
-          let trend = '';
-          if(before){ const d = (total-before)/before*100; trend = Math.abs(d) < 0.5 ? `, about the same as ${monthLabel(zp,{month:'long'})}` : `, ${Math.abs(d).toFixed(0)}% ${d<0?'fewer':'more'} than ${monthLabel(zp,{month:'long'})}`; }
-          $('#heroZeroMeta').textContent = before ? `${monthLabel(zl,{month:'short', year:'numeric'})}, ${Math.abs((total-before)/before*100).toFixed(0)}% ${total<before?'fewer':'more'} than ${monthLabel(zp,{month:'short'})}` : monthLabel(zl);
-        }
-
-        const gaps = incompleteMonths(state.sourceRaw); const first = months.find(m=>!gaps.has(m)) || months[0];
-        $('#dataRange').textContent = `Reports from ${monthLabel(first)} to ${monthLabel(latest)}`;
-        $('#heroSource').textContent = `Built from Atlassian's monthly Marketplace search reports, ${monthLabel(first)} to ${monthLabel(latest)}: the top 500 queries by share of all searches, and the queries that returned no apps.`;
-
-        // The search box stays still; the line under it states this month's leader.
-        const lead = top[0];
-        if(lead){
-          $('#heroMeta').innerHTML = `<strong>#1</strong> in ${monthLabel(latest)}: <a href="./keyword-explorer.html?q=${encodeURIComponent(lead.keyword)}">${escapeHtml(lead.keyword)}</a>, ${lead.value.toFixed(2)}% of all Marketplace searches.`;
-          $('#heroInput').placeholder = `Search a query, e.g. ${lead.keyword}`;
-        }
-        // Suggestions: every known query, biggest overall share first, with its share in the latest report.
-        const total = new Map(); for(const r of state.sourceRaw){ total.set(r.keyword, (total.get(r.keyword)||0) + (asNumber(r.percentage)||0)); }
-        for(const r of state.zeroRaw){ if(!total.has(r.keyword)) total.set(r.keyword, 0); }
-        const nowShare = new Map(now.map(r=>[r.keyword, r.value]));
-        const lastTop = new Map(), lastZero = new Map();
-        for(const r of state.sourceRaw){ const m = lastTop.get(r.keyword); if(!m || r.month > m) lastTop.set(r.keyword, r.month); }
-        for(const r of state.zeroRaw){ const m = lastZero.get(r.keyword); if(!m || r.month > m) lastZero.set(r.keyword, r.month); }
-        state.heroIndex = Array.from(total.entries()).sort((a,b)=> b[1]-a[1]).map(([k])=>({ k, now: nowShare.get(k), last: lastTop.get(k), zero: lastZero.get(k) }));
-        state.heroLatest = latest;
       }
 
       // --- Chart options ---
@@ -1552,44 +1491,6 @@
         setStatus(`rendered: months=${months.length}, rows=${state.sourceRaw.length}, start date=${months[0]}, end date=${months[months.length-1]}`);
       }
 
-      // Hero search: type, pick a suggestion (or press Enter), and the query opens in Keyword Explorer.
-      (function(){
-        const form = $('#heroSearch'), input = $('#heroInput'), box = $('#heroSuggest');
-        if(!form) return;
-        let items = [], active = -1;
-        const close = ()=>{ box.hidden = true; active = -1; input.setAttribute('aria-expanded','false'); };
-        // A picked query opens on its own; free text opens every query that contains all of its words.
-        const go = (q, exact=true)=>{
-          if(exact){ location.href = './keyword-explorer.html?q=' + encodeURIComponent(q); return; }
-          const words = Array.from(new Set(sanitizeKeyword(q).split(' ').filter(Boolean)));
-          location.href = './keyword-explorer.html?' + words.map(w=>'q=' + encodeURIComponent(w)).join('&') + '&mode=contains&logic=all';
-        };
-        const render = ()=>{
-          const q = sanitizeKeyword(input.value);
-          if(!q || !state.heroIndex){ close(); return; }
-          const starts = [], has = [];
-          for(const it of state.heroIndex){ if(it.k.startsWith(q)) starts.push(it); else if(it.k.includes(q)) has.push(it); if(starts.length >= 8) break; }
-          items = starts.concat(has).slice(0, 8);
-          box.innerHTML = items.length ? items.map((it,i)=>{ const at = it.k.indexOf(q); const name = escapeHtml(it.k.slice(0,at)) + '<b>' + escapeHtml(it.k.slice(at, at+q.length)) + '</b>' + escapeHtml(it.k.slice(at+q.length)); return `<button type="button" role="option" data-i="${i}"><span>${name}</span><span>${heroNote(it)}</span></button>`; }).join('') : `<div class="none">No query contains “${escapeHtml(input.value.trim())}”. Press Enter to see every query that contains ${sanitizeKeyword(input.value).includes(' ') ? 'all of these words' : 'it'}.</div>`;
-          active = items.length ? 0 : -1; mark(); box.hidden = false; input.setAttribute('aria-expanded','true');
-        };
-        const short = (m)=> monthLabel(m, {month:'short', year:'numeric'});
-        const heroNote = (it)=> it.now != null ? `${it.now.toFixed(2)}% in ${short(state.heroLatest)}`
-          : it.last ? `top 500 until ${short(it.last)}`
-          : it.zero ? `no apps found, ${short(it.zero)}` : '';
-        const mark = ()=> box.querySelectorAll('button').forEach((b,i)=> b.classList.toggle('active', i === active));
-        input.addEventListener('input', render);
-        input.addEventListener('focus', ()=>{ if(input.value.trim()) render(); });
-        input.addEventListener('keydown', e=>{
-          if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ if(!items.length) return; e.preventDefault(); active = (active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length; mark(); }
-          else if(e.key === 'Escape'){ close(); }
-        });
-        box.addEventListener('mousedown', e=> e.preventDefault());
-        box.addEventListener('click', e=>{ const b = e.target.closest('button'); if(b) go(items[+b.dataset.i].k); });
-        form.addEventListener('submit', e=>{ e.preventDefault(); const q = input.value.trim(); if(!q) { input.focus(); return; } if(active >= 0 && items[active]) go(items[active].k); else go(q, false); });
-        document.addEventListener('click', e=>{ if(!e.target.closest('.hero-search')) close(); });
-      })();
-
       // Inputs wiring
       $('#topN').addEventListener('change', e=>{ state.topN = +e.target.value; $('#topNVal').textContent = e.target.value; scheduleRender(); });
       $('#speed').addEventListener('change', e=>{ state.playInterval = +e.target.value; $('#speedVal').textContent = (state.playInterval/1000).toFixed(1)+"s"; if(state.timelinePlaying) startPlay(); });
@@ -1749,13 +1650,7 @@
         $('#btn-play').disabled = on; $('#raceMonth').disabled = on;
         if(on){
           document.querySelectorAll('.chart .placeholder').forEach(p=> p.textContent = 'No data loaded');
-          if($('#topList')){ $('#heroInput').placeholder = 'Reports not loaded'; $('#heroInput').disabled = true; $('#heroMeta').textContent = '';
-          $('#topList').innerHTML = '<li class="empty-note">No report loaded.</li>'; $('#topListTitle').textContent = 'Biggest climbers'; }
           state.heroSrc = null;
-        } else if($('#heroInput') && $('#heroInput').disabled){
-          // Data arrived after a failed load (retry or upload): bring the search back. renderHero sets the placeholder from the new data.
-          $('#heroInput').disabled = false;
-          if($('#heroInput').placeholder === 'Reports not loaded') $('#heroInput').placeholder = 'Search a query, e.g. scriptrunner';
         }
       }
       $('#btn-retry').addEventListener('click', async ()=>{ $('#btn-retry').disabled = true; await loadDefaults(true); $('#btn-retry').disabled = false; });
