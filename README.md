@@ -13,7 +13,7 @@ The app consumes two spreadsheets:
 
 With these inputs the site provides six linked pages:
 
-- **This month** (`index.html`) – a monthly brief: a headline written from the numbers, four key figures, searches that found no apps, the top ten, the biggest climbers and the queries that most often found nothing. `index.html?month=YYYY-MM` opens any earlier issue as it looked then.
+- **This month** (`index.html`) – a monthly brief: a headline written from the numbers (one story: a new or unusual #1, or a high or low in searches that found no apps), four key figures, the top ten, the biggest climbers, searches that found no apps per month and the queries that most often found nothing. `index.html?month=YYYY-MM` opens any earlier issue as it looked then.
 - **Month by month** (`month-by-month.html`) – every chart: the month-by-month race, searches that found no apps, the biggest queries over the years and the empty-search heatmap. A **Charts show** filter focuses all charts on picked queries.
 - **Keyword Explorer** (`keyword-explorer.html`) – one query or a few, month by month: share of searches, top-500 rank and empty searches.
 - **Archive** (`archive.html`) – every monthly issue with its #1 query and empty-search total.
