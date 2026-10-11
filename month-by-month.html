@@ -1091,15 +1091,23 @@
         }
         return out;
       }
-      // Race colours per month: assigned together with the previous month's rows, so a row leaving and a row entering
-      // in the same step never look alike.
+      // Race colours are chosen once for the whole race, so a query never changes colour while it plays. The 24 most
+      // searched queries always get their own colour (the same in every view and chart); any other query gets the first
+      // colour not used by a query it is ever on screen with (counting the step in which rows enter and leave).
       function raceColorFrames(months, topByMonth, t){
-        const pal = chartPalette(t), frames = [];
-        for(let i = 0; i < months.length; i++){
-          const now = (topByMonth[months[i]] || []).map(d=> d.name), before = i ? (topByMonth[months[i-1]] || []).map(d=> d.name) : [];
-          frames.push(colorSlots(now.concat(before), pal));
+        const pal = chartPalette(t), order = state.colorOrder || new Map();
+        const rank = (n)=> order.has(n) ? order.get(n) : 1e6 + (hashName(n) % 1e6);
+        const names = months.map(m=> (topByMonth[m] || []).map(d=> d.name));
+        const on = new Map();
+        names.forEach((now, i)=>{ for(const n of now.concat(i ? names[i-1] : [])){ if(!on.has(n)) on.set(n, new Set()); on.get(n).add(i); } });
+        const taken = months.map(()=> new Set()), color = new Map();
+        for(const n of Array.from(on.keys()).sort((a,b)=> rank(a) - rank(b) || (a < b ? -1 : 1))){
+          const r = order.get(n), pref = (r != null && r < pal.length ? r : hashName(n)) % pal.length, when = Array.from(on.get(n));
+          let pick = pref;
+          for(let k = 0; k < pal.length; k++){ const j = (pref + k) % pal.length; if(when.every(i=> !taken[i].has(j))){ pick = j; break; } }
+          when.forEach(i=> taken[i].add(pick)); color.set(n, pal[pick]);
         }
-        return frames;
+        return names.map((now, i)=> new Map(now.concat(i ? names[i-1] : []).map(n=> [n, color.get(n)])));
       }
       function monthLookup(list, field){ const by = new Map(); for(const r of list){ const m = toMonthKey(r.month); const v = asNumber(r[field]); if(!Number.isFinite(v)) continue; if(!by.has(m)) by.set(m, new Map()); const k = String(r.keyword||'').trim(); by.get(m).set(k, (by.get(m).get(k)||0) + v); } return (m, k)=> by.get(m)?.get(k); }
       function buildRaceOption(months, topByMonth, index){ return raceOption(months, topByMonth, {isPercent:true, index, lookup: state.popLookup}); }
