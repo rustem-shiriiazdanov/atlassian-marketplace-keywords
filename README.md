@@ -17,12 +17,12 @@ With these inputs the site provides six linked pages:
 - **Month by month** (`month-by-month.html`) – every chart: the month-by-month race, searches that found no apps, the biggest queries over the years and the empty-search heatmap. A **Charts show** filter focuses all charts on picked queries.
 - **Keyword Explorer** (`keyword-explorer.html`) – one query or a few, month by month: share of searches, top-500 rank and empty searches.
 - **Archive** (`archive.html`) – every monthly issue with its #1 query and empty-search total.
-- **Method** (`method.html`) – where the numbers come from, what they mean, breaks in the data and which queries are removed.
+- **Method** (`method.html`) – where the numbers come from, what they mean, breaks in the data and which queries count as meaningless.
 - **About** (`about.html`) – who makes the site.
 
 All pages follow the system light or dark theme. Shared styles live in `assets/site.css` and shared helpers (loading workbooks, cleaning queries, month labels) in `assets/common.js`.
 
-Data handling: partial monthly reports (Dec 2021, Nov 2023) are left out of trend lines; months whose zero-result total is far below their neighbours (Oct and Dec 2023) are marked; visually identical query variants are folded together. Meaningless queries are removed on load: queries with no letters or digits, long digit strings such as `1234`, HTML tags, pasted links, and script, SQL or template injection attempts. In November 2024 broad queries such as "automation" lost most of their share in one month, when Atlassian launched its redesigned Marketplace with autocomplete; trend views mark that month and default to the period after it.
+Data handling: partial monthly reports (Dec 2021, Nov 2023) are left out of trend lines; months whose zero-result total is far below their neighbours (Oct and Dec 2023) are marked; visually identical query variants are folded together. Every query is shown as Atlassian reports it by default. A **Hide meaningless queries** checkbox (on This month, Month by month, Keyword Explorer, Archive and Method; remembered in the browser) leaves out bot noise: queries with no letters or digits, long digit strings such as `1234`, HTML tags, pasted links and e-mail addresses, and script or SQL injection attempts. Totals are always added up from the rows shown. In November 2024 broad queries such as "automation" lost most of their share in one month, as Atlassian rolled out its redesigned Marketplace with autocomplete; trend views mark that month and default to the period after it.
 
 The **Keyword Explorer** keeps the API metrics distinct while placing them on synchronized monthly timelines:
 

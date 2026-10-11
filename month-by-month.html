@@ -282,6 +282,8 @@
     .filterbar .wrap{min-height:60px}
     .filterbar .label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
     .filterbar .hint{font-size:13px}
+    .filterbar .junk-check{margin-left:auto;font-size:13px;color:var(--muted)}
+    @media (max-width:720px){ .filterbar .junk-check{margin-left:0;flex-basis:100%;padding-bottom:10px} }
     .keyword-select-display{height:36px;border:1px solid var(--ink);border-radius:0;font-size:13px}
     .keyword-select-dropdown{border:1px solid var(--ink);border-radius:0}
     .keyword-select-dropdown input[type="text"]{border-radius:0;border-color:var(--ink);background:var(--surface)}
@@ -383,7 +385,7 @@
     <div class="page-head">
       <span class="kicker accent" id="pageKicker">All charts</span>
       <h1 id="pageTitle" data-testid="help-dynamics">Month by month</h1>
-      <p class="lede">The queries with the largest share of Marketplace searches each month, next to how many searches found no apps at all. Press play or drag the month slider. In November 2024 broad queries such as “automation”, “jira” and “structure” lost most of their share in a single month, while app names held steady. Atlassian rolled out its <a href="https://www.atlassian.com/blog/innovation/new-atlassian-marketplace" target="_blank" rel="noopener noreferrer">redesigned Marketplace</a>, with autocomplete and new categories, from mid-October to early November 2024, so shares before and after are not directly comparable. Meaningless queries are removed; see the <a href="./method.html#noise">method</a>.</p>
+      <p class="lede">The queries with the largest share of Marketplace searches each month, next to how many searches found no apps at all. Press play or drag the month slider. In November 2024 broad queries such as “automation”, “jira” and “structure” lost most of their share in a single month, while app names held steady. Atlassian rolled out its <a href="https://www.atlassian.com/blog/innovation/new-atlassian-marketplace" target="_blank" rel="noopener noreferrer">redesigned Marketplace</a>, with autocomplete and new categories, from mid-October to early November 2024, so shares before and after are not directly comparable. Queries are shown as Atlassian reports them; you can hide meaningless ones such as “1234” (see the <a href="./method.html#noise">method</a>).</p>
     </div>
   </section>
 
@@ -398,6 +400,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
       </button>
       <span class="hint">Pick queries to focus every chart below on them.</span>
+      <label class="check junk-check"><input type="checkbox" data-junk-toggle> Hide meaningless queries</label>
     </div>
   </div>
 
@@ -1322,7 +1325,7 @@
         const totals = new Map();
         for (const r of zeroRaw) {
           const m = toMonthKey(r.month); if (!rangeSet.has(m)) continue;
-          const k = String(r.keyword || '').trim(); if(filt && !filt.has(k)) continue; if(!filt && isJunkQuery(k)) continue;
+          const k = String(r.keyword || '').trim(); if(filt && !filt.has(k)) continue;
           const v = asNumber(r.count); if (!Number.isFinite(v)) continue;
           totals.set(k, (totals.get(k) || 0) + v);
         }
@@ -1559,7 +1562,7 @@
         try{
           const wb = await readWorkbook(await f.arrayBuffer());
           if(!wb.Raw) throw new Error('no Raw sheet');
-          state.sourceRaw = sourceRows(wb.Raw);
+          state.sourceAll = sourceRows(wb.Raw); applyJunk();
           setNoData(!state.sourceRaw.length);
           setStatus(`loaded Popular: ${state.sourceRaw.length} rows`);
           updateFileStatus('source-display', `${f.name} · ${state.sourceRaw.length.toLocaleString('en-US')} rows`);
@@ -1575,8 +1578,7 @@
         try{
           const wb = await readWorkbook(await f.arrayBuffer());
           if(!wb.Raw) throw new Error('no Raw sheet');
-          state.zeroRaw = zeroRows(wb.Raw);
-          state.zeroTotals = cleanZeroTotals(wb.Monthly_Summary, state.zeroRaw);
+          state.zeroAll = zeroRows(wb.Raw); state.zeroSummary = wb.Monthly_Summary || []; applyJunk();
           setStatus(`loaded Zero: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
           updateFileStatus('zero-display', `${f.name} · ${state.zeroRaw.length.toLocaleString('en-US')} rows`);
           renderAll();
@@ -1612,13 +1614,21 @@
           w.postMessage(copy, [copy]);
         });
       }
-      const sourceRows = (rows)=> rows.filter(r=>!isJunkQuery(r.keyword)).map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword), percentage: asNumber(r.percentage), rank: asNumber(r.rank) })).filter(r=>r.keyword);
-      const zeroRows = (rows)=> rows.filter(r=>!isJunkQuery(r.keyword)).map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword), count: asNumber(r.count||0) })).filter(r=>r.keyword);
+      // Every row is kept and meaningless ones are flagged on the raw text; the reader decides whether to hide them.
+      const sourceRows = (rows)=> rows.map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword) || String(r.keyword ?? '').trim(), junk:isJunkQuery(r.keyword), percentage: asNumber(r.percentage), rank: asNumber(r.rank) })).filter(r=>r.keyword);
+      const zeroRows = (rows)=> rows.map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword) || String(r.keyword ?? '').trim(), junk:isJunkQuery(r.keyword), count: asNumber(r.count||0) })).filter(r=>r.keyword);
+      // Rows shown follow the "Hide meaningless queries" setting; totals are added up from the rows shown.
+      function applyJunk(){
+        const hide = MK.hideJunk();
+        if(state.sourceAll) state.sourceRaw = hide ? state.sourceAll.filter(r=>!r.junk) : state.sourceAll;
+        if(state.zeroAll){ state.zeroRaw = hide ? state.zeroAll.filter(r=>!r.junk) : state.zeroAll; state.zeroTotals = cleanZeroTotals(state.zeroSummary, state.zeroRaw); }
+      }
+      window.addEventListener('mk:junk', ()=>{ applyJunk(); if(state.sourceRaw.length || state.zeroRaw.length) renderAll(); });
 
       async function tryLoadDefaultSource(){
         setStatus('loading default Popular…');
         const wb = await readWorkbook(await fetchFirst(DEFAULT_SOURCE_CANDIDATES));
-        state.sourceRaw = sourceRows(wb.Raw || []);
+        state.sourceAll = sourceRows(wb.Raw || []); applyJunk();
         setStatus(`default Popular loaded: ${state.sourceRaw.length} rows`);
         updateFileStatus('source-display', `${state.sourceRaw.length.toLocaleString('en-US')} rows loaded`);
       }
@@ -1626,8 +1636,7 @@
       async function tryLoadDefaultZero(){
         setStatus('loading default Zero…');
         const wb = await readWorkbook(await fetchFirst(DEFAULT_ZERO_CANDIDATES));
-        state.zeroRaw = zeroRows(wb.Raw || []);
-        state.zeroTotals = cleanZeroTotals(wb.Monthly_Summary, state.zeroRaw);
+        state.zeroAll = zeroRows(wb.Raw || []); state.zeroSummary = wb.Monthly_Summary || []; applyJunk();
         setStatus(`default Zero loaded: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
         updateFileStatus('zero-display', `${state.zeroRaw.length.toLocaleString('en-US')} rows loaded`);
       }
@@ -1715,6 +1724,7 @@
       });
 
       document.getElementById('btn-demo').addEventListener('click', ()=>{
+        state.sourceAll = null; state.zeroAll = null;
         state.sourceRaw = demo.sourceRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
         state.zeroRaw = demo.zeroRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
         state.zeroTotals = demo.zeroTotals.slice();
@@ -1736,6 +1746,7 @@
         try{ renderAll(); ok('renderAll without data does not throw', true); }catch(e){ ok('renderAll without data does not throw', false); }
         const wl = wrapLabel('this is a very very long keyword title that should wrap into two lines', 18);
         ok('wrapLabel inserts newline', wl.includes('\n'));
+        state.sourceAll = null; state.zeroAll = null;
         state.sourceRaw = demo.sourceRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
         state.zeroRaw = demo.zeroRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
         state.zeroTotals = demo.zeroTotals.slice();

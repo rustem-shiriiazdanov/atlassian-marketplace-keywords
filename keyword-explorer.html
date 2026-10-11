@@ -437,6 +437,7 @@
           </div>
         </div>
         <label class="toggle"><input id="smoothSeries" type="checkbox" /> 3-month average</label>
+        <label class="toggle"><input type="checkbox" data-junk-toggle /> Hide meaningless queries</label>
       </div>
     </section>
 
@@ -528,7 +529,7 @@
     }
     const $ = (selector)=>document.querySelector(selector);
     const state = {
-      popular:[], zero:[], months:[], allKeywords:[], selections:[],
+      popular:[], zero:[], popularAll:[], zeroAll:[], months:[], allKeywords:[], selections:[],
       matchMode:'exact', containsLogic:'any', compareMode:'separate', smooth:false,
       from:0, to:0, charts:{}, urlHadSelection:false, dataReady:false
     };
@@ -563,8 +564,11 @@
     // Same meaningless-query rule as every other page, so they all count the same rowss.
     // Meaningless queries (bot noise, test strings, pasted links, injection attempts) are judged on the raw text; see assets/common.js.
     function isJunkQuery(k){ return MK.isJunkQuery(k); }
-    async function parsePopular(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),percentage:number(row.percentage),rank:number(row.rank)})).filter(row=>row.month&&row.keyword&&!isJunkQuery(row.keyword)); }
-    async function parseZero(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),count:number(row.count),rank:number(row.rank)})).filter(row=>row.month&&row.keyword&&!isJunkQuery(row.keyword)); }
+    async function parsePopular(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),percentage:number(row.percentage),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
+    async function parseZero(buffer){ return (await workbookRows(buffer)).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),count:number(row.count),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
+    // Every row is kept and meaningless ones are flagged; the rows shown follow the "Hide meaningless queries" setting.
+    function applyJunk(){ const hide=MK.hideJunk(); state.popular=hide?state.popularAll.filter(r=>!r.junk):state.popularAll; state.zero=hide?state.zeroAll.filter(r=>!r.junk):state.zeroAll; }
+    window.addEventListener('mk:junk',()=>{ applyJunk(); if(state.popular.length) finalizeData(); });
     function hydrateUrl(){
       const params=new URLSearchParams(location.search); const queries=params.getAll('q').map(keywordText).filter(Boolean);
       state.urlHadSelection=queries.length>0; state.selections=queries;
@@ -624,11 +628,11 @@
     async function loadDefaults(){
       setStatus('Loading default Marketplace reports…');
       const [popularResult,zeroResult]=await Promise.allSettled([fetchFirst(DEFAULT_SOURCE).then(parsePopular),fetchFirst(DEFAULT_ZERO).then(parseZero)]);
-      if(popularResult.status==='fulfilled'){ state.popular=popularResult.value; $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`; }
-      if(zeroResult.status==='fulfilled'){ state.zero=zeroResult.value; $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`; }
+      if(popularResult.status==='fulfilled'){ state.popularAll=popularResult.value; applyJunk(); $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`; }
+      if(zeroResult.status==='fulfilled'){ state.zeroAll=zeroResult.value; applyJunk(); $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`; }
       if(!state.popular.length) throw new Error(zeroResult.status==='fulfilled'?'The popular-searches report could not be loaded':'Neither report could be loaded'); finalizeData();
     }
-    async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); if(type==='popular'){state.popular=await parsePopular(buffer);$('#popularFileStatus').textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zero=await parseZero(buffer);$('#zeroFileStatus').textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
+    async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); if(type==='popular'){state.popularAll=await parsePopular(buffer);applyJunk();$('#popularFileStatus').textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zeroAll=await parseZero(buffer);applyJunk();$('#zeroFileStatus').textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
     function canonicalKeyword(input){ return state.canon?state.canon.get(normalize(input)):state.allKeywords.find(item=>normalize(item)===normalize(input)); }
     function addSelection(input){
       const parts=String(input).split(/[\n,]+/).map(keywordText).filter(Boolean); let added=0;

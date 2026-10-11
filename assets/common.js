@@ -102,46 +102,70 @@
     for(const u of urls){ try{ const res = await fetch(u, {cache:'no-cache'}); if(res.ok) return await res.arrayBuffer(); }catch(e){} }
     throw new Error('Report file not found');
   }
-  // Raw sheet rows → clean rows, with meaningless queries dropped and counted.
+  // Raw sheet rows → clean rows. Every row is kept; meaningless ones are flagged (junk), judged on the raw text,
+  // so the reader can choose to hide them on every page.
   function prepPopular(rows){
-    const out = [], removed = [];
+    const out = [];
     for(const r of rows || []){
       const month = toMonthKey(r.month); if(!month) continue;
-      if(isJunkQuery(r.keyword)){ removed.push(r); continue; }
-      const keyword = cleanKeyword(r.keyword); if(!keyword) continue;
-      out.push({ month, keyword, percentage: num(r.percentage), rank: num(r.rank) });
+      const keyword = cleanKeyword(r.keyword) || String(r.keyword ?? '').trim(); if(!keyword) continue;
+      out.push({ month, keyword, raw: String(r.keyword ?? ''), junk: isJunkQuery(r.keyword), percentage: num(r.percentage), rank: num(r.rank) });
     }
-    return { rows: out, removed };
+    return out;
   }
   function prepZero(rows){
-    const out = [], removed = [];
+    const out = [];
     for(const r of rows || []){
       const month = toMonthKey(r.month); if(!month) continue;
-      if(isJunkQuery(r.keyword)){ removed.push(r); continue; }
-      const keyword = cleanKeyword(r.keyword); if(!keyword) continue;
-      out.push({ month, keyword, count: num(r.count) || 0 });
+      const keyword = cleanKeyword(r.keyword) || String(r.keyword ?? '').trim(); if(!keyword) continue;
+      out.push({ month, keyword, raw: String(r.keyword ?? ''), junk: isJunkQuery(r.keyword), count: num(r.count) || 0 });
     }
-    return { rows: out, removed };
+    return out;
   }
+
+  // --- Reader setting: hide meaningless queries (off by default: everything as Atlassian reports it) ---
+  const JUNK_KEY = 'mk-hide-junk';
+  function hideJunk(){ try{ return localStorage.getItem(JUNK_KEY) === '1'; }catch(e){ return false; } }
+  function setHideJunk(on){
+    try{ if(on) localStorage.setItem(JUNK_KEY, '1'); else localStorage.removeItem(JUNK_KEY); }catch(e){}
+    document.querySelectorAll('input[data-junk-toggle]').forEach(i=> i.checked = !!on);
+    window.dispatchEvent(new CustomEvent('mk:junk', { detail:{ hide: !!on } }));
+  }
+  // Every checkbox marked data-junk-toggle reflects and changes the setting; pages listen for 'mk:junk'.
+  function bindJunkToggles(){
+    document.querySelectorAll('input[data-junk-toggle]').forEach(i=>{
+      if(i._mkBound) return; i._mkBound = true; i.checked = hideJunk();
+      i.addEventListener('change', ()=> setHideJunk(i.checked));
+    });
+  }
+  // Another tab changed the setting.
+  window.addEventListener('storage', e=>{ if(e.key === JUNK_KEY) setHideJunk(hideJunk()); });
   const zeroTotalsFrom = (summary)=> (summary || []).map(r=>({ month: toMonthKey(r.month), value: num(r.sum_count) || 0 })).filter(r=>r.month);
 
-  let dataPromise = null;
-  // Both repository reports, read once per page.
+  let dataPromise = null, rawData = null;
+  // Both repository reports, read once per page, then indexed with or without meaningless queries.
   function loadData(){
-    if(dataPromise) return dataPromise;
-    dataPromise = Promise.all([
-      fetchFirst(DATA.popular).then(readWorkbook),
-      fetchFirst(DATA.zero).then(readWorkbook)
-    ]).then(([p, z])=>{
-      const pop = prepPopular(p.Raw), zer = prepZero(z.Raw);
-      return build(pop.rows, zer.rows, zeroTotalsFrom(z.Monthly_Summary), { popular: pop.removed.length, zero: zer.removed.length, popularRaw: (p.Raw||[]).length, zeroRaw: (z.Raw||[]).length, popularRows: pop.removed, zeroRows: zer.removed });
-    });
-    dataPromise.catch(()=>{ dataPromise = null; });
-    return dataPromise;
+    if(!dataPromise){
+      dataPromise = Promise.all([
+        fetchFirst(DATA.popular).then(readWorkbook),
+        fetchFirst(DATA.zero).then(readWorkbook)
+      ]).then(([p, z])=>{ rawData = { popular: prepPopular(p.Raw), zero: prepZero(z.Raw), summary: zeroTotalsFrom(z.Monthly_Summary) }; return rawData; });
+      dataPromise.catch(()=>{ dataPromise = null; });
+    }
+    return dataPromise.then(()=> currentData());
+  }
+  // The indexes for the current setting (cheap to rebuild when the reader flips it).
+  function currentData(){
+    const hide = hideJunk();
+    const keep = (r)=> !hide || !r.junk;
+    const junk = { popular: rawData.popular.filter(r=>r.junk), zero: rawData.zero.filter(r=>r.junk) };
+    const D = build(rawData.popular.filter(keep), rawData.zero.filter(keep), rawData.summary);
+    D.hideJunk = hide; D.junk = junk;
+    return D;
   }
 
   // Indexes every page needs: rows by month, totals of empty searches, partial or unusually small reports.
-  function build(popular, zero, zeroTotals, removed){
+  function build(popular, zero, zeroTotals){
     // Variants folded into one query are added up; pos is the place in the cleaned month list.
     const byMonth = new Map();
     for(const r of popular){
@@ -155,7 +179,7 @@
       const e = m.get(r.keyword); if(e) e.count += r.count; else m.set(r.keyword, { ...r });
     }
     for(const [k, m] of zeroByMonth){ const list = Array.from(m.values()).sort((a,b)=> b.count - a.count || (a.keyword < b.keyword ? -1 : 1)); zeroByMonth.set(k, list); }
-    // Totals are added up from the cleaned rows, so removed meaningless queries are not counted;
+    // Totals are added up from the rows shown, so they always match the tables (with or without meaningless queries);
     // the summary sheet only fills months that have no rows.
     let totals = Array.from(zeroByMonth.entries()).map(([month, l])=>({ month, value: l.reduce((a,r)=> a + r.count, 0) }));
     for(const t of zeroTotals || []) if(t.month && !zeroByMonth.has(t.month)) totals.push({ ...t });
@@ -169,7 +193,7 @@
     const zeroLow = new Set(kept.filter((x,i)=>{ const near = kept.slice(Math.max(0,i-3), i).concat(kept.slice(i+1, i+4)).map(y=>y.value).sort((p,q)=>p-q); const m = near[Math.floor(near.length/2)]; return near.length >= 4 && x.value < m*0.5; }).map(t=>t.month));
     const months = Array.from(byMonth.keys()).sort();
     const issues = months.filter(m=> !popularPartial.has(m));
-    return { popular, zero, zeroTotals: totals, byMonth, zeroByMonth, months, issues, popularPartial, zeroPartial, zeroLow, removed };
+    return { popular, zero, zeroTotals: totals, byMonth, zeroByMonth, months, issues, popularPartial, zeroPartial, zeroLow };
   }
   // A report with far fewer rows than usual is a partial export (Dec 2021, Nov 2023).
   function smallReports(map){
@@ -181,7 +205,7 @@
   // Atlassian rolled out its redesigned Marketplace from mid-October to early November 2024; broad one-word queries lost most of their share in November.
   const REPORT_BREAK = '2024-11';
   const BREAK_NOTE = 'In November 2024 broad queries such as “automation”, “jira” and “structure” lost most of their share in a single month, while app names held steady. Atlassian rolled out its redesigned Marketplace, with autocomplete and new categories, from mid-October to early November 2024, so shares before and after are not directly comparable.';
-  const NOISE_NOTE = 'Meaningless queries are removed: bot noise, test strings such as “1234”, pasted links and e-mail addresses, and HTML or script injection attempts.';
+  const NOISE_NOTE = 'Meaningless queries are bot noise, test strings such as “1234”, pasted links and e-mail addresses, and HTML or script injection attempts. They are shown by default, as Atlassian reports them; tick “Hide meaningless queries” to leave them out on every page.';
   // The zero-result report lists the 500 queries that most often found no apps; its monthly total adds those up.
   const ZERO_NOTE = 'Each month adds up the 500 queries that most often found no apps, as Atlassian reports them; rarer empty searches are not in the report.';
 
@@ -255,12 +279,13 @@
   const HEAT_BINS = [0, 1, 5, 10, 20, 50];
   const heatBin = (n)=>{ let b = 0; for(let i=0;i<HEAT_BINS.length;i++) if(n >= HEAT_BINS[i]) b = i; return n > 0 ? Math.max(1, b) : 0; };
 
-  window.MK = { XLSX_URLS, ECHARTS_URLS, LINKS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, prepPopular, prepZero, zeroTotalsFrom, loadData, build,
+  window.MK = { XLSX_URLS, ECHARTS_URLS, LINKS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
     toMonthKey, monthLabel, monthLong, monthShort, monthName, monthAbbr, addMonths, monthsBetween,
     escapeHtml, fmtInt, fmtPct, cleanKeyword, isJunkQuery, num, REPORT_BREAK, BREAK_NOTE, NOISE_NOTE, ZERO_NOTE,
     attachLookup, lookupIndex, tokens, HEAT_BINS, heatBin, isSpike, inkOn };
 
   // Fill links that are configured above; hide the ones that are not.
   const fillLinks = ()=> document.querySelectorAll('[data-link]').forEach(a=>{ const u = LINKS[a.dataset.link]; if(u) a.href = u; else a.hidden = true; });
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fillLinks); else fillLinks();
+  const ready = ()=>{ fillLinks(); bindJunkToggles(); };
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready); else ready();
 })();

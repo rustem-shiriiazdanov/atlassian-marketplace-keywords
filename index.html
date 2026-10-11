@@ -19,6 +19,8 @@
   .issue .right{display:flex;flex-direction:column;gap:16px}
   .dek{margin:0;font-size:18px;line-height:1.55;color:var(--ink2);text-wrap:pretty}
   .source{margin:0;font-size:13px;line-height:1.5;color:var(--muted)}
+  .issue-tools{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px 24px}
+  .issue-tools .check{font-size:13px;color:var(--muted)}
   .issue-nav{display:flex;gap:16px;font-size:14px;font-weight:600}
   .issue-nav a{text-decoration:none}
   .issue-nav a:hover{text-decoration:underline}
@@ -109,7 +111,10 @@
     <div class="right">
       <p class="dek" id="dek"><span class="wait">Reading Atlassian’s monthly Marketplace search reports.</span></p>
       <p class="source" id="source">From Atlassian’s monthly Marketplace search reports.</p>
-      <div class="issue-nav" id="issueNav" hidden></div>
+      <div class="issue-tools">
+        <div class="issue-nav" id="issueNav" hidden></div>
+        <label class="check"><input type="checkbox" data-junk-toggle> Hide meaningless queries</label>
+      </div>
     </div>
   </section>
 
@@ -160,7 +165,7 @@
   </section>
 
   <section class="foot-cols" aria-label="About this site">
-    <div><h2>Method</h2><p>The top 500 queries by share of all searches, and the 500 queries that most often returned no apps, from Atlassian’s monthly reports. Meaningless queries are removed. Not affiliated with Atlassian. <a href="./method.html">Read the method</a></p></div>
+    <div><h2>Method</h2><p>The top 500 queries by share of all searches, and the 500 queries that most often returned no apps, from Atlassian’s monthly reports, shown as reported; meaningless queries can be hidden. Not affiliated with Atlassian. <a href="./method.html">Read the method</a></p></div>
     <div><h2>Your own exports</h2><p>Open your own report files; they are read in your browser and never uploaded. <a href="./month-by-month.html#own-data">Load files</a></p></div>
     <div><h2>About</h2><p>A pet project by Rustem Shiriiazdanov, Product Owner of Report Builder for Jira at Actonic. <a href="./about.html">About the project</a></p></div>
   </section>
@@ -281,7 +286,7 @@
     const i = D.issues.indexOf(m), prev = D.issues[i-1], next = D.issues[i+1];
     const nav = $('#issueNav');
     nav.innerHTML = [prev ? `<a href="?month=${prev}">← ${monthShort(prev)}</a>` : '', next ? `<a href="${next === latest ? './index.html' : '?month=' + next}">${next === latest ? 'Latest issue' : monthShort(next)} →</a>` : ''].filter(Boolean).join('');
-    nav.hidden = isLatest && !prev;
+    nav.hidden = false;
     if(isLatest) nav.innerHTML = prev ? `<a href="?month=${prev}">← ${monthLong(prev)} issue</a>` : '';
     renderKpis(f); renderTop(f); renderClimbers(f); renderHeat(f); renderZeroChart();
   }
@@ -387,6 +392,8 @@
   window.addEventListener('resize', ()=>{ clearTimeout(resizeTimer); resizeTimer = setTimeout(()=>{ if(!D) return; if(chart) chart.resize(); renderKpis(facts(issue)); renderZeroChart(); }, 120); });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', ()=>{ if(D){ renderHeat(facts(issue)); renderZeroChart(); } });
   let index = null; MK.attachLookup($('#lookup'), ()=> index);
+  // The reader hid or showed meaningless queries: rebuild from the same reports and redraw the issue.
+  window.addEventListener('mk:junk', ()=>{ if(!D) return; D = MK.currentData(); index = MK.lookupIndex(D); if(!D.issues.includes(issue)) issue = D.issues.at(-1); renderIssue(); });
 
   function start(){
     $('#loadAlert').hidden = true;

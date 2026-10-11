@@ -13,6 +13,8 @@
     .arch-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:20px 32px;padding-bottom:28px}
     .arch-head .page-head{padding-bottom:0}
     .years{margin-bottom:4px}
+    .arch-tools{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+    .arch-tools .check{font-size:13px;color:var(--muted)}
     .year{display:grid;grid-template-columns:184px minmax(0,1fr);gap:24px;padding:28px 0 36px;border-top:3px solid var(--ink);scroll-margin-top:16px}
     .year h2{margin:0;font-family:var(--serif);font-weight:500;font-size:44px;line-height:1}
     .year .count{margin-top:8px;font-size:14px;color:var(--muted)}
@@ -64,9 +66,9 @@
     <div class="page-head">
       <span class="kicker accent" id="kicker">All issues</span>
       <h1>Archive</h1>
-      <p class="lede">Every monthly issue, each opening This month as it looked then. Until Atlassian’s redesigned Marketplace arrived in late 2024, broad queries such as “automation” took a much larger share, so shares before November 2024 run much higher.</p>
+      <p class="lede">Every monthly issue, each opening This month as it looked then. Queries are shown as Atlassian reports them; you can hide meaningless ones such as “1234”. Until Atlassian’s redesigned Marketplace arrived in late 2024, broad queries such as “automation” took a much larger share, so shares before November 2024 run much higher.</p>
     </div>
-    <nav class="years" aria-label="Jump to a year"><div class="seg" id="yearNav"></div></nav>
+    <div class="arch-tools"><nav class="years" aria-label="Jump to a year"><div class="seg" id="yearNav"></div></nav><label class="check"><input type="checkbox" data-junk-toggle> Hide meaningless queries</label></div>
   </div>
   <div id="archive"><p class="empty-note">Loading the issues…</p></div>
 </main>
@@ -97,11 +99,13 @@
           ${zero}</article>`;
       }).join('')}</div></section>`;
     }).join('');
-    $('#yearNav').addEventListener('click', e=>{ const b = e.target.closest('button'); if(!b) return; document.getElementById('y' + b.dataset.y)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); });
   }
+  $('#yearNav').addEventListener('click', e=>{ const b = e.target.closest('button'); if(!b) return; document.getElementById('y' + b.dataset.y)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); });
+  let loaded = false;
+  window.addEventListener('mk:junk', ()=>{ if(loaded) render(MK.currentData()); });
   function start(){
     $('#loadAlert').hidden = true;
-    MK.loadData().then(render).catch(err=>{ console.error(err); $('#loadAlert').hidden = false; $('#archive').innerHTML = ''; });
+    MK.loadData().then(D=>{ loaded = true; render(D); }).catch(err=>{ console.error(err); $('#loadAlert').hidden = false; $('#archive').innerHTML = ''; });
   }
   $('#retry').addEventListener('click', start);
   start();
