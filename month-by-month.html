@@ -1065,15 +1065,16 @@
             ] };
           } };
       }
-      // One palette for every chart on the page: the eight series colours, then tints and shades of them (24 in all).
+      // One palette for every chart on the page: the eight series colours, then tints and shades of them (up to 48;
+      // a Top 20 step with rows entering and leaving can show 30+ rows at once).
       function chartPalette(t){
         const mix = (a, b, k)=>{ const h = (c)=> { const x = c.replace('#',''); const f = x.length === 3 ? x.split('').map(y=>y+y).join('') : x; return [0,2,4].map(i=> parseInt(f.slice(i,i+2),16)); };
           try{ const A = h(a), B = h(b); if(A.some(isNaN) || B.some(isNaN)) return a; return '#' + A.map((v,i)=> Math.round(v*(1-k) + B[i]*k).toString(16).padStart(2,'0')).join(''); }catch(e){ return a; } };
         const base = t.series.length ? t.series : [t.ink];
         const pal = [], seen = new Set();
-        for(const [to, k] of [[null, 0], [t.paper, .5], [t.ink, .3], [t.paper, .75], [t.paper, .25], [t.ink, .55]]){
+        for(const [to, k] of [[null, 0], [t.paper, .5], [t.ink, .3], [t.paper, .75], [t.paper, .25], [t.ink, .55], [t.paper, .62], [t.ink, .15]]){
           for(const c of base){ const v = (to ? mix(c, to, k) : c).toLowerCase(); if(!seen.has(v)){ seen.add(v); pal.push(v); } }
-          if(pal.length >= 24) break;
+          if(pal.length >= 48) break;
         }
         return pal;
       }
@@ -1081,33 +1082,50 @@
       // included, so the hide switch never moves a colour); the 24 most searched each own one. Queries on screen together
       // never share a colour: a clash goes to the next free colour, the more searched query first.
       const hashName = (k)=>{ let h = 0; for(const ch of k) h = (h*31 + ch.codePointAt(0)) >>> 0; return h; };
+      const OWN_COLORS = 24; // the most searched queries that always keep their own colour
       function colorSlots(names, pal){
         const order = state.colorOrder || new Map(), rank = (n)=> order.has(n) ? order.get(n) : 1e6 + (hashName(n) % 1e6);
         const taken = new Set(), out = new Map();
         for(const n of Array.from(new Set(names)).sort((a,b)=> rank(a) - rank(b) || (a < b ? -1 : 1))){
-          const r = order.get(n); let i = (r != null && r < pal.length ? r : hashName(n)) % pal.length;
+          const r = order.get(n); let i = (r != null && r < OWN_COLORS ? r : hashName(n)) % pal.length;
           for(let k = 0; k < pal.length && taken.has(i); k++) i = (i + 1) % pal.length;
           taken.add(i); out.set(n, pal[i]);
         }
         return out;
       }
-      // Race colours are chosen once for the whole race, so a query never changes colour while it plays. The 24 most
-      // searched queries always get their own colour (the same in every view and chart); any other query gets the first
-      // colour not used by a query it is ever on screen with (counting the step in which rows enter and leave).
+      // Race colours: a query keeps one colour for each stretch it stays on screen (counting the step in which rows enter
+      // and leave), so no colour changes while a row is visible. The 24 most searched queries always get their own colour
+      // (the same in every view and chart); any other stretch takes the colour that query had last time if it is free,
+      // else its usual colour, else the first colour no other row on screen during that stretch is using.
       function raceColorFrames(months, topByMonth, t){
         const pal = chartPalette(t), order = state.colorOrder || new Map();
         const rank = (n)=> order.has(n) ? order.get(n) : 1e6 + (hashName(n) % 1e6);
         const names = months.map(m=> (topByMonth[m] || []).map(d=> d.name));
-        const on = new Map();
-        names.forEach((now, i)=>{ for(const n of now.concat(i ? names[i-1] : [])){ if(!on.has(n)) on.set(n, new Set()); on.get(n).add(i); } });
-        const taken = months.map(()=> new Set()), color = new Map();
-        for(const n of Array.from(on.keys()).sort((a,b)=> rank(a) - rank(b) || (a < b ? -1 : 1))){
-          const r = order.get(n), pref = (r != null && r < pal.length ? r : hashName(n)) % pal.length, when = Array.from(on.get(n));
-          let pick = pref;
-          for(let k = 0; k < pal.length; k++){ const j = (pref + k) % pal.length; if(when.every(i=> !taken[i].has(j))){ pick = j; break; } }
-          when.forEach(i=> taken[i].add(pick)); color.set(n, pal[pick]);
+        const vis = names.map((now, i)=> Array.from(new Set(now.concat(i ? names[i-1] : []))));
+        const stints = [];
+        const open = new Map();
+        vis.forEach((list, i)=>{
+          const here = new Set(list);
+          for(const [n, st] of open) if(!here.has(n)){ stints.push(st); open.delete(n); }
+          for(const n of list){ if(!open.has(n)) open.set(n, { n, from:i, to:i }); else open.get(n).to = i; }
+        });
+        for(const st of open.values()) stints.push(st);
+        const taken = months.map(()=> new Map()), last = new Map(), colorAt = months.map(()=> new Map());
+        // Owners first (they never move); every other stretch in the order it appears, so each one only competes with
+        // what is already on screen around it.
+        const ownerOf = (n)=>{ const r = order.get(n); return r != null && r < OWN_COLORS ? r : null; };
+        stints.sort((a,b)=> (ownerOf(a.n) == null) - (ownerOf(b.n) == null) || (ownerOf(a.n) != null ? rank(a.n) - rank(b.n) : 0) || a.from - b.from || rank(a.n) - rank(b.n));
+        for(const st of stints){
+          const own = ownerOf(st.n), usual = (own != null ? own : hashName(st.n)) % pal.length;
+          const free = (j)=>{ for(let i = st.from; i <= st.to; i++) if(taken[i].has(j)) return false; return true; };
+          let pick = own != null ? own : null;
+          if(pick == null && last.has(st.n) && free(last.get(st.n))) pick = last.get(st.n);
+          if(pick == null){ for(let k = 0; k < pal.length; k++){ const j = (usual + k) % pal.length; if(free(j)){ pick = j; break; } } }
+          if(pick == null) pick = usual;
+          last.set(st.n, pick);
+          for(let i = st.from; i <= st.to; i++){ taken[i].set(pick, st.n); colorAt[i].set(st.n, pal[pick]); }
         }
-        return names.map((now, i)=> new Map(now.concat(i ? names[i-1] : []).map(n=> [n, color.get(n)])));
+        return colorAt;
       }
       function monthLookup(list, field){ const by = new Map(); for(const r of list){ const m = toMonthKey(r.month); const v = asNumber(r[field]); if(!Number.isFinite(v)) continue; if(!by.has(m)) by.set(m, new Map()); const k = String(r.keyword||'').trim(); by.get(m).set(k, (by.get(m).get(k)||0) + v); } return (m, k)=> by.get(m)?.get(k); }
       function buildRaceOption(months, topByMonth, index){ return raceOption(months, topByMonth, {isPercent:true, index, lookup: state.popLookup}); }
