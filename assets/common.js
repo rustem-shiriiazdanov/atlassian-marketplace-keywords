@@ -155,8 +155,10 @@
       const e = m.get(r.keyword); if(e) e.count += r.count; else m.set(r.keyword, { ...r });
     }
     for(const [k, m] of zeroByMonth){ const list = Array.from(m.values()).sort((a,b)=> b.count - a.count || (a.keyword < b.keyword ? -1 : 1)); zeroByMonth.set(k, list); }
-    // Totals come from the summary sheet; without one they are summed from the rows.
-    let totals = zeroTotals && zeroTotals.length ? zeroTotals.slice() : Array.from(zeroByMonth.entries()).map(([month, l])=>({ month, value: l.reduce((a,r)=> a + r.count, 0) }));
+    // Totals are added up from the cleaned rows, so removed meaningless queries are not counted;
+    // the summary sheet only fills months that have no rows.
+    let totals = Array.from(zeroByMonth.entries()).map(([month, l])=>({ month, value: l.reduce((a,r)=> a + r.count, 0) }));
+    for(const t of zeroTotals || []) if(t.month && !zeroByMonth.has(t.month)) totals.push({ ...t });
     totals.sort((a,b)=> a.month < b.month ? -1 : 1);
     const popularPartial = smallReports(byMonth);
     // Zero-result report: a month with almost nothing in it is a partial export (Dec 2021, Nov 2023);

@@ -994,6 +994,13 @@
         }
         return { months, topByMonth: top };
       }
+      // Monthly totals are added up from the cleaned rows, so removed meaningless queries are not counted;
+      // the summary sheet only fills months that have no rows.
+      function cleanZeroTotals(summary, rows){
+        const fromRows = totalsByMonth(rows, 'count'); const have = new Set(fromRows.map(x=>x.month));
+        const extra = (summary || []).map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) })).filter(x=> x.month && !have.has(x.month));
+        return fromRows.concat(extra).sort((a,b)=> a.month.localeCompare(b.month));
+      }
       function totalsByMonth(list, valueField, filter){
         const acc = new Map();
         const filt = filter && filter.length ? new Set(filter) : null;
@@ -1568,8 +1575,8 @@
         try{
           const wb = await readWorkbook(await f.arrayBuffer());
           if(!wb.Raw) throw new Error('no Raw sheet');
-          state.zeroTotals = (wb.Monthly_Summary || []).map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) }));
           state.zeroRaw = zeroRows(wb.Raw);
+          state.zeroTotals = cleanZeroTotals(wb.Monthly_Summary, state.zeroRaw);
           setStatus(`loaded Zero: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
           updateFileStatus('zero-display', `${f.name} · ${state.zeroRaw.length.toLocaleString('en-US')} rows`);
           renderAll();
@@ -1619,8 +1626,8 @@
       async function tryLoadDefaultZero(){
         setStatus('loading default Zero…');
         const wb = await readWorkbook(await fetchFirst(DEFAULT_ZERO_CANDIDATES));
-        state.zeroTotals = (wb.Monthly_Summary || []).map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) }));
         state.zeroRaw = zeroRows(wb.Raw || []);
+        state.zeroTotals = cleanZeroTotals(wb.Monthly_Summary, state.zeroRaw);
         setStatus(`default Zero loaded: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
         updateFileStatus('zero-display', `${state.zeroRaw.length.toLocaleString('en-US')} rows loaded`);
       }

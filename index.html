@@ -249,7 +249,7 @@
     const zs = zeroStory(f), out = [];
     if(f.z != null && !D.zeroPartial.has(f.m)){
       // Atlassian's zero-result report lists the 500 queries that most often found no apps; the total adds those up.
-      let s = `Atlassian’s report counted ${zs && zs.kind === 'low' ? 'just ' : ''}${fmtInt(f.z)} searches that found no apps in ${monthName(f.m)}`;
+      let s = `${zs && zs.kind === 'low' ? 'Just ' : ''}${fmtInt(f.z)} searches found no apps in ${monthName(f.m)}, as Atlassian reports them`;
       // Compared with last month, and for a low or high also with the extreme of the past year.
       const dir = (v)=> f.z < v ? 'down' : 'up';
       const far = zs && zs.ref && (zs.kind === 'low' || zs.kind === 'high') && zs.ref.month !== f.m && zs.ref.month !== f.zPrevMonth ? zs.ref : null;
