@@ -11,21 +11,18 @@ The app consumes two spreadsheets:
 - **Popular Search Keywords** – top search queries with percentage share
 - **Zero‑Result Keywords** – queries that returned no apps, with counts
 
-With these inputs the site provides two linked pages:
+With these inputs the site provides six linked pages:
 
-- **Overview** (`index.html`) – broad Marketplace trends across every imported keyword
-- **Keyword Explorer** (`keyword-explorer.html`) – focused analysis of one query or a user-selected set
+- **This month** (`index.html`) – a monthly brief: a headline written from the numbers, four key figures, searches that found no apps, the top ten, the biggest climbers and the queries that most often found nothing. `index.html?month=YYYY-MM` opens any earlier issue as it looked then.
+- **Month by month** (`month-by-month.html`) – every chart: the month-by-month race, searches that found no apps, the biggest queries over the years and the empty-search heatmap. A **Charts show** filter focuses all charts on picked queries.
+- **Keyword Explorer** (`keyword-explorer.html`) – one query or a few, month by month: share of searches, top-500 rank and empty searches.
+- **Archive** (`archive.html`) – every monthly issue with its #1 query and empty-search total.
+- **Method** (`method.html`) – where the numbers come from, what they mean, breaks in the data and which queries are removed.
+- **About** (`about.html`) – who makes the site.
 
-The Overview provides:
+All pages follow the system light or dark theme. Shared styles live in `assets/site.css` and shared helpers (loading workbooks, cleaning queries, month labels) in `assets/common.js`.
 
-- **Latest month at a glance** – the biggest climbers and new entries in the top 100, the total number of searches that found no apps and the most frequent of them
-- **Search Dynamics** – bar chart race of popular keywords plus a zero‑result overview that can flip between total counts and top zero keywords
-- **Keyword Trails** – line chart tracking how top keywords change over time
-- **Zero‑Result Heatmap** – matrix highlighting months and keywords that frequently return nothing
-
-A sticky **keyword filter** lets you focus on specific terms across all charts. Chart toolbars offer full screen (with a Chart/Table toggle) and PNG download. Both pages follow the system light or dark theme.
-
-Data handling: partial monthly reports (Dec 2021, Nov 2023) are left out of trend lines; bot noise (queries with no letters or digits, HTML/URL injection probes) is dropped on load; visually identical query variants are folded together. Atlassian's report shows a methodology break in Nov 2024, so trend views default to the period after it and the race chart keeps one scale per period.
+Data handling: partial monthly reports (Dec 2021, Nov 2023) are left out of trend lines; months whose zero-result total is far below their neighbours (Oct and Dec 2023) are marked; visually identical query variants are folded together. Meaningless queries are removed on load: queries with no letters or digits, long digit strings such as `1234`, HTML tags, pasted links, and script, SQL or template injection attempts. In November 2024 broad queries such as "automation" lost most of their share in one month, when Atlassian launched its redesigned Marketplace with autocomplete; trend views mark that month and default to the period after it.
 
 The **Keyword Explorer** keeps the API metrics distinct while placing them on synchronized monthly timelines:
 
@@ -38,12 +35,12 @@ The **Keyword Explorer** keeps the API metrics distinct while placing them on sy
 ## Quick Start
 
 ### 1. Use Demo Data
-1. Open `index.html` in a browser.
-2. Open `index.html?debug`, scroll to **Use your own data** and click **Load demo data** (demo and smoke-test buttons only show in debug mode).
+1. Open `month-by-month.html` in a browser.
+2. Open `month-by-month.html?debug`, scroll to **Use your own data** and click **Load demo data** (demo and smoke-test buttons only show in debug mode).
 3. Press **▶ Play** to start the race.
 
 ### 2. Upload Your Data
-1. Open `index.html` and scroll to **Use your own data**.
+1. Open `month-by-month.html` and scroll to **Use your own data**.
 2. For each file tile choose the proper spreadsheet:
    - **Popular Search Keywords**: `.xlsx` with `Raw` sheet containing `month`, `keyword`, `percentage`
    - **Zero‑Result Keywords**: `.xlsx` with `Raw` sheet containing `month`, `keyword`, `count`. Optional `Monthly_Summary` sheet with `month`, `sum_count`
@@ -57,7 +54,7 @@ If the files below exist they autoload on startup or via **Reload repository dat
 - `./data/zero_result_keywords_marketplace.xlsx`
 
 ### 4. Run Smoke Tests
-Open `index.html?debug` and click **Run smoke tests** to verify required elements render. On the Keyword Explorer run `KeywordExplorer.runSmokeTests()` in the console.
+Open `month-by-month.html?debug` and click **Run smoke tests** to verify required elements render. On the Keyword Explorer run `KeywordExplorer.runSmokeTests()` in the console.
 
 ## Data Format
 
@@ -111,7 +108,7 @@ Every chart exposes buttons for:
 
 ## Technical Notes
 - Pure JavaScript with **ECharts 5.5.0** and **XLSX** libraries
-- Schibsted Grotesk typeface from Google Fonts, with system-font fallback
+- Newsreader (headlines and numbers) and Public Sans (text) from Google Fonts, with system-font fallbacks
 - Light and dark themes from CSS custom properties; charts read the same tokens
 - Responsive layout for desktop and mobile; respects reduced-motion settings
 - Sequential CDN fallbacks for robust loading
@@ -131,8 +128,15 @@ Modern browsers such as Chrome, Firefox, Safari, Edge, and mobile equivalents wi
 ## File Structure
 ```
 atlassian-marketplace-keywords/
-├── index.html                    # Main application
+├── index.html                    # This month (monthly brief; ?month=YYYY-MM for earlier issues)
+├── month-by-month.html           # All charts
 ├── keyword-explorer.html         # Focused keyword analysis page
+├── archive.html                  # Every monthly issue
+├── method.html                   # Sources, definitions, data breaks, removed queries
+├── about.html                    # About the author
+├── assets/
+│   ├── site.css                  # Shared design system (light and dark)
+│   └── common.js                 # Shared data loading and helpers
 ├── README.md                     # Documentation
 ├── data/                         # Optional default spreadsheets
 │   ├── source_search_keywords_marketplace.xlsx

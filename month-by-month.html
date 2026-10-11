@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Marketplace Keywords — Month by month</title>
+  <meta name="description" content="What people search for on the Atlassian Marketplace: monthly top queries, searches that found no apps, trends and heatmaps from Atlassian's Marketplace search reports." />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/site.css" />
+  <style>
+    /* This page's own token names, mapped onto the shared design system (assets/site.css). */
+    :root{
+      --ink-2:var(--ink2); --line:var(--rule); --grid:var(--rule2);
+      --blue:var(--ink); --blue-ink:var(--paper); --blue-soft:var(--sunken);
+      --coral:var(--accent); --coral-soft:var(--accent-soft);
+      --up:var(--pos); --down:var(--neg);
+      --tip-bg:var(--surface); --tip-ink:var(--ink);
+      --series:var(--s1),var(--s2),var(--s3),var(--s4),var(--s5),var(--s6),var(--s7),var(--s8);
+      --heat-none:var(--heat0); --heat-0:var(--heat1); --heat-1:var(--heat2); --heat-2:var(--heat3); --heat-3:var(--heat4); --heat-4:var(--heat5);
+      --search-shadow:0 12px 28px rgba(0,0,0,.14);
+      --font:var(--sans);
+    }
+
+    *{box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%}
+    a{color:var(--blue)}
+    h1,h2,h3{text-wrap:balance}
+    [hidden]{display:none !important}
+    input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:16px;height:16px;margin:0;border:1.5px solid var(--muted);border-radius:4px;background:var(--surface);display:inline-grid;place-content:center;cursor:pointer;flex:0 0 auto}
+    input[type="checkbox"]:checked{background:var(--blue);border-color:var(--blue)}
+    input[type="checkbox"]:checked::after{content:"";width:8px;height:4px;border-left:2px solid var(--blue-ink);border-bottom:2px solid var(--blue-ink);transform:translateY(-1px) rotate(-45deg)}
+    p{text-wrap:pretty}
+    button,input,select{font:inherit;color:inherit}
+    :focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+    .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+    /* Top bar */
+
+    /* Hero */
+    
+
+
+    /* Filter bar */
+    .filterbar{position:sticky;top:0;z-index:30;background:var(--paper);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .filterbar .wrap{position:relative}
+    .filterbar .wrap{display:flex;align-items:center;gap:12px;min-height:58px;flex-wrap:wrap}
+    .filterbar .label{font-weight:700;font-size:15px}
+    .filterbar .hint{color:var(--muted);font-size:14px}
+
+    /* Sections */
+    main{padding-bottom:40px;overflow-x:clip}
+    .section{padding:48px 0 0}
+    .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px 24px;flex-wrap:wrap;margin-bottom:18px}
+    .section-head h2{margin:0;font-size:28px;line-height:1.15;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+    .section-head p{margin:6px 0 0;color:var(--ink-2);max-width:68ch}
+    .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+    .grid-75{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:20px;align-items:stretch}
+    .grid-75 .card{display:flex;flex-direction:column}
+    .grid-75 .card-body{flex:1 1 auto;display:flex;flex-direction:column}
+    .grid-75 .card-body{flex:1 1 auto}
+    .grid-75 .chart{height:420px}
+    #race-card .card-body .chart{flex:1 1 auto;height:auto;min-height:420px}
+    body.filtered #race-card .card-body .chart{flex:0 0 auto;min-height:0}
+    body.filtered .grid-75{grid-template-columns:minmax(0,1fr)}
+    body.filtered #race-card{order:1} body.filtered .grid-75 .player{order:2} body.filtered #zeros-card{order:3}
+    .grid-75 .player{grid-column:1 / -1;flex-direction:row;align-self:start}
+    .grid-75 .card-note{margin-top:auto;padding-top:4px}
+    .h-small{font-size:20px !important}
+    .sub-note{margin:2px 0 0 !important;color:var(--muted);font-size:13px !important}
+    .sub-note:empty{display:none}
+    .grid-75 #zeros-card .card-body{justify-content:flex-start}
+    .head-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto}
+    .select-sm{height:32px;padding:0 28px 0 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23626F86' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;-webkit-appearance:none;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer}
+    .select-sm:hover{border-color:var(--muted)}
+    .scrubber{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:14px 20px}
+    .scrubber .track{order:2;flex:1 1 300px}
+    .scrubber .speed{order:3}
+    .scrubber .track{position:relative;min-width:80px;padding:16px 0 0}
+    .scrubber .ticks{top:-2px;bottom:auto}
+    .scrubber input[type="range"]{width:100%;-webkit-appearance:none;appearance:none;background:transparent;height:20px;margin:0}
+    .scrubber input[type="range"]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--blue) var(--p,0%),var(--line) var(--p,0%))}
+    .scrubber input[type="range"]::-moz-range-track{height:4px;border-radius:2px;background:var(--line)}
+    .scrubber input[type="range"]::-moz-range-progress{height:4px;border-radius:2px;background:var(--blue)}
+    .scrubber input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-6px;border-radius:50%;background:var(--blue);border:2px solid var(--surface);box-shadow:0 0 0 1px var(--blue)}
+    .scrubber input[type="range"]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--blue);border:2px solid var(--surface)}
+    .scrubber .ticks{position:absolute;left:8px;right:8px;height:14px;font-size:11px;color:var(--muted)}
+    .scrubber .ticks span{position:absolute;transform:translateX(-50%);top:0}
+    .scrubber .ticks span.first{transform:translateX(-8px)}
+    .scrubber .ticks span::after{content:"";position:absolute;left:50%;top:15px;width:1px;height:5px;background:var(--muted);opacity:.6}
+    .scrubber .ticks span.first::after{left:8px}
+    .scrubber .ticks span.brk{color:var(--ink-2);font-weight:600}
+    .scrubber .ticks span.brk::after{height:9px;background:var(--ink-2);opacity:1}
+    .scrubber .month-val{min-width:84px;font-weight:700;font-size:15px}
+    .btn.play{height:34px;padding:0 14px;font-size:14px;width:104px}
+    .card-note{margin:0;padding:0 20px 18px;color:var(--muted);font-size:13px;line-height:1.45;max-width:calc(72ch + 40px)}
+    .card-note:empty{display:none}
+    .card-foot{display:flex;align-items:center;border-top:1px solid var(--grid)}
+    .card-foot .card-note{padding:12px 20px}
+    .heat-legend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:4px 20px 18px;font-size:13px;color:var(--ink-2)}
+    .heat-legend .lg-title{font-weight:600;color:var(--ink);margin-right:4px}
+    .heat-legend .lg-item{display:inline-flex;align-items:center;gap:6px}
+    .heat-legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+    .heat-legend .lg-item:nth-of-type(2) i{box-shadow:inset 0 0 0 1px var(--line)}
+    .sel-note{display:inline-flex;align-items:center;height:32px;color:var(--muted);font-size:14px;font-weight:500}
+    .link-btn{border:0;background:none;padding:0;color:var(--blue);font-weight:700;font-size:14px;cursor:pointer}
+    .link-btn:hover{text-decoration:underline}
+    .alert{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:24px 0 0;padding:14px 16px;border:1px solid color-mix(in srgb,var(--coral) 45%,transparent);background:var(--coral-soft);border-radius:12px;color:var(--ink)}
+    .alert strong{font-weight:700}
+    .alert span{color:var(--ink-2);flex:1 1 240px}
+    .alert .btn{height:34px;font-size:14px}
+    body.no-data .chart{height:200px !important;min-height:0 !important;flex:0 0 auto !important}
+    body.no-data .heat-legend,body.no-data .card-note,body.no-data .stat-row,body.no-data .player,body.no-data .hero-meta{display:none}
+    body.no-data .card-controls{opacity:.45;pointer-events:none}
+    body.no-data .chart{align-items:center}
+    .btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+    a.btn{text-decoration:none}
+    body.no-data .searchbox{opacity:.55;pointer-events:none}
+    body.no-data .scrubber input[type="range"]{opacity:.4}
+    .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;height:32px}
+    .seg button{border:0;background:var(--surface);padding:0 12px;font-size:14px;font-weight:600;color:var(--ink-2);cursor:pointer;white-space:nowrap}
+    .seg button + button{border-left:1px solid var(--line)}
+    .seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+        .debug-only{display:none !important}
+    html.debug .debug-only{display:revert !important}
+    #keywordFilterReset[hidden]{display:none}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}
+    .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px 20px;padding:18px 20px 0}
+    .card-head h3{margin:0;font-size:17px;letter-spacing:-.01em}
+    .card-head p{margin:2px 0 0;color:var(--muted);font-size:14px;max-width:60ch}
+    .card-body{padding:8px 20px 12px}
+    .card-controls{display:flex;gap:10px 20px;align-items:center;flex-wrap:wrap;padding:14px 20px 0}
+
+    /* Controls */
+    .ctrl{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;font-size:14px;color:var(--ink-2);min-width:0}
+    .ctrl label{font-weight:600;white-space:nowrap}
+    .ctrl output,.ctrl .val{min-width:3.2em;font-weight:700;color:var(--ink)}
+    .ctrl.disabled{opacity:.45}
+    input[type="range"]{accent-color:var(--blue);width:140px;height:20px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:38px;padding:0 16px;border-radius:8px;border:1px solid transparent;background:var(--blue);color:var(--blue-ink);font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap}
+    .btn:hover{filter:brightness(1.07)}
+    .btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+    .btn.small{height:34px;padding:0 12px;font-size:14px}
+    .btn.ghost:hover{background:var(--sunken);filter:none}
+    .btn.icon{width:34px;height:34px;padding:0;border-radius:8px}
+    .btn svg{width:17px;height:17px}
+    .chart-toolbar{display:flex;gap:4px;flex:0 0 auto}
+    .chart-toolbar .btn{width:32px;height:32px;padding:0;background:transparent;border-color:transparent;color:var(--muted)}
+    .chart-toolbar .btn:hover{background:var(--sunken);color:var(--ink)}
+    .chart-toolbar .btn svg{width:17px;height:17px}
+
+    .help{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--muted);color:var(--muted);font-size:12px;font-weight:800;cursor:help;flex:0 0 auto;font-style:normal}
+    .tooltip{position:absolute;z-index:1000;max-width:260px;background:var(--tip-bg);color:var(--tip-ink);padding:8px 10px;font-size:13px;line-height:1.4;border-radius:8px;display:none;white-space:pre-wrap}
+
+    /* Keyword filter */
+    .keyword-select-wrapper{position:relative}
+    .keyword-select-display{display:inline-flex;align-items:center;gap:8px;height:38px;max-width:min(520px,70vw);padding:0 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .keyword-select-display::after{content:"";width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-2px) rotate(45deg);flex:0 0 auto}
+    .keyword-select-dropdown{position:absolute;top:calc(100% + 6px);left:0;width:min(340px,86vw);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:var(--search-shadow);max-height:340px;overflow:auto;display:none;z-index:40}
+    .keyword-select-dropdown.open{display:block}
+    .keyword-select-dropdown input[type="text"]{width:100%;height:38px;padding:0 12px;margin-bottom:6px;border:1px solid var(--line);border-radius:8px;background:var(--paper);outline:none}
+    .keyword-select-dropdown input[type="text"]:focus{border-color:var(--blue)}
+    .keyword-select-dropdown label{display:flex;align-items:center;gap:8px;font-size:14px;padding:6px 8px;border-radius:6px;cursor:pointer;min-width:0}
+    .keyword-select-dropdown label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .keyword-select-dropdown{padding-bottom:0;max-height:none;overflow:visible}
+    #keywordCheckboxes{max-height:238px;overflow:auto;scroll-snap-type:y proximity}
+    #keywordCheckboxes label{height:34px;scroll-snap-align:start}
+    #keywordCheckboxes label b{font-weight:800;color:var(--ink)}
+    #keywordCheckboxes[data-empty]::before{content:attr(data-empty);display:block;padding:10px 8px;color:var(--muted);font-size:14px}
+    .kw-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px -8px 0;padding:8px 16px;background:var(--surface);border-top:1px solid var(--grid);font-size:13px;color:var(--muted)}
+    .kw-foot button{border:0;background:none;color:var(--blue);font-weight:700;cursor:pointer;padding:0}
+    .keyword-select-dropdown label:hover{background:var(--sunken)}
+
+    /* Charts */
+    .chart{height:480px;width:100%;position:relative;display:flex;align-items:center;justify-content:center}
+    .chart.wide{height:440px}
+    .chart.heat{height:520px}
+    .chart .placeholder{color:var(--muted);font-size:14px}
+    .chart.flip{animation:flipY .6s}
+    @keyframes flipY{0%{transform:rotateY(0)}50%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
+    .card.is-fullscreen{position:fixed;inset:24px;margin:0 !important;z-index:1000;overflow:auto;display:flex;flex-direction:column;box-shadow:0 0 0 100vmax rgba(9,15,28,.62)}
+    .card.is-fullscreen .player{border:0;border-top:1px solid var(--grid);border-radius:0;align-self:stretch;margin-top:auto}
+    .fs-tabs{margin:0 8px 0 0}
+    .fs-table{margin:14px 20px 20px;flex:0 1 auto;min-height:0;overflow:auto;border:1px solid var(--line);border-radius:8px}
+    .fs-table table{border-collapse:separate;border-spacing:0;font-size:13px;width:max-content;min-width:100%}
+    .fs-table th,.fs-table td{padding:7px 12px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+    .fs-table th{position:sticky;top:0;background:var(--surface);color:var(--ink-2);z-index:2}
+    .fs-table th:first-child,.fs-table td:first-child{position:sticky;left:0;background:var(--surface);text-align:left;z-index:1;font-weight:600}
+    .fs-table th:first-child{z-index:3}
+    .chart-fullscreen-overlay{position:fixed;inset:0;background:var(--paper);display:none;flex-direction:column;align-items:stretch;padding:20px 24px;z-index:1000;overflow:auto}
+    .chart-fullscreen-overlay.active{display:flex}
+    .chart-fullscreen-overlay > .chart-toolbar{align-self:flex-end;margin-bottom:8px}
+    .chart-fullscreen-overlay .chart{flex:0 0 auto;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+    .chart-resizer{height:10px;cursor:row-resize;margin:6px 0;border-radius:5px;background:var(--grid)}
+    .chart-resizer:hover{background:var(--line)}
+    .chart-fullscreen-overlay .data-table{overflow:auto;margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+    .chart-fullscreen-overlay table{width:100%;border-collapse:collapse;font-size:14px}
+    .chart-fullscreen-overlay th,.chart-fullscreen-overlay td{border-bottom:1px solid var(--grid);padding:8px 12px;text-align:left;white-space:nowrap}
+    .chart-fullscreen-overlay th{position:sticky;top:0;background:var(--surface)}
+
+    /* Data & about */
+    .data-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:16px}
+    .file-tile{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+    .file-tile strong{display:block;font-size:15px}
+    .file-tile span{display:block;color:var(--muted);font-size:14px}
+    .file-status{display:block;margin-top:4px;font-style:normal;font-size:13px;font-weight:600;color:var(--ink-2)}
+    .data-range{color:var(--muted);font-size:14px}
+    .file-input-display{max-width:50%;text-align:right;background:none;border:0;padding:0;color:var(--blue);font-weight:700;font-size:14px;cursor:pointer}
+    .file-tile input[type="file"]{display:none}
+    .data-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+    /* Share chooser */
+    .share-overlay{position:fixed;inset:0;background:rgba(9,15,28,.55);display:flex;align-items:center;justify-content:center;z-index:10000;padding:16px}
+    .share-box{background:var(--surface);color:var(--ink);padding:20px;border-radius:12px;width:min(360px,100%);border:1px solid var(--line)}
+    .share-box h3{margin:0 0 12px;font-size:18px}
+    .share-box ul{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .share-box li a{display:block;padding:8px 10px;border-radius:8px;background:var(--sunken);color:var(--ink);text-decoration:none;font-weight:600;font-size:14px}
+    .share-box li a:hover{background:var(--blue-soft)}
+    .share-box input{width:100%;height:38px;padding:0 10px;margin-bottom:12px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+    .share-box .btn{width:100%}
+
+    @media (max-width:900px){
+    }
+    @media (max-width:1100px){
+      .grid-75{grid-template-columns:1fr}
+      .grid-75 #zeros{height:300px}
+      .grid-75 .card-note{margin-top:0}
+      #race-card{order:1} .player{order:2} #zeros-card{order:3}
+      .grid-75 .card-foot{height:auto;min-height:0}
+      .grid-75 .card-foot .card-note:empty{display:none}
+    }
+    @media (max-width:1040px){
+      .grid-2{grid-template-columns:1fr}
+    }
+    @media (max-width:720px){
+      .wrap{padding:0 16px}
+      .data-grid{grid-template-columns:1fr}
+      .chart{height:400px}
+      .grid-75 #race{height:400px}
+      .chart.wide{height:380px}
+      .card-head{padding:16px 16px 0}
+      .card-controls{padding:12px 16px 0}
+      .card-body{padding:8px 16px 12px}
+      .card-note,.heat-legend{padding-left:16px;padding-right:16px}
+      .heat-legend .lg-title{flex-basis:100%}
+      .heat-legend{gap:6px 9px}
+      .card-controls .seg{width:100%}
+      .card-controls .seg button{flex:1 1 auto;padding:0 10px;font-size:13px}
+      .seg,.select-sm,.sel-note{height:40px}
+      .btn.play,.btn.icon,.keyword-select-display{height:40px}
+      .btn.icon{width:40px}
+      .chart-toolbar [data-action="fullscreen"]{display:none}
+      .keyword-select-wrapper{position:static}
+      .keyword-select-dropdown{left:16px;right:16px;width:auto;top:calc(100% + 4px)}
+    }
+    @media (max-width:420px){
+      #heatTimeRangeChip{width:100%}
+      #heatTimeRangeChip select{flex:1 1 0;min-width:0}
+      .chart-toolbar [data-action="share"],.chart-toolbar [data-action="download"]{display:none}
+      .scrubber .month-val{min-width:0}
+      .scrubber{padding:12px 16px 14px}
+      .scrubber .track{order:3;flex-basis:100%}
+      .scrubber .speed{margin-left:auto;order:2}
+      .scrubber .speed label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+      .section{padding-top:36px}
+      .section-head h2{font-size:24px}
+      input[type="range"]{width:110px}
+      .filterbar .hint{display:none}
+    }
+    @media (prefers-reduced-motion: reduce){
+      .chart.flip{animation:none}
+    }
+    /* Editorial look (shared with every page): rules instead of cards, square controls, serif titles. */
+    a{color:var(--ink)}
+    :focus-visible{border-radius:0}
+    input[type="checkbox"]{border-radius:0;border-color:var(--ink)}
+    input[type="checkbox"]:checked{background:var(--ink);border-color:var(--ink)}
+    input[type="checkbox"]:checked::after{border-color:var(--paper)}
+    .filterbar{border-top:3px solid var(--ink);border-bottom:1px solid var(--ink);background:var(--paper)}
+    .filterbar .wrap{min-height:60px}
+    .filterbar .label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+    .filterbar .hint{font-size:13px}
+    .keyword-select-display{height:36px;border:1px solid var(--ink);border-radius:0;font-size:13px}
+    .keyword-select-dropdown{border:1px solid var(--ink);border-radius:0}
+    .keyword-select-dropdown input[type="text"]{border-radius:0;border-color:var(--ink);background:var(--surface)}
+    .keyword-select-dropdown input[type="text"]:focus{border-color:var(--ink)}
+    .keyword-select-dropdown label{border-radius:0}
+    .kw-foot button{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+    main{padding-bottom:24px}
+    .section{padding:40px 0 8px}
+    .section-head h2{font-family:var(--serif);font-weight:500;font-size:34px;letter-spacing:-.01em}
+    .section-head p{color:var(--ink2);font-size:16px}
+    .card{background:transparent;border:0;border-top:1px solid var(--ink);border-radius:0}
+    .card-head{padding:14px 0 0}
+    .card-head h3{font-family:var(--serif);font-weight:500;font-size:28px;line-height:1.12;letter-spacing:-.005em}
+    .card-head p{font-size:13px}
+    .card-controls{padding:14px 0 0}
+    .card-body{padding:8px 0 10px}
+    .card-note,.card-foot .card-note,.heat-legend{padding-left:0;padding-right:0}
+    .card-note{padding-bottom:4px}
+    .grid-75{grid-template-columns:minmax(0,1fr);gap:28px}
+    #race-card{order:1} .grid-75 .player{order:2} #zeros-card{order:3}
+    #race-card .card-body .chart{min-height:440px}
+    .grid-75 #zeros{height:340px}
+    .scrubber.card{background:var(--surface);border:1px solid var(--ink);padding:14px 16px}
+    .btn{border-radius:0;font-size:14px}
+    .btn.ghost{border-color:var(--ink)}
+    .btn.play{background:var(--accent);color:var(--on-accent);border-color:var(--accent);height:40px;width:108px;font-weight:700}
+    .btn.icon,.chart-toolbar .btn{border-radius:0}
+    .chart-toolbar .btn{border:1px solid var(--rule);background:var(--surface);color:var(--ink);width:36px;height:36px}
+    .chart-toolbar .btn:hover{border-color:var(--ink);background:var(--surface)}
+    .chart-toolbar{gap:8px}
+    .select-sm{height:36px;border:1px solid var(--ink);border-radius:0;font-size:13px}
+    .seg{height:36px;border:1px solid var(--ink);border-radius:0}
+    .seg button{font-size:13px;color:var(--ink);background:var(--surface)}
+    .seg button + button{border-left-color:var(--rule)}
+    .seg button[aria-pressed="true"]{background:var(--sel-bg);color:var(--sel-ink)}
+    .ctrl{color:var(--muted);font-size:13px}
+    .ctrl label{font-weight:500}
+    .scrubber input[type="range"]::-webkit-slider-runnable-track{height:4px;border-radius:0;background:linear-gradient(to right,var(--accent) var(--p,0%),var(--rule) var(--p,0%))}
+    .scrubber input[type="range"]::-moz-range-progress{background:var(--accent);border-radius:0}
+    .scrubber input[type="range"]::-moz-range-track{border-radius:0}
+    .scrubber input[type="range"]::-webkit-slider-thumb{background:var(--accent);box-shadow:0 0 0 1px var(--accent);border-color:var(--surface)}
+    .scrubber input[type="range"]::-moz-range-thumb{background:var(--accent)}
+    .scrubber .month-val{font-family:var(--serif);font-size:22px;font-weight:500;min-width:96px}
+    .heat-legend i{border-radius:0}
+    .data-grid{gap:0;border-top:1px solid var(--ink);border-bottom:1px solid var(--rule);margin-bottom:20px}
+    .file-tile{background:transparent;border:0;border-radius:0;padding:18px 0}
+    .file-tile + .file-tile{border-left:1px solid var(--rule);padding-left:24px}
+    .data-grid .file-tile:first-child{padding-right:24px}
+    .file-status{color:var(--pos)}
+    .link-btn{color:var(--ink);text-decoration:underline;text-underline-offset:3px;font-weight:600}
+    .data-actions{justify-content:space-between}
+    .alert{border-radius:0}
+    .card.is-fullscreen{background:var(--paper);border:1px solid var(--ink);padding:0 20px}
+    .fs-table{border-radius:0}
+    .share-box{border-radius:0;border-color:var(--ink)}
+    .share-box li a{border-radius:0}
+    .share-box input{border-radius:0}
+    .tooltip{border-radius:0;background:var(--surface);color:var(--ink);border:1px solid var(--ink)}
+    @media (max-width:720px){
+      .card-head,.card-controls,.card-body{padding-left:0;padding-right:0}
+      .card-note,.heat-legend{padding-left:0;padding-right:0}
+      .data-grid{grid-template-columns:1fr}
+      .file-tile + .file-tile{border-left:0;border-top:1px solid var(--rule);padding-left:0}
+      .card-head h3{font-size:24px}
+      .section-head h2{font-size:28px}
+      #race-card .card-body .chart{min-height:400px}
+    }
+  </style>
+  <script>
+    // Native dialogs would block the page; the app never needs them.
+    window.alert = () => {};
+    window.confirm = () => true;
+    window.prompt = () => null;
+    if(/[?&]debug\b/.test(location.search)) document.documentElement.classList.add('debug');
+  </script>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <div class="left">
+      <a class="brand" href="./index.html">Marketplace Keywords</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="./index.html">This month</a>
+        <a href="./month-by-month.html" aria-current="page">Month by month</a>
+        <a href="./keyword-explorer.html">Keyword Explorer</a>
+        <a href="./archive.html">Archive</a>
+        <a href="./method.html">Method</a>
+        <a href="./about.html">About</a>
+      </nav>
+    </div>
+    <div class="head-actions">
+      <a class="btn-quiet" data-link="github" href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12z"/></svg><span class="lbl">GitHub</span></a>
+      <button id="btn-share-page" class="btn-quiet" type="button" aria-label="Share this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span class="lbl">Share</span></button>
+    </div>
+  </div>
+</header>
+
+  <section class="wrap page-intro" aria-labelledby="pageTitle">
+    <div class="page-head">
+      <span class="kicker accent" id="pageKicker">All charts</span>
+      <h1 id="pageTitle" data-testid="help-dynamics">Month by month</h1>
+      <p class="lede">The queries with the largest share of Marketplace searches each month, next to how many searches found no apps at all. Press play or drag the month slider. In November 2024 broad queries such as “automation”, “jira” and “structure” lost most of their share in a single month, while app names held steady. Atlassian rolled out its <a href="https://www.atlassian.com/blog/innovation/new-atlassian-marketplace" target="_blank" rel="noopener noreferrer">redesigned Marketplace</a>, with autocomplete and new categories, from mid-October to early November 2024, so shares before and after are not directly comparable. Meaningless queries are removed; see the <a href="./method.html#noise">method</a>.</p>
+    </div>
+  </section>
+
+  <div class="filterbar">
+    <div class="wrap">
+      <span class="label" id="filterLabel">Charts show</span>
+      <div class="keyword-select-wrapper">
+        <button id="keywordFilterInput" class="keyword-select-display" type="button" aria-haspopup="true" aria-labelledby="filterLabel keywordFilterInput">All queries</button>
+        <div id="keywordOptions" class="keyword-select-dropdown"></div>
+      </div>
+      <button id="keywordFilterReset" class="btn ghost icon" type="button" aria-label="Show all queries" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+      <span class="hint">Pick queries to focus every chart below on them.</span>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <div id="loadAlert" class="alert" role="alert" hidden><strong>Couldn’t load the reports from the repository.</strong><span>Check your connection and try again, or open your own exports.</span><button id="btn-retry" class="btn small" type="button">Retry</button><a class="btn ghost small" href="#data">Open your own files</a></div>
+    <section class="section" id="dynamics" aria-label="Month by month charts">
+      <div class="grid-75">
+        <div class="card" id="race-card">
+          <div class="card-head">
+            <div><h3 id="raceTitle">Top queries by share of searches</h3><p id="raceDesc">Percentage of all Marketplace searches in the month.</p></div>
+            <div class="head-tools"><div data-toolbar-for="race"></div></div>
+          </div>
+          <div class="card-controls">
+            <div class="ctrl"><label for="topN">Show</label><span class="sel-note" hidden></span><select id="topN" class="select-sm"><option value="5">Top 5</option><option value="10" selected>Top 10</option><option value="15">Top 15</option><option value="20">Top 20</option></select><span id="topNVal" hidden>10</span></div>
+          </div>
+          <div class="card-body"><div id="race" class="chart" data-testid="race"><div class="placeholder">Loading charts…</div></div></div>
+          <p class="card-note" id="raceNote"></p>
+        </div>
+        <div class="card" id="zeros-card">
+          <div class="card-head">
+            <div><h3 id="zerosTitle">Searches that found no apps</h3><p id="zerosDesc">Total per month.</p></div>
+            <div class="head-tools"><div data-toolbar-for="zeros"></div></div>
+          </div>
+          <div class="card-controls"><div class="seg" role="group" aria-label="Zero-result view"><button type="button" id="zeroModeTotals" aria-pressed="true">Total per month</button><button type="button" id="zeroModeKeywords" aria-pressed="false">By query</button></div></div>
+          <div class="card-body"><div id="zeros" class="chart" data-testid="zeros"><div class="placeholder">Loading charts…</div></div></div>
+          <p class="card-note" id="zerosNote"></p>
+        </div>
+        <div class="scrubber card player" aria-label="Month player">
+          <button id="btn-play" class="btn play" type="button" aria-label="Play">▶ Play</button>
+          <label for="raceMonth" class="visually-hidden">Month</label>
+          <div class="track"><input id="raceMonth" type="range" min="0" max="0" value="0" /><div class="ticks" id="raceTicks" aria-hidden="true"></div></div>
+          <span id="raceMonthVal" class="month-val">–</span>
+          <div class="ctrl speed"><label for="speed" class="visually-hidden">Speed</label><select id="speed" class="select-sm"><option value="2000">0.5× speed</option><option value="1200" selected>1× speed</option><option value="600">2× speed</option></select><span id="speedVal" hidden>1.2s</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="trends" aria-labelledby="trendsTitle">
+      <div class="section-head">
+        <div>
+          <h2 id="trendsTitle">Over the years</h2>
+          <p id="trendsIntro">How the biggest queries moved, and which searches keep coming back empty.</p>
+        </div>
+      </div>
+      <div class="card" id="trails-card">
+        <div class="card-head">
+          <div><h3 data-testid="help-trails" id="trailsTitle">Share of searches for the biggest queries</h3><p id="trailsDesc">The queries with the highest typical monthly share since November 2024, when Atlassian’s redesigned Marketplace arrived. Point at or tap a line to isolate it.</p></div>
+          <div class="head-tools"><div data-toolbar-for="trails"></div></div>
+        </div>
+        <div class="card-controls">
+          <div class="seg" role="group" aria-label="Time range"><button type="button" id="trailsRecent" aria-pressed="true">Since Nov 2024</button><button type="button" id="trailsAll" aria-pressed="false">All years</button></div>
+          <div class="ctrl"><label for="trailsN">Show</label><span class="sel-note" hidden></span><select id="trailsN" class="select-sm"><option value="3">3 queries</option><option value="4">4 queries</option><option value="5">5 queries</option><option value="6" selected>6 queries</option><option value="8">8 queries</option><option value="10">10 queries</option></select><span id="trailsNVal" hidden>6</span></div>
+        </div>
+        <div class="card-body"><div id="trails" class="chart wide" data-testid="trails"><div class="placeholder">Waiting for data…</div></div></div>
+        <p class="card-note" id="trailsNote"></p>
+      </div>
+      <div class="card" id="heatmap-card" style="margin-top:20px">
+        <div class="card-head">
+          <div><h3 data-testid="help-heatmap">Queries that most often found no apps</h3><p id="heatDesc">Ranked by total empty searches in the selected period. Stronger colour means more empty searches that month.</p></div>
+          <div class="head-tools"><div data-toolbar-for="heatmap"></div></div>
+        </div>
+        <div class="card-controls">
+          <div class="seg" role="group" aria-label="Heatmap period" id="heatPresets"><button type="button" data-range="report" aria-pressed="false">Since Nov 2024</button><button type="button" data-range="12" aria-pressed="true">12 months</button><button type="button" data-range="all" aria-pressed="false">All years</button><button type="button" data-range="custom" aria-pressed="false">Custom</button></div>
+          <div class="ctrl"><label for="heatTopK">Show</label><span class="sel-note" hidden></span><select id="heatTopK" class="select-sm"><option value="10">10 queries</option><option value="15" selected>15 queries</option><option value="20">20 queries</option><option value="30">30 queries</option></select><span id="heatTopKVal" hidden>15</span></div>
+          <div class="ctrl" id="heatTimeRangeChip" hidden><label for="heatTimeStart">From</label><select id="heatTimeStart" class="select-sm"></select><label for="heatTimeEnd">to</label><select id="heatTimeEnd" class="select-sm"></select><span id="heatTimeStartVal" hidden></span><span id="heatTimeEndVal" hidden></span></div>
+        </div>
+        <div class="card-body"><div id="heatmap" class="chart heat" data-testid="heatmap"><div class="placeholder">Waiting for data…</div></div></div>
+        <div id="heatLegend" class="heat-legend" aria-label="Colour key"></div>
+      </div>
+    </section>
+
+    <section class="section" id="data" aria-labelledby="dataTitle"><span id="own-data"></span>
+      <div class="section-head">
+        <div>
+          <h2 id="dataTitle" data-testid="help-inputs">Use your own data</h2>
+          <p>The page loads the latest reports from this repository. You can open your own exports instead; files are read in your browser and never uploaded.</p>
+        </div>
+      </div>
+      <div class="data-grid">
+        <div class="file-tile">
+          <div><strong>Popular search keywords</strong><span>Raw sheet with month, keyword, percentage, rank</span><em id="source-display" class="file-status">Not loaded</em></div>
+          <input id="file-source" type="file" accept=".xlsx,.xls" />
+          <button id="source-open" class="btn ghost small" type="button">Choose file</button>
+        </div>
+        <div class="file-tile">
+          <div><strong>Zero-result keywords</strong><span>Raw sheet with month, keyword, count</span><em id="zero-display" class="file-status">Not loaded</em></div>
+          <input id="file-zero" type="file" accept=".xlsx,.xls" />
+          <button id="zero-open" class="btn ghost small" type="button">Choose file</button>
+        </div>
+      </div>
+      <div class="data-actions">
+        <span id="dataRange" class="data-range"></span>
+        <button id="btn-load-defaults" class="link-btn" type="button">Reload repository data</button>
+        <button id="btn-demo" class="btn ghost debug-only" type="button">Load demo data</button>
+        <button id="btn-test" class="btn ghost debug-only" type="button">Run smoke tests</button>
+      </div>
+      <div id="status" class="status debug-only" role="status">Status: starting…</div>
+    </section>
+
+  </main>
+
+<footer class="site-foot"><div class="wrap"><span>Data: Atlassian Marketplace search reports. Not affiliated with or endorsed by Atlassian. <a href="./method.html">Method</a></span><a class="powered" href="https://www.actonic.de" data-link="actonic" target="_blank" rel="noopener noreferrer"><img src="img/actonic.svg" alt="" width="14" height="17">Powered by Actonic</a></div></footer>
+
+  <script src="assets/common.js"></script>
+  <script>
+  (function(){
+    const statusEl = document.getElementById('status');
+    const setBootStatus = (t)=>{ if(statusEl) statusEl.textContent = 'Status: ' + t; };
+
+    function loadScriptSeq(urls, globalName){
+      return new Promise((resolve, reject)=>{
+        let i = 0;
+        const tryNext = ()=>{
+          if(i >= urls.length){ reject(new Error('All CDNs failed for '+globalName)); return; }
+          const url = urls[i++];
+          setBootStatus(`loading ${globalName} from ${new URL(url).hostname}…`);
+          const s = document.createElement('script');
+          s.src = url; s.async = true; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
+          s.onload = ()=>{ setTimeout(()=>{ if(window[globalName]){ resolve(window[globalName]); } else { tryNext(); } }, 0); };
+          s.onerror = ()=>{ setBootStatus(`${globalName} failed from ${new URL(url).hostname}, trying next…`); tryNext(); };
+          document.head.appendChild(s);
+        };
+        tryNext();
+      });
+    }
+
+    const ECHARTS_URLS = [
+      'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js',
+      'https://unpkg.com/echarts@5.5.0/dist/echarts.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/echarts/5.3.3/echarts.min.js'
+    ];
+    const XLSX_URLS = [
+      'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+      'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'
+    ];
+
+    function boot(){
+      Promise.all([
+        window.echarts ? Promise.resolve(window.echarts) : loadScriptSeq(ECHARTS_URLS, 'echarts')
+      ]).then(()=>{
+        setBootStatus('libraries ready');
+        startApp();
+      }).catch(err=>{
+        console.error(err);
+        setBootStatus('error: '+ err.message);
+        const q = document.getElementById('heroInput'); if(q){ q.placeholder = 'Charts could not load'; q.disabled = true; }
+        const al = document.getElementById('loadAlert'); if(al){ al.hidden = false; al.querySelector('strong').textContent = 'The chart library could not load.'; al.querySelector('span').textContent = 'Refresh the page to try again.'; al.querySelector('#btn-retry').addEventListener('click', ()=> location.reload()); }
+        document.body.classList.add('no-data'); document.querySelectorAll('.chart .placeholder').forEach(p=> p.textContent = 'Charts could not load');
+      });
+    }
+
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', boot);
+    } else { boot(); }
+
+    function startApp(){
+      const $ = (sel)=>document.querySelector(sel);
+      const setStatus = (t)=> $('#status').textContent = `Status: ${t}`;
+      const FONT = "'Public Sans', 'Helvetica Neue', Arial, sans-serif";
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const fullscreenState = { chartEl: null, chart: null, placeholder: null, btn: null, toolbar: null, toolbarPlaceholder: null };
+
+      // Theme colours come from CSS custom properties so charts follow light/dark mode.
+      function T(){
+        const s = getComputedStyle(document.documentElement);
+        const v = (n)=> s.getPropertyValue(n).trim();
+        return {
+          ink:v('--ink'), ink2:v('--ink-2'), muted:v('--muted'), line:v('--line'), grid:v('--grid'), surface:v('--surface'), paper:v('--paper'),
+          blue:v('--blue'), blueSoft:v('--blue-soft'), coral:v('--coral'), tipBg:v('--tip-bg'), tipInk:v('--tip-ink'),
+          heat:[v('--heat-0'),v('--heat-1'),v('--heat-2'),v('--heat-3'),v('--heat-4')], heatNone:v('--heat-none'),
+          series:v('--series').split(',').map(x=>x.trim()).filter(Boolean)
+        };
+      }
+      const tooltipStyle = (t)=>({ confine:true, backgroundColor:t.tipBg, borderColor:t.ink, borderWidth:1, padding: innerWidth < 560 ? [6,8] : [8,10], textStyle:{ color:t.tipInk, fontFamily:FONT, fontSize: innerWidth < 560 ? 12 : 13 }, extraCssText:'border-radius:0;box-shadow:0 8px 20px rgba(0,0,0,.12);' });
+      // Tooltips sit beside the pointer, below any legend and clear of the y-axis labels.
+      // Beside the pointer, never on top of it: right if it fits, else left (over the axis labels if it must).
+      const tipAt = (top=8, minLeft=4)=> (point, params, dom, rect, size)=>{ const x = point[0], w = size.contentSize[0], W = size.viewSize[0]; if(x + 14 + w <= W - 4) return [x + 14, top]; if(x - 14 - w >= minLeft) return [x - 14 - w, top]; if(x - 14 - w >= 2) return [x - 14 - w, top]; return [Math.max(2, Math.min(W - w - 2, x + 14)), top]; };
+      const tipBeside = tipAt();
+      const sliderZoom = (t, extra={})=>({ type:'slider', xAxisIndex:0, height:16, bottom:8, borderColor:t.line, backgroundColor:'transparent', fillerColor:t.blueSoft, handleStyle:{ color:t.surface, borderColor:t.muted }, moveHandleStyle:{ color:t.line }, dataBackground:{ lineStyle:{ color:t.line }, areaStyle:{ color:t.grid } }, selectedDataBackground:{ lineStyle:{ color:t.blue }, areaStyle:{ color:t.blueSoft } }, textStyle:{ color:t.muted, fontFamily:FONT }, ...extra });
+
+      function initHelp(){
+        const tip = document.createElement('div');
+        tip.className = 'tooltip';
+        tip.setAttribute('role','tooltip');
+        document.body.appendChild(tip);
+        const show = (e)=>{
+          const msg = e.currentTarget.getAttribute('data-help') || e.currentTarget.getAttribute('title');
+          if(!msg) return;
+          tip.textContent = msg;
+          const r = e.currentTarget.getBoundingClientRect();
+          tip.style.left = Math.min(r.left + window.scrollX, window.scrollX + document.documentElement.clientWidth - 276) + 'px';
+          tip.style.top = (r.bottom + window.scrollY + 8) + 'px';
+          tip.style.display = 'block';
+        };
+        const hide = ()=>{ tip.style.display = 'none'; };
+        document.querySelectorAll('.help').forEach(el=>{
+          el.addEventListener('mouseenter', show);
+          el.addEventListener('mouseleave', hide);
+          el.addEventListener('focus', show);
+          el.addEventListener('blur', hide);
+          el.addEventListener('touchstart', show, {passive:true});
+          el.addEventListener('touchend', hide);
+        });
+      }
+
+      const state = {
+        charts: { race: null, zeros: null, trails: null, heatmap: null },
+        sourceRaw: [], zeroRaw: [], zeroTotals: [],
+        months: [],
+        zeroMode: 'totals',
+        topN: 10, playInterval: 1200, timelinePlaying: false,
+        trailsN: 6, heatTopK: 15,
+        keywordFilter: [],
+        heatTimeStartIdx: 0, heatTimeEndIdx: 0, heatTimeRangeInitialized: false, trailsLegendPage: 0, trailsLegendCols: 3, trailsLegendRows: 2, trailsLegendTotalPages: 1,
+        manualSource: false, manualZero: false, defaultsTried: false,
+        hero: { queue: [], idx: 0, timer: null, key: '' },
+        trailsRange: 'recent', raceMonths: [], raceIndex: 0, playTimer: null, gapsPopular: new Set(), gapsZero: new Set(), zeroTotalsCache: null, zeroRaceMonths: []
+      };
+
+      const ICON_DOWNLOAD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+      const ICON_SHARE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
+      const ICON_FLIP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
+      const ICON_FULLSCREEN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
+      const ICON_FULLSCREEN_EXIT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="14" y1="10" x2="21" y2="3"/></svg>`;
+
+      // --- Utils ---
+      function sanitizeKeyword(k){
+        // The reports contain visually identical variants (case, zero-width or odd spaces); fold them into one query.
+        return String(k||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/[<>]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+      }
+      function escapeHtml(v){ return String(v).replace(/[&<>"']/g,(ch)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+      function monthLabel(key, opts={month:'long', year:'numeric'}){
+        const m = /^(\d{4})-(\d{2})/.exec(String(key||''));
+        if(!m) return String(key||'');
+        return new Date(Date.UTC(+m[1], +m[2]-1, 1)).toLocaleString('en-US', {...opts, timeZone:'UTC'}).replace(' ', '\u00a0');
+      }
+      function updateKeywordDisplay(){
+        const disp = document.getElementById('keywordFilterInput');
+        if(!disp) return;
+        const n = state.keywordFilter.length;
+        const rb = document.getElementById('keywordFilterReset'); if(rb) rb.hidden = !n;
+        disp.textContent = !n ? 'All queries' : n <= 3 ? state.keywordFilter.join(', ') : `${state.keywordFilter.slice(0,2).join(', ')} and ${n-2} more`;
+      }
+      function populateKeywordOptions(){
+        const list = document.getElementById('keywordOptions');
+        if(!list) return;
+        // Every load assigns new row arrays, so comparing the arrays themselves catches a new workbook even with the same row count.
+        if(list._src !== state.sourceRaw || list._zero !== state.zeroRaw){
+          list._src = state.sourceRaw; list._zero = state.zeroRaw;
+          const weight = new Map();
+          for(const r of state.sourceRaw){ const k = r.keyword; if(k) weight.set(k, (weight.get(k)||0) + (asNumber(r.percentage)||0)); }
+          for(const r of state.zeroRaw){ const k = r.keyword; if(k && !weight.has(k)) weight.set(k, 0); }
+          list.innerHTML = '';
+          const search = document.createElement('input');
+          search.type = 'text'; search.id = 'keywordSearch'; search.placeholder = 'Search queries…'; search.setAttribute('aria-label','Search queries');
+          const box = document.createElement('div'); box.id = 'keywordCheckboxes';
+          const foot = document.createElement('div'); foot.className = 'kw-foot';
+          foot.innerHTML = '<span id="kwCount"></span><button type="button" id="kwClear">Clear</button>';
+          list.append(search, box, foot);
+          const keywords = Array.from(weight.keys()).filter(k=> /[\p{L}\p{N}]/u.test(k)).sort((a,b)=> weight.get(b)-weight.get(a) || a.localeCompare(b));
+          // Only the rows on screen exist as elements (at most 80), so opening and typing stay instant with thousands of queries.
+          const nodes = new Map();
+          const node = (k)=>{
+            let label = nodes.get(k); if(label) return label;
+            label = document.createElement('label'); label.dataset.k = k; label.title = k;
+            const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = k;
+            const span = document.createElement('span');
+            label.append(cb, span); nodes.set(k, label);
+            cb.addEventListener('change', ()=>{
+              if(cb.checked){ if(!state.keywordFilter.includes(k)) state.keywordFilter.push(k); }
+              else state.keywordFilter = state.keywordFilter.filter(x=>x!==k);
+              updateKeywordDisplay(); scheduleRender();
+            });
+            return label;
+          };
+          const lower = keywords;
+          const LIMIT = 80;
+          let current = [];
+          const apply = ()=>{
+            const q = search.value.trim().toLowerCase();
+            const picked = state.keywordFilter.filter(k=> !q || k.includes(q));
+            const pickedSet = new Set(picked);
+            const buckets = [[],[],[],[]];
+            for(let i=0;i<lower.length;i++){
+              const k = lower[i]; if(pickedSet.has(k)) continue;
+              if(!q){ if(buckets[3].length < LIMIT) buckets[3].push(k); else break; continue; }
+              const at = k.indexOf(q); if(at < 0) continue;
+              const sc = k === q ? 0 : at === 0 ? 1 : /[\s\-_/]/.test(k[at-1]) ? 2 : 3;
+              if(buckets[sc].length < LIMIT) buckets[sc].push(k);
+            }
+            current = picked.concat(...buckets).slice(0, LIMIT);
+            const frag = document.createDocumentFragment();
+            for(const k of current){
+              const l = node(k); const at = q ? k.indexOf(q) : -1;
+              l.lastChild.innerHTML = at >= 0 ? escapeHtml(k.slice(0,at)) + '<b>' + escapeHtml(k.slice(at, at+q.length)) + '</b>' + escapeHtml(k.slice(at+q.length)) : escapeHtml(k);
+              l.firstChild.checked = state.keywordFilter.includes(k);
+              frag.appendChild(l);
+            }
+            box.replaceChildren(frag);
+            if(!current.length){ box.dataset.empty = 'No matching queries'; } else delete box.dataset.empty;
+          };
+          search.addEventListener('input', apply);
+          search.addEventListener('keydown', e=>{
+            if(e.key === 'Enter'){ const k = current.find(x=> !state.keywordFilter.includes(x)); if(k){ const cb = node(k).firstChild; cb.checked = true; cb.dispatchEvent(new Event('change')); } search.value=''; apply(); e.preventDefault(); }
+          });
+          foot.querySelector('#kwClear').addEventListener('click', ()=> document.getElementById('keywordFilterReset').click());
+          list._apply = apply;
+          apply();
+        }
+        list.querySelectorAll('#keywordCheckboxes input').forEach(cb=> cb.checked = state.keywordFilter.includes(cb.value));
+        const n = state.keywordFilter.length;
+        const c = list.querySelector('#kwCount'); if(c) c.textContent = n ? `${n} picked` : 'Biggest first, all reports combined. Type to search.';
+        list.querySelector('#kwClear').hidden = !n;
+        updateKeywordDisplay();
+      }
+      function toggleRangeSelectors(){
+        const n = state.keywordFilter.length;
+        ['topN','trailsN','heatTopK'].forEach(id=>{
+          const el = document.getElementById(id); if(!el) return;
+          const note = el.parentElement.querySelector('.sel-note');
+          el.hidden = !!n; const lab = el.parentElement.querySelector('label'); if(lab) lab.hidden = !!n; if(note){ note.hidden = !n; note.textContent = `${n} picked ${n===1?'query':'queries'}`; }
+        });
+      }
+      const toMonthKey = (v)=>{
+        if(typeof v === 'string' && v.length === 7 && v.charCodeAt(4) === 45) return v;
+        try{
+          if(typeof v === 'number' && window.XLSX && XLSX.SSF){ const d = XLSX.SSF.parse_date_code(v); const date = new Date(Date.UTC(d.y, d.m-1, d.d)); return date.toISOString().slice(0,7); }
+          const d = new Date(v); if(!isNaN(d)) return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString().slice(0,7);
+          return String(v).trim().slice(0,7);
+        }catch(e){ return String(v).trim().slice(0,7); }
+      };
+      const asNumber = (x)=>{ if(x==null) return NaN; const n = Number(String(x).replace(',','.')); return Number.isFinite(n)?n:NaN; };
+      const labelTrim = (s, max=18)=>{ s = String(s||''); return s.length>max ? s.slice(0, max-1) + '…' : s; };
+      // Wrap to two lines at a sensible point (space if possible), keep start visible
+      function wrapLabel(s, max=22){
+        s = String(s||'');
+        if(s.length <= max) return s;
+        const cut = (str, m)=>{
+          if(str.length <= m) return [str, ''];
+          let i = str.lastIndexOf(' ', m);
+          if(i < Math.floor(m*0.6)) i = str.indexOf(' ', m);
+          if(i === -1) i = m;
+          return [str.slice(0, i), str.slice(i+1)];
+        };
+        let [l1, rest] = cut(s, max);
+        if(rest.length > max){ rest = rest.slice(0, max-1) + '…'; }
+        return l1 + '\n' + rest;
+      }
+
+      // Measure text width to size axis gutters dynamically
+      const measureTextWidth = (() => {
+        const c = document.createElement('canvas');
+        const ctx = c.getContext('2d');
+        ctx.font = `13px ${FONT}`;
+        return (s)=> ctx.measureText(String(s||'')).width;
+      })();
+
+      const trimToWidth = (s, maxPx)=>{
+        s = String(s||'');
+        if(measureTextWidth(s) <= maxPx) return s;
+        while(s.length && measureTextWidth(s + '…') > maxPx){
+          s = s.slice(0, -1);
+        }
+        return s + '…';
+      };
+
+      function chartBg(chart){
+        let el = chart.getDom();
+        while(el && el !== document.body){
+          const bg = getComputedStyle(el).backgroundColor;
+          if(bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') return bg;
+          el = el.parentElement;
+        }
+        return getComputedStyle(document.body).backgroundColor || '#ffffff';
+      }
+
+      function downloadChartPng(chart, filename='chart.png'){
+        const bg = chartBg(chart);
+        const dataURL = chart.getDataURL({type:'png', pixelRatio: window.devicePixelRatio||2, backgroundColor: bg});
+        const a = document.createElement('a');
+        a.href = dataURL;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+
+      async function shareChart(chart, {title, text, permalink, filename='chart.png'}){
+        const bg = chartBg(chart);
+        const dataURL = chart.getDataURL({type:'png', pixelRatio:2, backgroundColor: bg});
+        if(navigator.share){
+          try{
+            const res = await fetch(dataURL);
+            const blob = await res.blob();
+            const file = new File([blob], filename, {type:'image/png'});
+            if(navigator.canShare && navigator.canShare({files:[file]})){
+              await navigator.share({title, text, url:permalink, files:[file]});
+              return;
+            }
+            await navigator.share({title, text, url:permalink});
+            return;
+          }catch(e){ /* continue to fallback */ }
+        }
+        openShareChooser({url:permalink, text});
+      }
+
+      function openShareChooser({url, text}){
+        const u = encodeURIComponent(url);
+        const t = encodeURIComponent(text||'');
+        const options = [
+          {label:'X (Twitter)', href:`https://twitter.com/intent/tweet?url=${u}&text=${t}`},
+          {label:'LinkedIn', href:`https://www.linkedin.com/sharing/share-offsite/?url=${u}`},
+          {label:'Facebook', href:`https://www.facebook.com/sharer/sharer.php?u=${u}`},
+          {label:'Reddit', href:`https://www.reddit.com/submit?url=${u}&title=${t}`},
+          {label:'Telegram', href:`https://t.me/share/url?url=${u}&text=${t}`},
+          {label:'WhatsApp', href:`https://api.whatsapp.com/send?text=${t}%20${u}`},
+          {label:'Email', href:`mailto:?subject=${t}&body=${t}%0A%0A${u}`}
+        ];
+        let overlay = document.getElementById('shareOverlay');
+        if(!overlay){
+          overlay = document.createElement('div');
+          overlay.id = 'shareOverlay';
+          overlay.className = 'share-overlay';
+          const box = document.createElement('div');
+          box.className = 'share-box';
+          box.setAttribute('role','dialog');
+          box.setAttribute('aria-label','Share');
+          box.innerHTML = `<h3>Share</h3><ul></ul><input readonly aria-label="Link"><button class="btn" type="button">Close</button>`;
+          overlay.appendChild(box);
+          box.querySelector('button').addEventListener('click', ()=> overlay.style.display='none');
+          overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.style.display='none'; });
+          document.body.appendChild(overlay);
+        }
+        const list = overlay.querySelector('ul');
+        list.innerHTML = options.map(o=>`<li><a href="${o.href}" target="_blank" rel="noopener">${o.label}</a></li>`).join('');
+        overlay.querySelector('input').value = url;
+        overlay.style.display = 'flex';
+      }
+
+      function sharePage(){
+        const permalink = location.href;
+        const title = document.title;
+        const text = 'What people search for on the Atlassian Marketplace';
+        if(navigator.share){
+          navigator.share({title, text, url:permalink}).catch(()=>{});
+        }else{
+          openShareChooser({url:permalink, text});
+        }
+      }
+
+      function makeDataTable(chart){
+        const opt = chart.getOption();
+        const series = opt.series || [];
+        let rows = [];
+        const fmtCat = (c)=> /^\d{4}-\d{2}$/.test(String(c)) ? monthLabel(c,{month:'short', year:'numeric'}) : c;
+        if(series[0]?.type === 'heatmap'){
+          const xs = opt.xAxis[0].data, ys = opt.yAxis[0].data;
+          const grid = ys.map(()=> xs.map(()=> ''));
+          for(const [xi, yi, v] of series[0].data) grid[yi][xi] = v;
+          rows = [['Query', 'Total', ...xs.map(fmtCat)], ...ys.map((y,i)=>[y, grid[i].reduce((a,v)=> a + (+v||0), 0).toLocaleString('en-US'), ...grid[i].map(v=> v ? Number(v).toLocaleString('en-US') : '–')])];
+        } else if(series[0]?.type === 'bar' && opt.yAxis?.[0]?.type === 'category'){
+          const names = opt.yAxis[0].data || [], vals = series[0].data || [];
+          rows = [['Query', 'Value'], ...names.map((n,i)=>[n, (vals[i]?.value ?? vals[i])])];
+        } else if(series.length){
+          const categories = opt.xAxis && opt.xAxis[0] && opt.xAxis[0].data ? opt.xAxis[0].data : [];
+          rows = [['Month', ...series.map(s=>s.name||'Value')], ...categories.map((c,i)=>[fmtCat(c), ...series.map(s=>{ const v = Array.isArray(s.data?.[i]) ? s.data[i][1] : s.data?.[i]; const n = v && typeof v === 'object' ? v.value : v; return n==null ? '–' : (typeof n === 'number' && !Number.isInteger(n) ? n.toFixed(2) : n); })])];
+        }
+        const table = document.createElement('table');
+        if(rows.length){
+          const [header, ...body] = rows;
+          const trHead = document.createElement('tr');
+          header.forEach(h=>{ const th=document.createElement('th'); th.textContent=h; trHead.appendChild(th); });
+          table.appendChild(trHead);
+          body.forEach(r=>{ const tr=document.createElement('tr'); r.forEach(c=>{ const td=document.createElement('td'); td.textContent=c ?? ''; tr.appendChild(td); }); table.appendChild(tr); });
+        } else {
+          const tr=document.createElement('tr'); const td=document.createElement('td'); td.textContent='No data'; tr.appendChild(td); table.appendChild(tr);
+        }
+        return table;
+      }
+
+      function fitFullscreenChart(card, chartEl, chart){
+        // The chart takes whatever height the modal has left after its header, controls and footer.
+        const used = [...card.children].reduce((a, c)=> a + c.getBoundingClientRect().height, 0);
+        let h = chartEl.offsetHeight + (card.clientHeight - used) - 12;
+        if(chartEl.id === 'heatmap'){ const rows = (chart.getOption().yAxis?.[0]?.data || []).length; h = Math.min(h, rows*44 + 44); }
+        if(chartEl.id === 'race' && state.keywordFilter.length){ h = Math.min(h, Math.max(160, Math.min(state.keywordFilter.length, 20)*52 + 70)); card.style.bottom = 'auto'; card.style.top = Math.max(24, (innerHeight - (used - chartEl.offsetHeight + h + 12))/2) + 'px'; }
+        chartEl.style.height = Math.max(280, h) + 'px';
+        chart.resize();
+      }
+      function exitFullscreen(){
+        document.querySelectorAll('.card.is-fullscreen').forEach(c=>{
+          c.classList.remove('is-fullscreen'); c.style.top = ''; c.style.bottom = ''; c.querySelector('.fs-table')?.remove(); c.querySelector('.fs-tabs')?.remove();
+          c.querySelectorAll('.card-body,.heat-legend,.scrubber').forEach(el=> el.style.display = '');
+          const ch = c.querySelector('.chart'); ch.style.height = ch.dataset.h || '';
+          const b = c.querySelector('[data-action="exitfullscreen"]'); if(b){ b.innerHTML = ICON_FULLSCREEN; b.dataset.action = 'fullscreen'; b.setAttribute('aria-label','Open chart full screen'); b.title = 'Full screen'; }
+        });
+        const player = document.querySelector('.player'), home = document.getElementById('race-card')?.parentElement;
+        if(player && home && player.parentElement !== home) home.appendChild(player);
+        const was = fullscreenState.chart;
+        fullscreenState.chartEl = null; fullscreenState.chart = null; fullscreenState.btn = null;
+        document.body.style.overflow = '';
+        if(was) requestAnimationFrame(()=>{ was.resize(); if(was === state.charts.heatmap) renderAll(); });
+      }
+      function refreshFullscreenTable(){
+        const card = document.querySelector('.card.is-fullscreen'); const wrap = card?.querySelector('.fs-table');
+        if(wrap && fullscreenState.chart){ wrap.replaceChildren(makeDataTable(fullscreenState.chart)); }
+      }
+      function toggleFullscreen(chartEl, chart, btn){
+        const card = chartEl.closest('.card');
+        const entering = !card.classList.contains('is-fullscreen');
+        exitFullscreen();
+        if(!entering) return;
+        card.classList.add('is-fullscreen');
+        chartEl.dataset.h = chartEl.style.height || '';
+        // The month player drives both month-by-month charts, so it comes along into the modal.
+        if(card.id === 'race-card' || card.id === 'zeros-card'){ const player = document.querySelector('.player'); if(player) card.appendChild(player); }
+        const wrap = document.createElement('div'); wrap.className = 'fs-table'; wrap.hidden = true; wrap.appendChild(makeDataTable(chart));
+        const tabs = document.createElement('div'); tabs.className = 'seg fs-tabs'; tabs.setAttribute('role','group'); tabs.setAttribute('aria-label','View');
+        tabs.innerHTML = '<button type="button" aria-pressed="true" data-v="chart">Chart</button><button type="button" aria-pressed="false" data-v="table">Table</button>';
+        tabs.addEventListener('click', e=>{ const b = e.target.closest('button'); if(!b) return; const tbl = b.dataset.v === 'table'; tabs.querySelectorAll('button').forEach(x=> x.setAttribute('aria-pressed', String(x===b))); if(tbl) refreshFullscreenTable(); wrap.hidden = !tbl; card.querySelectorAll('.card-body,.heat-legend,.scrubber').forEach(el=> el.style.display = tbl ? 'none' : ''); if(!tbl) requestAnimationFrame(()=> fitFullscreenChart(card, chartEl, chart)); });
+        card.querySelector('.head-tools').prepend(tabs);
+        card.querySelector('.card-body').after(wrap);
+        btn.innerHTML = ICON_FULLSCREEN_EXIT; btn.dataset.action = 'exitfullscreen'; btn.setAttribute('aria-label','Exit full screen'); btn.title = 'Exit full screen';
+        fullscreenState.chartEl = chartEl; fullscreenState.chart = chart; fullscreenState.btn = btn;
+        document.body.style.overflow = 'hidden';
+        requestAnimationFrame(()=> fitFullscreenChart(card, chartEl, chart));
+      }
+
+      function attachChartToolbar(chartEl, chart, name){
+        const slot = document.querySelector(`[data-toolbar-for="${name}"]`);
+        if((slot || chartEl).querySelector('.chart-toolbar')) return;
+        const tb = document.createElement('div');
+        tb.className = 'chart-toolbar';
+        const btns = [`<button class="btn" type="button" data-action="fullscreen" aria-label="Open chart full screen" title="Full screen">${ICON_FULLSCREEN}</button>`];
+        btns.push(`<button class="btn" type="button" data-action="download" aria-label="Download chart as PNG" title="Download PNG">${ICON_DOWNLOAD}</button>`);
+        tb.innerHTML = btns.join('');
+        tb.addEventListener('click', (e)=>{
+          const btn = e.target.closest('button'); if(!btn) return;
+          const action = btn.dataset.action;
+          const permalink = location.href.split('#')[0] + '#' + name;
+          if(action === 'download'){
+            downloadChartPng(chart, name + '.png');
+          } else if(action === 'share'){
+            shareChart(chart, {title: `${document.title} — ${name}`, text: `View the ${name} chart`, permalink, filename: name + '.png'});
+          } else if(action === 'flip'){
+            flipZeros();
+          } else if(action === 'fullscreen' || action === 'exitfullscreen'){
+            toggleFullscreen(chartEl, chart, btn);
+          }
+        });
+        (slot || chartEl).appendChild(tb);
+      }
+
+      function ensureChart(id){
+        const el = document.getElementById(id);
+        if(!el){ console.error(`#${id} not found`); return null; }
+        const ph = el.querySelector('.placeholder'); if(ph) ph.remove();
+        if(state.charts[id] && !state.charts[id].isDisposed?.()) return state.charts[id];
+        try{ const c = echarts.init(el); state.charts[id] = c; attachChartToolbar(el, c, id); return c; }catch(err){ console.error('echarts.init failed', id, err); return null; }
+      }
+      function safeSetOption(id, option){
+        const c = ensureChart(id); if(!c){ setStatus(`error: chart #${id} not ready`); return; }
+        // Same picture, same size: leave the chart alone instead of redrawing it.
+        const sig = c.getWidth() + 'x' + c.getHeight() + '|' + JSON.stringify(option);
+        if(c.__sig === sig) return;
+        // The draw-in animation plays once; later updates appear at once instead of replaying it.
+        if(c.__sig) option.animation = false;
+        c.__sig = sig; c.setOption(option, true);
+      }
+
+      function setZeroMode(mode){
+        state.zeroMode = mode;
+        $('#zeroModeTotals').setAttribute('aria-pressed', String(mode==='totals'));
+        $('#zeroModeKeywords').setAttribute('aria-pressed', String(mode==='keywords'));
+        state.charts.zeros?.dispose(); state.charts.zeros = null;
+        renderAll();
+      }
+      function flipZeros(){ setZeroMode(state.zeroMode === 'totals' ? 'keywords' : 'totals'); }
+
+      // Grouping helpers
+      function groupByMonthTop(list, valueField, topN, filter){
+        const filt = filter && filter.length ? new Set(filter) : null;
+        const by = new Map(); for(const r of list){ const m = toMonthKey(r.month); if(!by.has(m)) by.set(m, []); by.get(m).push(r); }
+        const months = Array.from(by.keys()).sort(); const top = {};
+        for(const m of months){
+          const agg = new Map();
+          for(const x of by.get(m)){ const v = asNumber(x[valueField]); if(!Number.isFinite(v)) continue; const k = String(x.keyword||'').trim(); agg.set(k, (agg.get(k)||0) + v); }
+          let arr = Array.from(agg.entries()).map(([keyword, v])=>({ keyword, [valueField]: v }));
+          if(filt) arr = arr.filter(x=>filt.has(String(x.keyword||'').trim()));
+          arr = arr.sort((a,b)=> asNumber(b[valueField]) - asNumber(a[valueField]));
+          const sliceCount = filt ? arr.length : topN;
+          top[m] = arr.slice(0, sliceCount).map(x=>({ name:String(x.keyword||'').trim(), value:asNumber(x[valueField]) }));
+        }
+        return { months, topByMonth: top };
+      }
+      function totalsByMonth(list, valueField, filter){
+        const acc = new Map();
+        const filt = filter && filter.length ? new Set(filter) : null;
+        for(const r of list){ const k = String(r.keyword||'').trim(); if(filt && !filt.has(k)) continue; const m = toMonthKey(r.month); acc.set(m,(acc.get(m)||0)+(asNumber(r[valueField])||0)); }
+        return Array.from(acc.entries()).sort((a,b)=>a[0].localeCompare(b[0])).map(([m,v])=>({month:m,value:v}));
+      }
+
+      // --- Hero: latest month at a glance ---
+      function latestRanking(list, field, month){
+        const agg = new Map();
+        for(const r of list){
+          if(toMonthKey(r.month)!==month) continue; const v = asNumber(r[field]); if(!Number.isFinite(v)) continue;
+          const k = String(r.keyword||'').trim(); const cur = agg.get(k) || { value:0, rank:Infinity };
+          cur.value += v; const rr = asNumber(r.rank); if(Number.isFinite(rr) && rr > 0) cur.rank = Math.min(cur.rank, rr); agg.set(k, cur);
+        }
+        return Array.from(agg.entries()).sort((a,b)=> b[1].value-a[1].value || a[1].rank-b[1].rank)
+          .map(([keyword, x], i)=>({ keyword, value:x.value, rank: field==='percentage' && Number.isFinite(x.rank) ? x.rank : i+1 }));
+      }
+      function renderHero(){
+        if(state.heroSrc === state.sourceRaw && state.heroZero === state.zeroRaw && state.sourceRaw.length) return;
+        state.heroSrc = state.sourceRaw; state.heroZero = state.zeroRaw;
+        const months = Array.from(new Set(state.sourceRaw.map(r=>toMonthKey(r.month)))).sort();
+        if(months.length){
+          const gaps0 = incompleteMonths(state.sourceRaw); const first0 = months.find(m=>!gaps0.has(m)) || months[0], last0 = months[months.length-1];
+          $('#dataRange').textContent = `Reports from ${monthLabel(first0)} to ${monthLabel(last0)}`;
+          $('#pageKicker').textContent = `All charts · ${monthLabel(first0)} – ${monthLabel(last0)}`;
+        }
+        const list = $('#topList');
+        if(!list) return;
+        if(!months.length){
+          list.innerHTML = '<li class="empty-note">No report loaded yet. Load the repository data or open your own file below.</li>';
+          return;
+        }
+        const latest = months[months.length-1], prev = months[months.length-2];
+        const now = latestRanking(state.sourceRaw, 'percentage', latest);
+        const prevRank = new Map(prev ? latestRanking(state.sourceRaw, 'percentage', prev).map(r=>[r.keyword, r.rank]) : []);
+        const top = now.slice(0, 10);
+        // Climbers: biggest rank gains into the top 100 (new entries count as climbing from outside the top 500).
+        const withPrev = prev ? now.slice(0, 100).map(r=>({ ...r, prev: prevRank.get(r.keyword) ?? null })) : [];
+        const entries = withPrev.filter(r=> !r.prev);
+        const climbers = [...entries.slice(0,2), ...withPrev.filter(r=> r.prev && r.prev > r.rank).map(r=>({ ...r, gain: r.prev - r.rank })).sort((a,b)=> b.gain - a.gain || a.rank - b.rank)].slice(0, 6);
+        const foot = $('#topListFoot');
+        if(foot){ const more = entries.slice(2); const link = (r)=> `<a href="./keyword-explorer.html?q=${encodeURIComponent(r.keyword)}">${escapeHtml(r.keyword)}</a> #${r.rank}`; const all = './keyword-explorer.html?' + more.map(r=>'q='+encodeURIComponent(r.keyword)).join('&'); foot.innerHTML = more.length ? `Also new: ${more.slice(0,3).map(link).join(', ')}${more.length > 3 ? `, and <a href="${all}">${more.length-3} more</a>` : ''}.` : ''; }
+        $('#topListTitle').textContent = `Biggest climbers in ${monthLabel(latest)}`;
+        $('#topListSub').textContent = prev ? `New entries and the most places gained in the top 100 since ${monthLabel(prev,{month:'long'})}.` : 'Rank changes appear once there are two months of data.';
+        list.innerHTML = climbers.length ? climbers.map(r=>{
+          const from = r.prev ? `#${r.prev}` : '<span class="new-tag">new</span>';
+          const head = r.prev ? `<strong class="gain">+${r.prev - r.rank}</strong>` : '<strong class="gain">New</strong>';
+          const sub = r.prev ? `#${r.prev} → #${r.rank}` : `entered at #${r.rank}`;
+          return `<li><span class="kw"><span>${escapeHtml(r.keyword)}</span><small>${r.value.toFixed(2)}% of searches</small></span><span class="move2">${head}<small>${sub}</small></span></li>`;
+        }).join('') : '<li class="empty-note">No climbers this month.</li>';
+
+        // Zero-result line
+        const zMonths = Array.from(new Set(state.zeroRaw.map(r=>toMonthKey(r.month)))).sort();
+        if(zMonths.length){
+          const zl = zMonths[zMonths.length-1], zp = zMonths[zMonths.length-2];
+          const zTop = latestRanking(state.zeroRaw, 'count', zl);
+          const totalFor = (m)=>{ const t = state.zeroTotals.find(x=>x.month===m); return t && Number.isFinite(t.value) && t.value>0 ? t.value : zMonths.length ? state.zeroRaw.reduce((s,r)=> toMonthKey(r.month)===m ? s+(asNumber(r.count)||0) : s, 0) : 0; };
+          const total = totalFor(zl), before = zp ? totalFor(zp) : null;
+          $('#heroZeroQuery').textContent = zTop[0]?.keyword || '—';
+          $('#heroZeroLabel').textContent = 'Most frequent empty search';
+          $('#heroZeroCount').textContent = zTop[0] ? `${zTop[0].value.toLocaleString('en-US')} times in ${monthLabel(zl,{month:'short', year:'numeric'})}` : '';
+          $('#heroZeroTotalLabel').textContent = 'Searches that found no apps';
+          $('#heroZeroTotal').textContent = Math.round(total).toLocaleString('en-US');
+          let trend = '';
+          if(before){ const d = (total-before)/before*100; trend = Math.abs(d) < 0.5 ? `, about the same as ${monthLabel(zp,{month:'long'})}` : `, ${Math.abs(d).toFixed(0)}% ${d<0?'fewer':'more'} than ${monthLabel(zp,{month:'long'})}`; }
+          $('#heroZeroMeta').textContent = before ? `${monthLabel(zl,{month:'short', year:'numeric'})}, ${Math.abs((total-before)/before*100).toFixed(0)}% ${total<before?'fewer':'more'} than ${monthLabel(zp,{month:'short'})}` : monthLabel(zl);
+        }
+
+        const gaps = incompleteMonths(state.sourceRaw); const first = months.find(m=>!gaps.has(m)) || months[0];
+        $('#dataRange').textContent = `Reports from ${monthLabel(first)} to ${monthLabel(latest)}`;
+        $('#heroSource').textContent = `Built from Atlassian's monthly Marketplace search reports, ${monthLabel(first)} to ${monthLabel(latest)}: the top 500 queries by share of all searches, and the queries that returned no apps.`;
+
+        // The search box stays still; the line under it states this month's leader.
+        const lead = top[0];
+        if(lead){
+          $('#heroMeta').innerHTML = `<strong>#1</strong> in ${monthLabel(latest)}: <a href="./keyword-explorer.html?q=${encodeURIComponent(lead.keyword)}">${escapeHtml(lead.keyword)}</a>, ${lead.value.toFixed(2)}% of all Marketplace searches.`;
+          $('#heroInput').placeholder = `Search a query, e.g. ${lead.keyword}`;
+        }
+        // Suggestions: every known query, biggest overall share first, with its share in the latest report.
+        const total = new Map(); for(const r of state.sourceRaw){ total.set(r.keyword, (total.get(r.keyword)||0) + (asNumber(r.percentage)||0)); }
+        for(const r of state.zeroRaw){ if(!total.has(r.keyword)) total.set(r.keyword, 0); }
+        const nowShare = new Map(now.map(r=>[r.keyword, r.value]));
+        const lastTop = new Map(), lastZero = new Map();
+        for(const r of state.sourceRaw){ const m = lastTop.get(r.keyword); if(!m || r.month > m) lastTop.set(r.keyword, r.month); }
+        for(const r of state.zeroRaw){ const m = lastZero.get(r.keyword); if(!m || r.month > m) lastZero.set(r.keyword, r.month); }
+        state.heroIndex = Array.from(total.entries()).sort((a,b)=> b[1]-a[1]).map(([k])=>({ k, now: nowShare.get(k), last: lastTop.get(k), zero: lastZero.get(k) }));
+        state.heroLatest = latest;
+      }
+
+      // --- Chart options ---
+      // Reports with too few rows are partial exports (e.g. Dec 2021, Nov 2023); they are kept out of trend lines.
+      function monthCounts(list){ const c = new Map(); for(const r of list){ const m = toMonthKey(r.month); c.set(m, (c.get(m)||0)+1); } return c; }
+      function incompleteMonths(list){
+        const c = monthCounts(list); if(!c.size) return new Set();
+        const sorted = Array.from(c.values()).sort((a,b)=>a-b); const median = sorted[Math.floor(sorted.length/2)];
+        return new Set(Array.from(c.entries()).filter(([,n])=> n < median*0.8).map(([m])=>m));
+      }
+      const axisMonth = (v)=> monthLabel(v,{month:'short', year:'numeric'}).replace(/ (\d{4})$/, (_, y)=>` ’${y.slice(2)}`);
+      function yearTicks(months){ return (v, i)=> /-01$/.test(months[i]) ? v.slice(0,4) : ''; }
+      function quarterTicks(months){ return (v, i)=>{ const m = months[i]||''; if(i===0 && !/-01$/.test(m)) return `${monthLabel(m,{month:'short'})} ’${m.slice(2,4)}`; if(i>0 && i<3 && !/-01$/.test(months[0]||'') && !/-01$/.test(m)) return ''; if(/-01$/.test(m)) return m.slice(0,4); if(/-(04|07|10)$/.test(m)) return monthLabel(m,{month:'short'}); return ''; }; }
+      const narrow = (id)=> (document.getElementById(id)?.clientWidth || 999) < 480;
+      // Month ticks spaced by the room they get: every 1, 2, 3, 6, 12 or 24 months, Januaries as years.
+      function smartTicks(months, pxPerMonth, minGap=56){
+        // One fixed stride (yearly strides sit on Januaries, shorter ones start at the first month shown).
+        // A label carries its year when it is the first one or the year has changed since the previous label.
+        const step = [1,2,3,6,12,24].find(k=> k*pxPerMonth >= minGap) || 24;
+        const last = months.length-1;
+        const mi = (m)=> (+m.slice(0,4))*12 + (+m.slice(5,7)) - 1;
+        const shown = months.map((m,i)=> step >= 12 ? mi(m) % step === 0 : i % step === 0);
+        const text = months.map(()=> '');
+        let prevYear = null;
+        months.forEach((m,i)=>{ if(!shown[i]) return; const y = m.slice(0,4); text[i] = step >= 12 ? y : (y !== prevYear ? `${monthLabel(m,{month:'short'})} ’${y.slice(2)}` : monthLabel(m,{month:'short'})); prevYear = y; });
+        return (v, i)=> text[i] || '';
+      }
+      function niceAxis(max, n=4){
+        if(!(max > 0)) max = 1;
+        const raw = max/n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw/p;
+        const k = [1,2,5,10].find(x=> x >= f-1e-9), step = k*p;
+        const decimals = Math.max(0, -Math.floor(Math.log10(step)+1e-9) + (k === 2.5 ? 1 : 0));
+        return { max: +(Math.ceil(max/step - 1e-9)*step).toFixed(6), interval: step, decimals };
+      }
+      // Bot noise in the reports: queries with no letters or digits, and HTML/URL injection probes.
+      const isJunkQuery = (k)=> MK.isJunkQuery(k);
+      // One colour per query everywhere: preferred slot = the query's place in the latest report, then the next free slot.
+      function queryColors(names){
+        const pal = T().series, used = new Set(), out = {};
+        const hash = (k)=>{ let h=0; for(const ch of k) h = (h*31 + ch.codePointAt(0)) >>> 0; return h; };
+        const order = names.slice().sort((a,b)=> (state.colorRank?.get(a) ?? 1e9) - (state.colorRank?.get(b) ?? 1e9));
+        for(const n of order){
+          const r = state.colorRank?.get(n);
+          let i = (r != null ? r : hash(n)) % pal.length, tries = 0;
+          while(used.has(i) && tries < pal.length){ i = (i+1) % pal.length; tries++; }
+          used.add(i); out[n] = pal[i];
+        }
+        return out;
+      }
+
+      // Race gridlines: one colour per tick. ECharts adds a tick at an unrounded right edge while the scale
+      // eases between months; that one is transparent, so only the labelled gridlines show and slide.
+      function raceGridColors(iv, max){
+        const n = Math.floor(max/iv + 1e-9) + 1, aligned = Math.abs(max/iv - Math.round(max/iv)) < 1e-9;
+        const out = Array(n).fill(T().grid); if(!aligned) out.push('rgba(0,0,0,0)'); return out;
+      }
+      function raceOption(months, topByMonth, {isPercent, accent, index=0, lookup=null}){
+        const t = T();
+        const barColor = accent || t.blue;
+        const fmt = (v)=> isPercent ? `${v.toFixed(2)}%` : Math.round(v).toLocaleString('en-US');
+        const n = Math.max(...months.map(m=>(topByMonth[m]||[]).length), 1);
+        // Every query that ever makes the cut gets a fixed category, so a bar keeps its identity while the race plays.
+        const allNames = Array.from(new Set(months.flatMap(m=>(topByMonth[m]||[]).map(d=>d.name))));
+        const small = narrow('race');
+        const longest = Math.max(60, ...allNames.map(nm=>measureTextWidth(nm)));
+        const labelW = small ? 138 : Math.min(accent ? 150 : 220, Math.ceil(longest) + 8);
+        // mode: 'static' (scrubbing, sorted rows), 'prep' (same frame in race layout, no motion), 'play' (animated step)
+        const frame = (i, mode='static')=>{ const m = months[i], pm = months[i-1]; const rows = topByMonth[m]||[];
+          const playing = mode === 'play', race = mode !== 'static';
+          const top = Math.max(0, ...rows.map(d=>d.value));
+          const ax = niceAxis(top*1.06, small ? 3 : 4);
+          const rankOf = new Map(rows.map((d,k)=>[d.name, k+1]));
+          const byName = new Map(rows.map(d=>[d.name, d.value]));
+          const change = (name, v)=>{
+            if(!pm || !lookup) return '';
+            if(isPercent && state.trailsBreak === m) return `<br/>${breakIsMarketplace() ? 'Atlassian’s redesigned Marketplace arrived this month' : 'The report changed this month'}, so no comparison`;
+            const before = lookup(pm, name);
+            const when = monthLabel(pm,{month:'short'});
+            if(before == null) return `<br/>Not in the ${isPercent ? 'top 500' : 'report'} in ${when}`;
+            const d = v - before;
+            return isPercent ? `<br/>${d > 0 ? '+' : d < 0 ? '−' : ''}${Math.abs(d).toFixed(2)} pp vs ${when}` : `<br/>${d > 0 ? '+' : d < 0 ? '−' : ''}${Math.abs(Math.round(d)).toLocaleString('en-US')} vs ${when}`;
+          };
+          const names = race ? allNames : rows.map(d=>d.name);
+          return {
+          backgroundColor:'transparent', animation: playing && !reduceMotion.matches, animationDuration:0, animationDurationUpdate: Math.min(700, state.playInterval*0.6), animationEasing:'cubicInOut', animationEasingUpdate:'cubicInOut', textStyle:{ fontFamily:FONT },
+          grid:{ left: labelW + 12, right:56, top:24, bottom:28, containLabel:false },
+          // While playing, the scale changes every step; gridlines and ticks come back when the race stops.
+          xAxis:{ type:'value', min:0, max: ax.max, interval: ax.interval, splitLine:{ show:true, lineStyle:{ color: raceGridColors(ax.interval, ax.max) } }, axisLabel:{ show: true, color:t.muted, fontSize:12, hideOverlap:true, formatter: isPercent ? (v)=> v === 0 ? '0%' : `${v.toFixed(ax.decimals)}%` : (v)=> Number(v).toLocaleString('en-US') } },
+          yAxis:{ type:'category', inverse:true, max: n-1, data: names, animationDurationUpdate: Math.min(700, state.playInterval*0.6), axisLabel:{ color:t.ink, fontSize: small ? 12 : 13, fontWeight:600, margin:12, width: labelW, overflow: (small || accent) ? 'break' : 'truncate', lineHeight: (small || accent) ? 15 : undefined }, axisTick:{ show:false }, axisLine:{ show:false } },
+          tooltip:{ trigger:'item', ...tooltipStyle(t), formatter:p=>`<b>${escapeHtml(p.name)}</b><br/>#${rankOf.get(p.name) ?? '–'}${state.keywordFilter.length ? ' of the picked queries' : ''} in ${monthLabel(m,{month:'short', year:'numeric'})}: ${isPercent ? fmt(p.value)+' of all searches' : fmt(p.value)+' empty searches'}${change(p.name, p.value)}` },
+          series:[{ id:'race', type:'bar', realtimeSort: race, barCategoryGap:'42%', barMaxWidth:24, label:{ show:true, position:'right', distance:8, color:t.ink2, fontSize:12, fontWeight:600, textBorderColor:t.surface, textBorderWidth:3, valueAnimation: false, formatter:p=> byName.has(p.name) ? fmt(byName.get(p.name)) : '' }, itemStyle:{ borderRadius:0, color: barColor }, emphasis:{ itemStyle:{ color: t.ink } },
+            data: names.map(nm=>({ value: byName.get(nm) ?? 0, name:nm })) }]
+        }; };
+        return frame;
+      }
+      function monthLookup(list, field){ const by = new Map(); for(const r of list){ const m = toMonthKey(r.month); const v = asNumber(r[field]); if(!Number.isFinite(v)) continue; if(!by.has(m)) by.set(m, new Map()); const k = String(r.keyword||'').trim(); by.get(m).set(k, (by.get(m).get(k)||0) + v); } return (m, k)=> by.get(m)?.get(k); }
+      function buildRaceOption(months, topByMonth, index){ return raceOption(months, topByMonth, {isPercent:true, index, lookup: state.popLookup}); }
+      function buildZeroRaceOption(months, topByMonth, index){ return raceOption(months, topByMonth, {isPercent:false, accent:T().coral, index, lookup: state.zeroLookup}); }
+      // While playing, each step glides: rows take the new month's order at once, and every bar grows or shrinks
+      // from its own previous value to the new one (new entries grow from zero). Bars never slide past each other,
+      // so a label always sits next to its own bar, and the gridlines come back when the step ends.
+      const tweens = {};
+      function drawRace(id, frame, i, mode='static', prevI=null){
+        const c = ensureChart(id); if(!c || !frame) return;
+        cancelAnimationFrame(tweens[id]);
+        const fit = (o)=>{ if(id === 'zeros'){ const extra = Math.max(0, document.getElementById('zeros').clientHeight - document.getElementById('race').clientHeight); o.grid.bottom += extra; } return o; };
+        const to = fit(frame(i, 'static'));
+        if(mode !== 'play' || prevI == null || prevI < 0 || reduceMotion.matches){ c.setOption(to, { notMerge:true }); return; }
+        const from = frame(prevI, 'static');
+        const before = new Map(from.series[0].data.map(d=>[d.name, d.value]));
+        const target = to.series[0].data;
+        const maxA = from.xAxis.max, maxB = to.xAxis.max;
+        const dur = Math.min(650, state.playInterval*0.55), t0 = performance.now();
+        const iv = to.xAxis.interval, tickFmt = to.xAxis.axisLabel.formatter;
+        const onTick = (v)=> Math.abs(v/iv - Math.round(v/iv)) < 1e-6 ? tickFmt(v) : '';
+        const num = id === 'race' ? (v)=> `${v.toFixed(2)}%` : (v)=> Math.round(v).toLocaleString('en-US');
+        let first = true;
+        const step = (now)=>{
+          const p = Math.min(1, (now - t0)/dur), e = 1 - Math.pow(1 - p, 3);
+          if(p >= 1){ c.setOption(to, { notMerge:true }); return; }
+          // Gridlines and tick labels stay on screen: ticks keep the new month's step and slide while the scale
+          // eases to its new maximum, and the unlabeled right edge never gets a label of its own.
+          const mx = maxA + (maxB - maxA)*e;
+          const xAxis = { ...to.xAxis, max: mx, splitLine:{ show:true, lineStyle:{ color: raceGridColors(iv, mx) } }, axisLabel:{ ...to.xAxis.axisLabel, formatter: onTick } };
+          const series = [{ ...to.series[0], label:{ ...to.series[0].label, formatter: (q)=> num(q.value) }, data: target.map(d=>{ const a = before.get(d.name) ?? 0; return { name:d.name, value: a + (d.value - a)*e }; }) }];
+          c.setOption(first ? { ...to, xAxis, series } : { xAxis, series }, { notMerge: first });
+          first = false;
+          tweens[id] = requestAnimationFrame(step);
+        };
+        tweens[id] = requestAnimationFrame(step);
+      }
+
+      function buildZerosOption(months, totals, currentMonth, gaps, fill0){
+        const t = T();
+        const byMonth = new Map(totals.map(x=>[x.month, x.value]));
+        // With picked queries, a month where none of them came back empty is a real 0, not missing data.
+        const data = months.map(m => gaps.has(m) ? null : (byMonth.get(m) ?? (fill0 ? 0 : null)));
+        const idx = months.indexOf(currentMonth);
+        const cur = idx>=0 ? data[idx] : null;
+        const gapAreas = months.filter(m=>gaps.has(m)).map(m=>[{ xAxis:m }, { xAxis:m }]);
+        const el = document.getElementById('zeros'); const px = Math.max(120, (el?.clientWidth || 600) - 72) / Math.max(1, months.length-1);
+        const dark = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim().toLowerCase() !== '#ffffff';
+        return { backgroundColor:'transparent', textStyle:{ fontFamily:FONT }, animation:false,
+          grid:{ left:4, right:20, top:28, bottom:6, containLabel:true },
+          xAxis:{ type:'category', boundaryGap:false, data: months, axisLabel:{ color:t.muted, fontSize:12, margin:12, interval:0, formatter: smartTicks(months, px), hideOverlap:true }, axisTick:{ show:false }, axisLine:{ lineStyle:{ color:t.line } } },
+          yAxis:{ type:'value', splitNumber:4, axisLabel:{ color:t.muted, fontSize:12, formatter:(v)=>Number(v).toLocaleString('en-US') }, splitLine:{ lineStyle:{ color:t.grid } } },
+          tooltip:{ trigger:'axis', ...tooltipStyle(t), position: tipAt(8, 56), axisPointer:{ type:'line', lineStyle:{ color:t.line } }, formatter:(ps)=>{ const p=ps.find(x=>x.seriesName!=='_break' && x.seriesName!=='_odd')||ps[0]; return `<b>${monthLabel(p.axisValue)}</b><br/>${p.value==null ? 'No data: the report is incomplete' : Math.round(p.value).toLocaleString('en-US')+' searches found no apps'}`; } },
+          series:[{ name:'Searches with zero results', type:'line', smooth:false, connectNulls:false, symbol:'circle', symbolSize:6, showSymbol:false, itemStyle:{ color:t.coral }, lineStyle:{ width:2, color:t.coral, join:'round' }, areaStyle:{ color:t.coral, opacity: dark ? .06 : .08 }, data,
+            markArea: gapAreas.length ? { silent:true, itemStyle:{ color:t.grid, opacity:.9 }, label:{ show: (document.getElementById('zeros')?.clientWidth || 999) >= 380, position:'top', distance:4, color:t.muted, fontSize:11, fontFamily:FONT, formatter:'no data' }, data: gapAreas.map(([a,b])=>[{...a, xAxis: months[Math.max(0, months.indexOf(a.xAxis)-1)]},{...b, xAxis: months[Math.min(months.length-1, months.indexOf(b.xAxis)+1)]}]) } : undefined,
+            markLine: idx>=0 && idx < months.length-1 ? { silent:true, symbol:'none', lineStyle:{ color:t.coral, type:'solid', width:1, opacity:.4 }, label:{ show:false }, data:[{ xAxis: idx }] } : undefined,
+            markPoint: idx>=0 && cur!=null ? { symbol:'circle', symbolSize:9, itemStyle:{ color:t.coral, borderColor:t.surface, borderWidth:1 }, label:{ show:false }, data:[{ coord:[idx, cur] }] } : undefined },
+            ...((state.zeroOdd||[]).length && !state.keywordFilter.length ? [{ name:'_odd', type:'scatter', silent:true, symbol:'circle', symbolSize:7, z:5, itemStyle:{ color:t.surface, borderColor:t.coral, borderWidth:1.5 }, data: state.zeroOdd.map(m=> [months.indexOf(m), byMonth.get(m)]).filter(d=> d[0] >= 0 && d[1] != null) }] : []),
+            ...(state.trailsBreak && months.indexOf(state.trailsBreak) > 0 ? [{ name:'_break', type:'line', data:[], silent:true, markLine:{ silent:true, symbol:'none', lineStyle:{ color:t.muted, type:[4,4], width:1 }, label:{ show: (document.getElementById('zeros')?.clientWidth || 999) >= 380, position:'end', distance:4, color:t.muted, opacity:1, fontSize:11, fontFamily:FONT, formatter: breakIsMarketplace() ? 'New Marketplace' : 'Report change' }, data:[{ xAxis: months.indexOf(state.trailsBreak) }] } }] : [])] };
+      }
+      // The collapse found in the data is Atlassian's redesigned Marketplace only when it falls in November 2024 (uploaded files may differ).
+      const breakIsMarketplace = ()=> state.trailsBreak === MK.REPORT_BREAK;
+      function zerosDescText(month){
+        const f = state.keywordFilter, n = f.length;
+        const when = monthLabel(month,{month:'short', year:'numeric'});
+        const who = n ? ` for ${n <= 3 ? f.join(', ') : n + ' picked queries'}` : '';
+        if(state.gapsZero.has(month)) return `${when}: no data, the report is incomplete.`;
+        const row = (state.zeroTotalsCache||[]).find(x=>x.month===month);
+        const v = row ? row.value : (n ? 0 : null);
+        return v == null ? `Total per month${who}.` : `${when}: ${Math.round(v).toLocaleString('en-US')} ${Math.round(v) === 1 ? 'search' : 'searches'}${who}.`;
+      }
+
+      function detectBreak(months, series){
+        // A month where the combined share of the biggest queries collapses at once: a change in the source report, not in demand.
+        if((series||[]).length < 3) return null;
+        const tot = months.map((_,i)=> series.reduce((a,s)=> a + (s.data[i]||0), 0));
+        for(let i=1;i<tot.length;i++){ if(tot[i-1] > 0 && tot[i] < tot[i-1]*0.4) return months[i]; }
+        return null;
+      }
+      function buildTrailsOption(months, series, opts={}){
+        const t = T();
+        const small = narrow('trails');
+        // All years squeezes the latest values together, so labels at the line ends would pile up; use a legend there.
+        const legendMode = small || !!opts.allYears;
+        const picked = state.keywordFilter.length > 0;
+        const cmap = queryColors((series||[]).map(x=>x.name));
+        const tuned = (series||[]).map((s)=>({
+          ...s, smooth:false, symbol:'none', connectNulls:false,
+          data: s.data.map(v=> v && typeof v === 'object' ? v.value : v),
+          lineStyle:{ width:2, join:'round' }, color: cmap[s.name],
+          emphasis:{ focus:'series', lineStyle:{ width:3 } }, blur:{ lineStyle:{ opacity:.15 } },
+          endLabel:{ show: !legendMode, formatter:'{a}', color: cmap[s.name], fontSize:13, fontWeight:700, fontFamily:FONT, distance:8, lineHeight:20, padding:[1,0] },
+          labelLayout:{ moveOverlap:'shiftY' }, labelLine:{ show:true, length2:6, smooth:false, lineStyle:{ width:1, color: cmap[s.name], opacity:.6 } }
+        }));
+        const lastVal = (x)=>{ for(let j=x.data.length-1;j>=0;j--) if(x.data[j]!=null) return { j, v:x.data[j] }; return null; };
+        // Queries that have since dropped far behind go grey, so the leaders stay readable. Picked queries never fade.
+        const lastVals = tuned.map(x=> x.data[x.data.length-1]);
+        const topLast = Math.max(0, ...lastVals.filter(v=>v!=null));
+        let faded = false;
+        if(!picked) tuned.forEach((x,i)=>{ const v = lastVals[i]; if(v == null || v < topLast*0.25){ faded = true; x.color = t.muted; x.endLabel.color = t.muted; x.endLabel.fontWeight = 600; x.labelLine.lineStyle.color = t.muted; } });
+        // Months with no value (outside the top 500, or a partial report) are bridged with a dotted segment.
+        let bridged = false;
+        tuned.forEach(x=>{
+          const d = x.data, segs = []; let prev = -1;
+          for(let i=0;i<d.length;i++){ if(d[i]==null) continue; if(prev>=0 && i-prev>1) segs.push([{ coord:[prev, d[prev]] }, { coord:[i, d[i]] }]); prev = i; }
+          if(segs.length){ bridged = true; x.markLine = { silent:true, symbol:'none', label:{ show:false }, lineStyle:{ type:[2,4], width:1.5, color:x.color, opacity:.8 }, data:segs }; }
+          // Hover shows a dot on every line; months seen only once keep a permanent dot.
+          x.symbol = 'circle'; x.symbolSize = 6; x.showSymbol = false; x.itemStyle = { color: x.color };
+          const lone = d.map((v,i,a)=> v!=null && a[i-1]==null && a[i+1]==null ? i : -1).filter(i=>i>=0);
+          if(lone.length) x._lone = { silent:true, symbol:'circle', symbolSize:5, itemStyle:{ color:x.color }, label:{ show:false }, data: lone.map(i=>({ coord:[i, d[i]] })) };
+        });
+        // A query that is no longer in the latest report ends where it was last seen, with a note instead of an end label.
+        tuned.forEach(x=>{ const L = x.data.length-1; if(x.data[L] == null){ x.labelLine = { show:false }; x.endLabel.show = false; const lv = lastVal({ data: x.data.map(v=> v && typeof v === 'object' ? v.value : v) }); if(lv && !legendMode) x.markPoint = { symbol:'circle', symbolSize:6, itemStyle:{ color:x.color }, label:{ show:true, position:'top', distance:6, color:x.color, fontSize:12, fontWeight:600, fontFamily:FONT, textBorderColor:t.surface, textBorderWidth:3, formatter:`${x.name}: left the top 500` }, data:[{ coord:[lv.j, lv.v] }] }; } });
+        state.trailsBridged = bridged; state.trailsFaded = faded;
+        const useLegend = legendMode;
+        if(useLegend) tuned.forEach(x=>{ x.endLabel.show = false; x.labelLine = { show:false }; x.markPoint = undefined; });
+        tuned.forEach(x=>{ if(x._lone){ if(!x.markPoint) x.markPoint = x._lone; else x.markPoint.data = [...x.markPoint.data, ...x._lone.data]; } delete x._lone; });
+        const longest = Math.max(60, ...tuned.filter(x=>x.endLabel.show).map(s=>measureTextWidth(s.name) * 1.1));
+        const ymax = Math.max(0, ...tuned.flatMap(x=> x.data.map(v=> v && typeof v === 'object' ? v.value : v).filter(v=>v!=null)));
+        const ax = niceAxis(ymax*1.04, small ? 3 : 4);
+        const breakIdx = opts.breakMonth ? months.indexOf(opts.breakMonth) : -1;
+        const extra = [];
+        if(breakIdx > 0) extra.push({ name:'_break', type:'line', data:[], silent:true, markLine:{ silent:true, symbol:'none', lineStyle:{ color:t.muted, type:[4,4], width:1 },
+          label:{ show:true, position:'end', distance:6, color:t.ink2, fontSize:12, fontWeight:600, fontFamily:FONT, formatter: `${breakIsMarketplace() ? 'New Marketplace' : 'Report change'}, ${monthLabel(months[breakIdx],{month:'short', year:'numeric'})}` }, data:[{ xAxis: breakIdx }] } });
+        const right = useLegend ? 12 : Math.min(300, longest + 24);
+        const el = document.getElementById('trails'); const px = Math.max(120, (el?.clientWidth || 800) - right - 48) / Math.max(1, months.length-1);
+        return {
+          backgroundColor:'transparent', textStyle:{ fontFamily:FONT }, animationDuration:600,
+          grid:{ left:4, right, top: useLegend ? 64 : 28, bottom:6, containLabel:true },
+          legend: useLegend ? { top:0, left:0, right:0, data: tuned.map(x=>x.name), icon:'roundRect', itemWidth:12, itemHeight:4, itemGap:14, textStyle:{ color:t.ink2, fontFamily:FONT, fontSize:13 } } : undefined,
+          tooltip:{ trigger:'axis', ...tooltipStyle(t), position: tipAt(useLegend ? 64 : 8, 48), axisPointer:{ type:'line', lineStyle:{ color:t.line } }, order:'valueDesc',
+            formatter:(ps)=>`<b>${monthLabel(ps[0].axisValue)}</b><br/>` + ps.filter(p=>p.seriesType==='line' && p.seriesName!=='_break').slice().sort((a,b)=>(b.value??-1)-(a.value??-1)).map(p=>`${p.marker}${escapeHtml(p.seriesName)} <b style="float:right;margin-left:16px">${p.value==null ? 'not in top 500' : Number(p.value).toFixed(2)+'%'}</b>`).join('<br/>') },
+          xAxis:{ type:'category', boundaryGap:false, data: months, axisLabel:{ color:t.muted, fontSize:12, margin:12, interval:0, hideOverlap:true, formatter: smartTicks(months, px) }, axisLine:{ lineStyle:{ color:t.line } }, axisTick:{ show:false } },
+          yAxis:{ type:'value', min:0, max: ax.max, interval: ax.interval, axisLabel:{ color:t.muted, fontSize:12, formatter:(v)=> v === 0 ? '0%' : `${v.toFixed(ax.decimals)}%` }, splitLine:{ lineStyle:{ color:t.grid } } },
+          series: [...tuned, ...extra]
+        };
+      }
+
+      function buildHeatmapOption(months, yCats, matrix, gaps){
+        const t = T();
+        const small = narrow('heatmap');
+        const xIndex = new Map(months.map((m,i)=>[m,i]));
+        const yIndex = new Map(yCats.map((k,i)=>[k,i]));
+        const data = []; const vals = [];
+        for(const row of matrix){
+          const yi = yIndex.get(row.keyword), xi = xIndex.get(row.month);
+          if(yi==null || xi==null || gaps.has(row.month)) continue;
+          data.push([xi, yi, row.value]); if(row.value > 0) vals.push(row.value);
+        }
+        const labW = small ? 128 : Math.min(250, Math.max(80, Math.ceil(Math.max(0, ...yCats.map(k=>measureTextWidth(k)))) + 8));
+        // Fixed round classes, so the key never shifts with the period, the filter or the loaded file.
+        const br = [4, 9, 19, 49];
+        const ramp = t.heat;
+        const pieces = [{ value:0, label:'0 / not listed', color:t.heatNone }];
+        let lo = 1;
+        br.forEach((hi,i)=>{ pieces.push({ gte:lo, lte:hi, label: lo===hi ? `${lo}` : `${lo}–${hi}`, color:ramp[i] }); lo = hi+1; });
+        pieces.push({ gte:lo, label:`${lo}+`, color:ramp[4] });
+        return {
+          backgroundColor:'transparent', textStyle:{ fontFamily:FONT }, animation:false,
+          grid:{ left: labW + 12, right:4, top:30, bottom:4, containLabel:false },
+          tooltip:{ ...tooltipStyle(t), formatter:(p)=>{
+            const kw = yCats[p.value[1]]; const m = months[p.value[0]]; const v = p.value[2];
+            return `<b>${escapeHtml(kw)}</b><br/>${monthLabel(m)}: ${v ? v.toLocaleString('en-US')+' empty '+(v===1?'search':'searches') : 'not listed (0)'}`;
+          } },
+          xAxis:{ type:'category', position:'top', data: months, splitArea:{ show:false }, axisLabel:{ color:t.muted, fontSize:12, interval:0, hideOverlap:true, formatter: smartTicks(months, Math.max(60, (document.getElementById('heatmap')?.clientWidth || 800) - labW - 16) / Math.max(1, months.length), 48) }, axisLine:{ show:false }, axisTick:{ show:false } },
+          yAxis:{ type:'category', data: yCats, inverse:true, splitArea:{ show:false }, axisLabel:{ color:t.ink, fontSize: small ? 12 : 13, fontWeight:500, margin:10, width: labW, overflow: small ? 'break' : 'truncate', lineHeight: small ? 13 : undefined, ellipsis:'…' }, axisLine:{ show:false }, axisTick:{ show:false } },
+          visualMap:{ type:'piecewise', show:false, dimension:2, pieces },
+          series:[{ name:'Zero results', type:'heatmap', data, itemStyle:{ borderColor:t.paper || t.surface, borderWidth: small ? 1 : 2, borderRadius:0 }, emphasis:{ itemStyle:{ borderColor:t.ink, borderWidth:2 } } }],
+          _legend: pieces
+        };
+      }
+      function renderHeatLegend(pieces){
+        const el = document.getElementById('heatLegend'); if(!el) return;
+        el.innerHTML = '<span class="lg-title">Empty searches per month</span>' + pieces.map(p=>`<span class="lg-item"><i style="background:${p.color}"></i>${p.label}</span>`).join('');
+      }
+
+      // --- Data transforms ---
+      function computeTrailsSeries(sourceRaw, months, topN, filter, gaps, rankMonths){
+        const sum = new Map();
+        const filt = filter && filter.length ? new Set(filter) : null;
+        const rankSet = new Set(rankMonths || months); const monthSet = rankSet;
+        for(const r of sourceRaw){ const m = toMonthKey(r.month); if(!monthSet.has(m) || gaps.has(m)) continue; const k = String(r.keyword||'').trim(); if(filt && !filt.has(k)) continue; const v = asNumber(r.percentage); if(!Number.isFinite(v)) continue; sum.set(k, (sum.get(k)||0)+v); }
+        // Rank by median monthly share so a one-month spike cannot push a query into the chart.
+        const perMonth = new Map();
+        for(const r of sourceRaw){ const m = toMonthKey(r.month); if(!monthSet.has(m) || gaps.has(m)) continue; const k = String(r.keyword||'').trim(); const v = asNumber(r.percentage); if(!Number.isFinite(v)) continue; if(!perMonth.has(k)) perMonth.set(k, []); perMonth.get(k).push(v); }
+        const valid = (rankMonths || months).filter(m=>!gaps.has(m)).length;
+        const median = (k)=>{ const a = (perMonth.get(k)||[]).slice(); while(a.length < valid) a.push(0); a.sort((x,y)=>x-y); return a.length ? a[Math.floor(a.length/2)] : 0; };
+        let top = filt ? Array.from(filt).filter(k=>sum.has(k)) : Array.from(sum.keys()).map(k=>[k, median(k)]).sort((a,b)=>b[1]-a[1]).slice(0, topN).map(([k])=>k);
+        const byMonthKey = new Map();
+        for(const r of sourceRaw){ const m = toMonthKey(r.month); const k = String(r.keyword||'').trim(); const v = asNumber(r.percentage); if(!byMonthKey.has(m)) byMonthKey.set(m, new Map()); byMonthKey.get(m).set(k, v); }
+        return top.map(k=>({ name:k, type:'line', data: months.map(m=> gaps.has(m) ? null : (byMonthKey.get(m)?.get(k) ?? null)) }));
+      }
+      function computeHeatmapMatrix(zeroRaw, months, topK, startIdx, endIdx, filter){
+        const rangeMonths = months.slice(startIdx, endIdx + 1);
+        const rangeSet = new Set(rangeMonths);
+        const filt = filter && filter.length ? new Set(filter) : null;
+        const totals = new Map();
+        for (const r of zeroRaw) {
+          const m = toMonthKey(r.month); if (!rangeSet.has(m)) continue;
+          const k = String(r.keyword || '').trim(); if(filt && !filt.has(k)) continue; if(!filt && isJunkQuery(k)) continue;
+          const v = asNumber(r.count); if (!Number.isFinite(v)) continue;
+          totals.set(k, (totals.get(k) || 0) + v);
+        }
+        const sorted = Array.from(totals.entries()).sort((a, b) => b[1] - a[1]);
+        const yCats = filt ? sorted.map(([k])=>k) : sorted.slice(0, topK).map(([k])=>k);
+        const byMonthKey = new Map();
+        for (const r of zeroRaw) {
+          const m = toMonthKey(r.month); const k = String(r.keyword || '').trim(); if(filt && !filt.has(k)) continue;
+          const v = asNumber(r.count); if (!byMonthKey.has(m)) byMonthKey.set(m, new Map());
+          byMonthKey.get(m).set(k, (byMonthKey.get(m).get(k) || 0) + (Number.isFinite(v) ? v : 0));
+        }
+        const matrix = [];
+        for (const m of rangeMonths) { const row = byMonthKey.get(m) || new Map(); for (const k of yCats) matrix.push({ month: m, keyword: k, value: row.get(k) || 0 }); }
+        return { yCats, matrix, rangeMonths };
+      }
+
+      function updateFileStatus(elementId, message){ const el = document.getElementById(elementId); if(el) el.textContent = message; }
+
+      // --- Render pipeline ---
+      function fillMonthSelect(sel, months, value){
+        const want = months.join('|');
+        if(sel.dataset.months !== want){ sel.innerHTML = months.map((m,i)=>`<option value="${i}">${monthLabel(m,{month:'short', year:'numeric'})}</option>`).join(''); sel.dataset.months = want; }
+        sel.value = String(value);
+      }
+      function updateHeatTimeRangeControls(){
+        const max = state.months.length;
+        if(!state.heatTimeRangeInitialized && max > 0){ state.heatTimeRangeInitialized = true; if(!state.heatPreset) state.heatPreset = '12'; }
+        if(max > 0 && state.heatPreset !== 'custom'){
+          const bi = state.trailsBreak ? state.months.indexOf(state.trailsBreak) : -1;
+          state.heatTimeEndIdx = max - 1;
+          state.heatTimeStartIdx = state.heatPreset === 'all' ? 0 : state.heatPreset === 'report' && bi > 0 ? bi : Math.max(0, max - 12);
+        }
+        document.querySelectorAll('#heatPresets button').forEach(b=>{ b.setAttribute('aria-pressed', String(b.dataset.range === state.heatPreset)); if(b.dataset.range==='report'){ b.hidden = !state.trailsBreak; if(state.trailsBreak) b.textContent = narrow('heatmap') ? `Since ${monthLabel(state.trailsBreak,{month:'short'})} ’${state.trailsBreak.slice(2,4)}` : `Since ${monthLabel(state.trailsBreak,{month:'short', year:'numeric'})}`; } if(b.dataset.range==='12') b.textContent = narrow('heatmap') ? '12 mo' : '12 months'; });
+        $('#heatTimeRangeChip').hidden = state.heatPreset !== 'custom';
+        const start = Math.max(0, Math.min(state.heatTimeStartIdx, max-1));
+        const end = Math.max(start, Math.min(state.heatTimeEndIdx, max-1));
+        state.heatTimeStartIdx = start; state.heatTimeEndIdx = end;
+        const s = document.getElementById('heatTimeStart'), e = document.getElementById('heatTimeEnd');
+        if(max){ fillMonthSelect(s, state.months, start); fillMonthSelect(e, state.months, end); }
+        $('#heatTimeStartVal').textContent = state.months[start] || '–';
+        $('#heatTimeEndVal').textContent = state.months[end] || '–';
+      }
+      function setRaceIndex(i, fromChart){
+        const months = state.raceMonths; if(!months.length) return;
+        i = Math.max(0, Math.min(months.length-1, i)); state.raceIndex = i;
+        const r = $('#raceMonth'); r.max = String(months.length-1); r.value = String(i); r.style.setProperty('--p', (i/Math.max(1, months.length-1)*100).toFixed(2) + '%');
+        const when = monthLabel(months[i],{month:'short', year:'numeric'});
+        $('#raceMonthVal').textContent = when;
+        $('#raceDesc').textContent = state.keywordFilter.length ? `Share of all Marketplace searches for the picked queries in ${when}.` : `Share of all Marketplace searches in ${when}.`;
+        // Months step without tweening: an animated re-sort leaves labels and bars out of step mid-frame.
+        const mode = !state.timelinePlaying ? 'static' : fromChart === 'play' ? 'play' : 'prep';
+        drawRace('race', state.raceFrame, i, mode, i-1);
+        $('#raceNote').textContent = state.trailsBreak && months[i] < state.trailsBreak ? breakIsMarketplace() ? `Before Atlassian’s redesigned Marketplace arrived in ${monthLabel(state.trailsBreak)}, broad queries such as “automation” and “jira” took a much larger share, so these shares are not directly comparable with later months.` : `Shares before ${monthLabel(state.trailsBreak)} are not directly comparable with later months: the report changed that month.` : '';
+        if(state.zeroMode==='keywords' && state.zeroFrame){ const zi = (state.zeroRaceMonths||[]).indexOf(months[i]); if(zi>=0){ drawRace('zeros', state.zeroFrame, zi, mode, zi-1); $('#zerosDesc').textContent = `Empty searches per query in ${when}.`; } else { $('#zerosDesc').textContent = `No zero-result report for ${when}.`; } }
+        if(state.zeroMode==='totals' && state.zeroTotalsCache){ safeSetOption('zeros', buildZerosOption(state.months, state.zeroTotalsCache, months[i], state.gapsZero, state.keywordFilter.length > 0)); $('#zerosDesc').textContent = zerosDescText(months[i]); }
+      }
+      function stopPlay(){ const was = state.timelinePlaying; clearInterval(state.playTimer); state.playTimer = null; state.timelinePlaying = false; const b=$('#btn-play'); b.textContent='▶ Play'; b.setAttribute('aria-label','Play'); if(was) setRaceIndex(state.raceIndex); }
+      function startPlay(){
+        if(!state.raceMonths.length) return;
+        if(state.raceIndex >= state.raceMonths.length-1) setRaceIndex(0);
+        state.timelinePlaying = true; const b=$('#btn-play'); b.textContent='❚❚ Pause'; b.setAttribute('aria-label','Pause');
+        setRaceIndex(state.raceIndex, 'prep');
+        clearInterval(state.playTimer);
+        state.playTimer = setInterval(()=>{ if(state.raceIndex >= state.raceMonths.length-1){ stopPlay(); return; } setRaceIndex(state.raceIndex+1, 'play'); }, state.playInterval);
+      }
+
+      // Controls repaint first; the charts follow one frame later, and several quick changes collapse into one render.
+      let renderQueued = false;
+      function scheduleRender(){ if(renderQueued) return; renderQueued = true; requestAnimationFrame(()=> setTimeout(()=>{ renderQueued = false; renderAll(); }, 0)); }
+      function renderAll(){
+        populateKeywordOptions();
+        toggleRangeSelectors();
+        renderHero();
+        if(!state.sourceRaw.length){ setStatus('waiting for Popular Search Keywords (or demo)'); return; }
+        // Everything that depends only on the loaded files is worked out once per load, not on every click.
+        if(state.lookupSrc !== state.sourceRaw || state.lookupZero !== state.zeroRaw){
+          state.lookupSrc = state.sourceRaw; state.lookupZero = state.zeroRaw;
+          state.gapsPopular = incompleteMonths(state.sourceRaw);
+          state.gapsZero = incompleteMonths(state.zeroRaw);
+          const ms = Array.from(new Set(state.sourceRaw.map(r=>r.month))).sort();
+          state.colorRank = new Map(latestRanking(state.sourceRaw,'percentage',ms[ms.length-1]).map((r,i)=>[r.keyword,i]));
+          state.popLookup = monthLookup(state.sourceRaw, 'percentage'); state.zeroLookup = monthLookup(state.zeroRaw, 'count');
+          let f = 0; while(f < ms.length-1 && state.gapsPopular.has(ms[f])) f++;
+          const full = ms.slice(f);
+          state.trailsBreak = detectBreak(full, computeTrailsSeries(state.sourceRaw, full, 6, [], state.gapsPopular));
+        }
+        // With picked queries, the month-by-month charts shrink to fit them instead of keeping room for ten bars.
+        { const n = state.keywordFilter.length; document.body.classList.toggle('filtered', n > 0); const h = n ? Math.max(140, Math.min(n, 20)*40 + 60) + 'px' : ''; ['race'].concat(state.zeroMode === 'keywords' ? ['zeros'] : []).forEach(id=>{ const el = document.getElementById(id); if(!fullscreenState.chartEl && el.style.height !== h){ el.style.height = h; state.charts[id]?.resize(); } }); if(state.zeroMode !== 'keywords'){ const z = document.getElementById('zeros'); if(z.style.height){ z.style.height = ''; state.charts.zeros?.resize(); } } }
+        const { months: allMonths, topByMonth } = groupByMonthTop(state.sourceRaw, 'percentage', state.topN, state.keywordFilter);
+        // Drop leading partial reports so every chart starts at the first full month.
+        let first = 0; while(first < allMonths.length-1 && state.gapsPopular.has(allMonths[first])) first++;
+        const months = allMonths.slice(first);
+        if(JSON.stringify(state.months) !== JSON.stringify(months)) state.heatTimeRangeInitialized = false;
+        state.months = months; if(!months.length){ setStatus('no months detected in source'); return; }
+        const raceMonths = months.filter(m=>!state.gapsPopular.has(m));
+        const keepIndex = state.raceMonths && state.raceMonths.length === raceMonths.length ? state.raceIndex : raceMonths.length-1;
+        state.raceMonths = raceMonths;
+        $('#raceTicks').innerHTML = raceMonths.map((m,i)=> /-01$/.test(m) ? `<span${i===0 ? ' class="first"' : ''} style="left:${(i/(raceMonths.length-1||1)*100).toFixed(2)}%">${m.slice(0,4)}</span>` : '').join('');
+        state.raceIndex = Math.min(keepIndex ?? raceMonths.length-1, raceMonths.length-1);
+        // 1) Race + zeros overview
+        state.raceFrame = buildRaceOption(raceMonths, topByMonth, state.raceIndex);
+        const race = ensureChart('race');
+        // Only the zero-result months inside the charted range are worth a note.
+        const skipped = Array.from(state.gapsZero).filter(m=> m >= months[0]).sort().map(m=>monthLabel(m,{month:'short', year:'numeric'}));
+        $('#zerosNote').textContent = skipped.length && state.zeroMode === 'totals' ? `The ${skipped.join(' and ').replace(/ and (?=.* and )/g, ', ')} zero-result ${skipped.length===1?'report is':'reports are'} partial and left out.` : '';
+        if(state.zeroMode === 'totals' && (document.getElementById('zeros')?.clientWidth || 999) < 380) state.zerosPhoneNote = true; else state.zerosPhoneNote = false;
+        if(state.zeroMode === 'totals' && !state.keywordFilter.length){
+          // Months whose total is far below every neighbour look like incomplete exports; say so instead of hiding them.
+          const tot = (state.zeroTotals.length ? state.zeroTotals : totalsByMonth(state.zeroRaw,'count')).filter(x=>!state.gapsZero.has(x.month));
+          const oddRows = tot.filter((x,i)=>{ const near = tot.slice(Math.max(0,i-3), i).concat(tot.slice(i+1, i+4)).map(y=>y.value).filter(v=>v>0).sort((p,q)=>p-q); const med = near[Math.floor(near.length/2)]; return near.length >= 4 && x.value < med*0.5; });
+          state.zeroOdd = oddRows.map(x=>x.month);
+          const odd = oddRows.map(x=>monthLabel(x.month,{month:'short', year:'numeric'}));
+          if(odd.length) $('#zerosNote').textContent = `${skipped.length ? `The ${skipped.join(' and ')} zero-result ${skipped.length===1?'report is':'reports are'} partial and left out; t` : 'T'}otals for ${odd.join(' and ').replace(/ and (?=.* and )/g, ', ')} are unusually low in Atlassian’s reports (hollow dots).`;
+        }
+        if(state.zeroMode === 'totals' && !state.keywordFilter.length) $('#zerosNote').textContent = (MK.ZERO_NOTE + ' ' + $('#zerosNote').textContent).trim();
+        if(state.zerosPhoneNote && state.trailsBreak) $('#zerosNote').textContent += ` Grey band: no data. Dashed line: ${breakIsMarketplace() ? 'the new Marketplace' : 'the report change'}, ${monthLabel(state.trailsBreak,{month:'short', year:'numeric'})}.`;
+        if(state.zeroMode === 'totals'){
+          $('#zerosTitle').textContent = 'Searches that found no apps';
+          let totals;
+          if(state.keywordFilter.length) totals = totalsByMonth(state.zeroRaw,'count', state.keywordFilter);
+          else totals = state.zeroTotals.length ? state.zeroTotals : (state.zeroRaw.length ? totalsByMonth(state.zeroRaw,'count') : []);
+          state.zeroTotalsCache = totals;
+          safeSetOption('zeros', buildZerosOption(months, totals, raceMonths[state.raceIndex], state.gapsZero, state.keywordFilter.length > 0));
+        } else {
+          $('#zerosTitle').textContent = 'Searches that found no apps';
+          $('#zerosDesc').textContent = `Empty searches per query in ${monthLabel(raceMonths[state.raceIndex],{month:'short', year:'numeric'})}.`;
+          state.zeroTotalsCache = null; state.zeroFrame = null;
+          const { months: zAll, topByMonth: zTop } = groupByMonthTop(state.zeroRaw, 'count', state.topN, state.keywordFilter);
+          const zMonths = zAll.filter(m=>!state.gapsZero.has(m) && months.includes(m)); state.zeroRaceMonths = zMonths;
+          const zi = Math.max(0, zMonths.indexOf(raceMonths[state.raceIndex]));
+          state.zeroFrame = zMonths.length ? buildZeroRaceOption(zMonths, zTop, zi) : null;
+        }
+        setRaceIndex(state.raceIndex);
+        // 2) Keyword trails
+        const recent = state.trailsRange === 'recent' && state.trailsBreak;
+        const tMonths = recent ? months.slice(months.indexOf(state.trailsBreak)) : months;
+        const recentMonths = state.trailsBreak ? months.slice(months.indexOf(state.trailsBreak)) : months;
+        const trailSeries = computeTrailsSeries(state.sourceRaw, tMonths, state.trailsN, state.keywordFilter, state.gapsPopular, recentMonths);
+        $('#trailsRecent').textContent = state.trailsBreak ? (narrow('trails') ? `Since ${monthLabel(state.trailsBreak,{month:'short'})} ’${state.trailsBreak.slice(2,4)}` : `Since ${monthLabel(state.trailsBreak,{month:'short', year:'numeric'})}`) : 'Recent';
+        $('#trailsRecent').closest('.card-controls').hidden = !state.trailsBreak;
+        const tEl = document.getElementById('trails'); const wantH = state.trailsRange === 'all' && !narrow('trails') ? '520px' : ''; if(tEl.style.height !== wantH){ tEl.style.height = wantH; state.charts.trails?.resize(); }
+        $('#trendsIntro').textContent = state.keywordFilter.length ? 'How the picked queries moved, and how often they came back empty.' : 'How the biggest queries moved, and which searches keep coming back empty.';
+        $('#trailsTitle').textContent = state.keywordFilter.length ? 'Share of searches for the picked queries' : 'Share of searches for the biggest queries';
+        $('#raceTitle').textContent = state.keywordFilter.length ? 'Picked queries by share of searches' : 'Top queries by share of searches';
+        { const hint = document.querySelector('.filterbar .hint'); if(hint) hint.textContent = state.keywordFilter.length ? `Every chart below shows only the ${state.keywordFilter.length} picked ${state.keywordFilter.length===1?'query':'queries'}.` : 'Pick queries to focus every chart below on them.'; }
+        $('#trailsDesc').textContent = state.keywordFilter.length ? 'Share of all Marketplace searches for the picked queries. Point at or tap a line to isolate it.' : `The queries with the highest typical monthly share${state.trailsBreak ? (breakIsMarketplace() ? ` since ${monthLabel(state.trailsBreak)}, when Atlassian’s redesigned Marketplace arrived` : ` since the ${monthLabel(state.trailsBreak)} report change`) : ''}. Point at or tap a line to isolate it.`;
+        safeSetOption('trails', buildTrailsOption(tMonths, trailSeries, { breakMonth: recent ? null : state.trailsBreak, allYears: state.trailsRange === 'all' }));
+        { const notes = [];
+          if(state.trailsBreak && state.trailsRange === 'all'){
+            // Name only the charted queries that really collapse in the break month, so the note matches the lines.
+            const prevM = months[months.indexOf(state.trailsBreak)-1];
+            const before = latestRanking(state.sourceRaw, 'percentage', prevM).slice(0, 10);
+            const after = new Map(latestRanking(state.sourceRaw, 'percentage', state.trailsBreak).map(r=>[r.keyword, r.value]));
+            const fell = before.filter(r=> (after.get(r.keyword) || 0) < r.value*0.4).map(r=>r.keyword);
+            const who = fell.length ? fell.slice(0,3).join(', ').replace(/, (?=[^,]*$)/, ' and ') : 'several of the biggest queries';
+            notes.push(`In ${monthLabel(state.trailsBreak)} the shares of ${who} fall at once. That points to a change in how Atlassian's report counts searches, not a loss of interest, so the two periods are best read separately.`);
+          }
+          if(state.trailsBridged) notes.push('Dotted segments bridge months a query spent outside the top 500.');
+          if(state.trailsFaded) notes.push('Grey lines are queries that have since dropped far behind.');
+          $('#trailsNote').textContent = notes.join(' '); }
+        // 3) Heatmap
+        updateHeatTimeRangeControls();
+        if(state.zeroRaw.length){
+          const startIdx = state.heatTimeStartIdx;
+          const { yCats, matrix, rangeMonths } = computeHeatmapMatrix(state.zeroRaw, months, state.heatTopK, startIdx, state.heatTimeEndIdx, state.keywordFilter);
+          const hEl = document.getElementById('heatmap');
+          if(!fullscreenState.chartEl){ hEl.style.height = Math.max(110, yCats.length*(narrow('heatmap') ? 34 : 30) + 44) + 'px'; state.charts.heatmap?.resize(); }
+          const hOpt = buildHeatmapOption(rangeMonths, yCats, matrix, state.gapsZero);
+          renderHeatLegend(hOpt._legend); delete hOpt._legend;
+          safeSetOption('heatmap', hOpt);
+        }
+        refreshFullscreenTable();
+        setStatus(`rendered: months=${months.length}, rows=${state.sourceRaw.length}, start date=${months[0]}, end date=${months[months.length-1]}`);
+      }
+
+      // Hero search: type, pick a suggestion (or press Enter), and the query opens in Keyword Explorer.
+      (function(){
+        const form = $('#heroSearch'), input = $('#heroInput'), box = $('#heroSuggest');
+        if(!form) return;
+        let items = [], active = -1;
+        const close = ()=>{ box.hidden = true; active = -1; input.setAttribute('aria-expanded','false'); };
+        // A picked query opens on its own; free text opens every query that contains all of its words.
+        const go = (q, exact=true)=>{
+          if(exact){ location.href = './keyword-explorer.html?q=' + encodeURIComponent(q); return; }
+          const words = Array.from(new Set(sanitizeKeyword(q).split(' ').filter(Boolean)));
+          location.href = './keyword-explorer.html?' + words.map(w=>'q=' + encodeURIComponent(w)).join('&') + '&mode=contains&logic=all';
+        };
+        const render = ()=>{
+          const q = sanitizeKeyword(input.value);
+          if(!q || !state.heroIndex){ close(); return; }
+          const starts = [], has = [];
+          for(const it of state.heroIndex){ if(it.k.startsWith(q)) starts.push(it); else if(it.k.includes(q)) has.push(it); if(starts.length >= 8) break; }
+          items = starts.concat(has).slice(0, 8);
+          box.innerHTML = items.length ? items.map((it,i)=>{ const at = it.k.indexOf(q); const name = escapeHtml(it.k.slice(0,at)) + '<b>' + escapeHtml(it.k.slice(at, at+q.length)) + '</b>' + escapeHtml(it.k.slice(at+q.length)); return `<button type="button" role="option" data-i="${i}"><span>${name}</span><span>${heroNote(it)}</span></button>`; }).join('') : `<div class="none">No query contains “${escapeHtml(input.value.trim())}”. Press Enter to see every query that contains ${sanitizeKeyword(input.value).includes(' ') ? 'all of these words' : 'it'}.</div>`;
+          active = items.length ? 0 : -1; mark(); box.hidden = false; input.setAttribute('aria-expanded','true');
+        };
+        const short = (m)=> monthLabel(m, {month:'short', year:'numeric'});
+        const heroNote = (it)=> it.now != null ? `${it.now.toFixed(2)}% in ${short(state.heroLatest)}`
+          : it.last ? `top 500 until ${short(it.last)}`
+          : it.zero ? `no apps found, ${short(it.zero)}` : '';
+        const mark = ()=> box.querySelectorAll('button').forEach((b,i)=> b.classList.toggle('active', i === active));
+        input.addEventListener('input', render);
+        input.addEventListener('focus', ()=>{ if(input.value.trim()) render(); });
+        input.addEventListener('keydown', e=>{
+          if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ if(!items.length) return; e.preventDefault(); active = (active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length; mark(); }
+          else if(e.key === 'Escape'){ close(); }
+        });
+        box.addEventListener('mousedown', e=> e.preventDefault());
+        box.addEventListener('click', e=>{ const b = e.target.closest('button'); if(b) go(items[+b.dataset.i].k); });
+        form.addEventListener('submit', e=>{ e.preventDefault(); const q = input.value.trim(); if(!q) { input.focus(); return; } if(active >= 0 && items[active]) go(items[active].k); else go(q, false); });
+        document.addEventListener('click', e=>{ if(!e.target.closest('.hero-search')) close(); });
+      })();
+
+      // Inputs wiring
+      $('#topN').addEventListener('change', e=>{ state.topN = +e.target.value; $('#topNVal').textContent = e.target.value; scheduleRender(); });
+      $('#speed').addEventListener('change', e=>{ state.playInterval = +e.target.value; $('#speedVal').textContent = (state.playInterval/1000).toFixed(1)+"s"; if(state.timelinePlaying) startPlay(); });
+      $('#trailsN').addEventListener('change', e=>{ state.trailsN = +e.target.value; $('#trailsNVal').textContent = e.target.value; scheduleRender(); });
+      $('#heatTopK').addEventListener('change', e=>{ state.heatTopK = +e.target.value; $('#heatTopKVal').textContent = e.target.value; scheduleRender(); });
+      document.querySelectorAll('#heatPresets button').forEach(b=> b.addEventListener('click', ()=>{ state.heatPreset = b.dataset.range; scheduleRender(); }));
+      $('#heatTimeStart').addEventListener('change', e=>{ state.heatTimeStartIdx = +e.target.value; if(state.heatTimeStartIdx>state.heatTimeEndIdx) state.heatTimeEndIdx = state.heatTimeStartIdx; renderAll(); });
+      $('#heatTimeEnd').addEventListener('change', e=>{ state.heatTimeEndIdx = +e.target.value; if(state.heatTimeEndIdx<state.heatTimeStartIdx) state.heatTimeStartIdx = state.heatTimeEndIdx; renderAll(); });
+      const setTrailsRange = (r)=>{ state.trailsRange = r; $('#trailsRecent').setAttribute('aria-pressed', String(r==='recent')); $('#trailsAll').setAttribute('aria-pressed', String(r==='all')); state.charts.trails?.dispose(); state.charts.trails = null; renderAll(); };
+      $('#trailsRecent').addEventListener('click', ()=> setTrailsRange('recent'));
+      $('#trailsAll').addEventListener('click', ()=> setTrailsRange('all'));
+      $('#zeroModeTotals').addEventListener('click', ()=> setZeroMode('totals'));
+      $('#zeroModeKeywords').addEventListener('click', ()=> setZeroMode('keywords'));
+      $('#raceMonth').addEventListener('input', e=>{ stopPlay(); setRaceIndex(+e.target.value); });
+      $('#btn-play').addEventListener('click', ()=>{ state.timelinePlaying ? stopPlay() : startPlay(); });
+      document.getElementById('btn-share-page').addEventListener('click', sharePage);
+
+      const keywordInput = document.getElementById('keywordFilterInput');
+      const keywordReset = document.getElementById('keywordFilterReset');
+      const keywordDropdown = document.getElementById('keywordOptions');
+      if(keywordInput){
+        keywordInput.addEventListener('click', e=>{
+          e.stopPropagation();
+          const open = keywordDropdown?.classList.toggle('open');
+          keywordInput.setAttribute('aria-expanded', open ? 'true' : 'false');
+          if(open) keywordDropdown.querySelector('#keywordSearch')?.focus();
+        });
+      }
+      if(keywordDropdown){
+        keywordDropdown.addEventListener('click', e=> e.stopPropagation());
+        keywordDropdown.addEventListener('keydown', e=>{ if(e.key==='Escape'){ keywordDropdown.classList.remove('open'); keywordInput?.focus(); } });
+      }
+      document.addEventListener('click', ()=> keywordDropdown?.classList.remove('open'));
+      if(keywordReset){
+        keywordReset.addEventListener('click', ()=>{
+          state.keywordFilter = [];
+          updateKeywordDisplay();
+          keywordDropdown?.querySelectorAll('input[type="checkbox"]').forEach(cb=> cb.checked=false);
+          const s = keywordDropdown?.querySelector('#keywordSearch');
+          if(s){ s.value=''; keywordDropdown._apply?.(); }
+          renderAll();
+        });
+      }
+      document.addEventListener('keydown', e=>{
+        if(e.key === 'Escape' && fullscreenState.chartEl) exitFullscreen();
+      });
+      // A click on the dimmed backdrop closes the full-screen view.
+      document.addEventListener('mousedown', e=>{
+        const card = document.querySelector('.card.is-fullscreen');
+        if(card && !card.contains(e.target) && !e.target.closest('.keyword-select-dropdown,.share-overlay')) exitFullscreen();
+      });
+
+      // File inputs
+      $('#file-source').addEventListener('change', async (e)=>{
+        const f = e.target.files[0];
+        if(!f) { updateFileStatus('source-display', 'Not loaded'); return; }
+        state.manualSource = true; setStatus('reading Popular Search Keywords…');
+        updateFileStatus('source-display', `Reading ${f.name}…`);
+        try{
+          const wb = await readWorkbook(await f.arrayBuffer());
+          if(!wb.Raw) throw new Error('no Raw sheet');
+          state.sourceRaw = sourceRows(wb.Raw);
+          setNoData(!state.sourceRaw.length);
+          setStatus(`loaded Popular: ${state.sourceRaw.length} rows`);
+          updateFileStatus('source-display', `${f.name} · ${state.sourceRaw.length.toLocaleString('en-US')} rows`);
+          renderAll();
+        }catch(err){ console.error(err); setStatus('error reading Popular file: check that it has a Raw sheet'); updateFileStatus('source-display', 'Could not read file'); }
+      });
+
+      $('#file-zero').addEventListener('change', async (e)=>{
+        const f = e.target.files[0];
+        if(!f) { updateFileStatus('zero-display', 'Not loaded'); return; }
+        state.manualZero = true; setStatus('reading Zero-Result Keywords…');
+        updateFileStatus('zero-display', `Reading ${f.name}…`);
+        try{
+          const wb = await readWorkbook(await f.arrayBuffer());
+          if(!wb.Raw) throw new Error('no Raw sheet');
+          state.zeroTotals = (wb.Monthly_Summary || []).map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) }));
+          state.zeroRaw = zeroRows(wb.Raw);
+          setStatus(`loaded Zero: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
+          updateFileStatus('zero-display', `${f.name} · ${state.zeroRaw.length.toLocaleString('en-US')} rows`);
+          renderAll();
+        }catch(err){ console.error(err); setStatus('error reading Zero file: check that it has a Raw sheet'); updateFileStatus('zero-display', 'Could not read file'); }
+      });
+
+      // --- Default file autoload (for GitHub Pages) ---
+      const DEFAULT_SOURCE_CANDIDATES = ['./data/source_search_keywords_marketplace.xlsx','./source_search_keywords_marketplace.xlsx'];
+      const DEFAULT_ZERO_CANDIDATES   = ['./data/zero_result_keywords_marketplace.xlsx','./zero_result_keywords_marketplace.xlsx'];
+
+      async function fetchFirst(urls){
+        for(const u of urls){
+          try{ const res = await fetch(u, {cache:'no-cache'}); if(res.ok){ return await res.arrayBuffer(); } }catch(e){}
+        }
+        throw new Error('defaults not found');
+      }
+
+      // Reading a workbook takes about a second of CPU, so it happens in a background worker and the page never freezes.
+      // If workers are unavailable it falls back to the page itself.
+      const ensureXLSX = ()=> window.XLSX ? Promise.resolve(window.XLSX) : loadScriptSeq(XLSX_URLS, 'XLSX');
+      const WORKER_SRC = `const URLS=${JSON.stringify(XLSX_URLS)};
+        for(const u of URLS){ try{ importScripts(u); if(self.XLSX) break; }catch(e){} }
+        const key=(v)=>{ if(typeof v==='number'){ const d=XLSX.SSF.parse_date_code(v); return d.y+'-'+String(d.m).padStart(2,'0'); } const t=String(v==null?'':v).trim(); const m=/^(\\d{4})-(\\d{2})/.exec(t); if(m) return m[1]+'-'+m[2]; const d=new Date(t); return isNaN(d)?t.slice(0,7):d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0'); };
+        self.onmessage=(e)=>{ try{ if(!self.XLSX) throw new Error('no xlsx'); const wb=XLSX.read(e.data,{type:'array'}); const out={}; for(const name of ['Raw','Monthly_Summary']){ if(wb.Sheets[name]) out[name]=XLSX.utils.sheet_to_json(wb.Sheets[name],{defval:null}).map(r=>({...r, month:key(r.month)})); } self.postMessage(out); }catch(err){ self.postMessage({error:String(err&&err.message||err)}); } };`;
+      function readWorkbook(buf){
+        return new Promise((resolve, reject)=>{
+          let w; try{ w = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], {type:'text/javascript'}))); }catch(e){ w = null; }
+          const onPage = ()=> ensureXLSX().then(()=>{ const wb = XLSX.read(buf, {type:'array'}); const out = {}; for(const name of ['Raw','Monthly_Summary']) if(wb.Sheets[name]) out[name] = XLSX.utils.sheet_to_json(wb.Sheets[name], {defval:null}).map(r=>({...r, month: toMonthKey(r.month)})); resolve(out); }).catch(reject);
+          if(!w){ onPage(); return; }
+          const copy = buf.slice(0);
+          w.onmessage = (e)=>{ w.terminate(); if(e.data && e.data.error) onPage(); else resolve(e.data); };
+          w.onerror = ()=>{ w.terminate(); onPage(); };
+          w.postMessage(copy, [copy]);
+        });
+      }
+      const sourceRows = (rows)=> rows.filter(r=>!isJunkQuery(r.keyword)).map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword), percentage: asNumber(r.percentage), rank: asNumber(r.rank) })).filter(r=>r.keyword);
+      const zeroRows = (rows)=> rows.filter(r=>!isJunkQuery(r.keyword)).map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword), count: asNumber(r.count||0) })).filter(r=>r.keyword);
+
+      async function tryLoadDefaultSource(){
+        setStatus('loading default Popular…');
+        const wb = await readWorkbook(await fetchFirst(DEFAULT_SOURCE_CANDIDATES));
+        state.sourceRaw = sourceRows(wb.Raw || []);
+        setStatus(`default Popular loaded: ${state.sourceRaw.length} rows`);
+        updateFileStatus('source-display', `${state.sourceRaw.length.toLocaleString('en-US')} rows loaded`);
+      }
+
+      async function tryLoadDefaultZero(){
+        setStatus('loading default Zero…');
+        const wb = await readWorkbook(await fetchFirst(DEFAULT_ZERO_CANDIDATES));
+        state.zeroTotals = (wb.Monthly_Summary || []).map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) }));
+        state.zeroRaw = zeroRows(wb.Raw || []);
+        setStatus(`default Zero loaded: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
+        updateFileStatus('zero-display', `${state.zeroRaw.length.toLocaleString('en-US')} rows loaded`);
+      }
+
+      async function loadDefaults(forceLoad = false){
+        let any = false;
+        const shouldLoadSource = forceLoad || (!state.sourceRaw.length && !state.manualSource);
+        const shouldLoadZero = forceLoad || (!state.zeroRaw.length && !state.manualZero);
+        // Both reports are fetched and read in parallel, and the page draws once when they are in.
+        const [src, zero] = await Promise.allSettled([shouldLoadSource ? tryLoadDefaultSource() : null, shouldLoadZero ? tryLoadDefaultZero() : null]);
+        if(shouldLoadSource){ if(src.status === 'fulfilled') any = true; else { console.info('No default Popular found'); updateFileStatus('source-display', forceLoad ? 'Repository file not found' : 'Not loaded'); } }
+        if(shouldLoadZero){ if(zero.status === 'fulfilled') any = true; else { console.info('No default Zero found'); updateFileStatus('zero-display', forceLoad ? 'Repository file not found' : 'Not loaded'); } }
+        if(any) renderAll();
+        if(forceLoad && !any) {
+          setStatus('No default files found in /data/ directory');
+        } else if(!forceLoad && !any) {
+          setStatus('ready: open your files or load the demo');
+        }
+        setNoData(!state.sourceRaw.length);
+        return any;
+      }
+
+      // When the reports cannot be fetched, say so once, plainly, instead of leaving "Loading…" everywhere.
+      function setNoData(on){
+        document.body.classList.toggle('no-data', on);
+        $('#loadAlert').hidden = !on;
+        $('#btn-play').disabled = on; $('#raceMonth').disabled = on;
+        if(on){
+          document.querySelectorAll('.chart .placeholder').forEach(p=> p.textContent = 'No data loaded');
+          if($('#topList')){ $('#heroInput').placeholder = 'Reports not loaded'; $('#heroInput').disabled = true; $('#heroMeta').textContent = '';
+          $('#topList').innerHTML = '<li class="empty-note">No report loaded.</li>'; $('#topListTitle').textContent = 'Biggest climbers'; }
+          state.heroSrc = null;
+        } else if($('#heroInput') && $('#heroInput').disabled){
+          // Data arrived after a failed load (retry or upload): bring the search back. renderHero sets the placeholder from the new data.
+          $('#heroInput').disabled = false;
+          if($('#heroInput').placeholder === 'Reports not loaded') $('#heroInput').placeholder = 'Search a query, e.g. scriptrunner';
+        }
+      }
+      $('#btn-retry').addEventListener('click', async ()=>{ $('#btn-retry').disabled = true; await loadDefaults(true); $('#btn-retry').disabled = false; });
+
+      async function autoLoadDefaults(){
+        if(state.defaultsTried) return;
+        state.defaultsTried = true;
+        await loadDefaults(false);
+      }
+
+      // Demo data & tests
+      const demo = { sourceRaw:[
+        {month:'2023-08-01', keyword:'scriptrunner', percentage:3.30},
+        {month:'2023-08-01', keyword:'jira', percentage:3.03},
+        {month:'2023-08-01', keyword:'structure', percentage:2.95},
+        {month:'2023-08-01', keyword:'automation', percentage:2.74},
+        {month:'2023-08-01', keyword:'portfolio', percentage:2.55},
+        {month:'2023-09-01', keyword:'scriptrunner', percentage:3.90},
+        {month:'2023-09-01', keyword:'jira', percentage:3.60},
+        {month:'2023-09-01', keyword:'automation', percentage:2.80},
+        {month:'2023-09-01', keyword:'structure', percentage:2.30},
+        {month:'2023-09-01', keyword:'tempo', percentage:2.00},
+        {month:'2023-10-01', keyword:'scriptrunner', percentage:3.40},
+        {month:'2023-10-01', keyword:'automation', percentage:3.10},
+        {month:'2023-10-01', keyword:'jira', percentage:2.70},
+        {month:'2023-10-01', keyword:'structure', percentage:2.20},
+        {month:'2023-10-01', keyword:'eazybi', percentage:1.80},
+        {month:'2023-11-01', keyword:'automation', percentage:3.50},
+        {month:'2023-11-01', keyword:'scriptrunner', percentage:3.10},
+        {month:'2023-11-01', keyword:'jira', percentage:2.80},
+        {month:'2023-11-01', keyword:'tempo', percentage:2.20},
+        {month:'2023-11-01', keyword:'structure', percentage:1.90},
+        {month:'2023-12-01', keyword:'automation', percentage:3.70},
+        {month:'2023-12-01', keyword:'jira', percentage:3.20},
+        {month:'2023-12-01', keyword:'scriptrunner', percentage:2.90},
+        {month:'2023-12-01', keyword:'structure', percentage:2.10},
+        {month:'2023-12-01', keyword:'portfolio', percentage:1.60}
+      ], zeroRaw:[
+        {month:'2023-08-01', keyword:'cost tracker', count:40},
+        {month:'2023-08-01', keyword:'rpa', count:80},
+        {month:'2023-09-01', keyword:'rpa', count:120},
+        {month:'2023-10-01', keyword:'rpa', count:60},
+        {month:'2023-10-01', keyword:'okrs', count:40},
+        {month:'2023-12-01', keyword:'okrs', count:200}
+      ], zeroTotals:[
+        {month:'2023-08', value:1719}, {month:'2023-09', value:1481}, {month:'2023-10', value:554}, {month:'2023-11', value:2}, {month:'2023-12', value:730}
+      ] };
+
+      document.getElementById('btn-load-defaults').addEventListener('click', async ()=>{
+        setStatus('Loading default files from /data/ directory...');
+        state.manualSource = false;
+        state.manualZero = false;
+        const loaded = await loadDefaults(true);
+        if(loaded) setStatus('Default files loaded successfully');
+      });
+
+      document.getElementById('btn-demo').addEventListener('click', ()=>{
+        state.sourceRaw = demo.sourceRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
+        state.zeroRaw = demo.zeroRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
+        state.zeroTotals = demo.zeroTotals.slice();
+        updateFileStatus('source-display', 'Demo data loaded');
+        updateFileStatus('zero-display', 'Demo data loaded');
+        renderAll(); startPlay();
+      });
+
+      function runSmokeTests(){
+        const out = []; const ok = (name, cond)=>{ out.push(`${cond? '✅':'❌'} ${name}`); if(!cond) console.error('Test failed:', name); };
+        ok('race container exists', !!document.getElementById('race'));
+        ok('zeros container exists', !!document.getElementById('zeros'));
+        ok('trails container exists', !!document.getElementById('trails'));
+        ok('heatmap container exists', !!document.getElementById('heatmap'));
+        ok('inputs help exists', !!document.querySelector('[data-testid="help-inputs"]'));
+        ok('dynamics help exists', !!document.querySelector('[data-testid="help-dynamics"]'));
+        ok('trails help exists', !!document.querySelector('[data-testid="help-trails"]'));
+        ok('heatmap help exists', !!document.querySelector('[data-testid="help-heatmap"]'));
+        try{ renderAll(); ok('renderAll without data does not throw', true); }catch(e){ ok('renderAll without data does not throw', false); }
+        const wl = wrapLabel('this is a very very long keyword title that should wrap into two lines', 18);
+        ok('wrapLabel inserts newline', wl.includes('\n'));
+        state.sourceRaw = demo.sourceRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
+        state.zeroRaw = demo.zeroRaw.map(r=>({...r, month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword)}));
+        state.zeroTotals = demo.zeroTotals.slice();
+        try{ renderAll(); const race = ensureChart('race'); const zeros = ensureChart('zeros'); const trails = ensureChart('trails'); const heat = ensureChart('heatmap'); ok('race chart instance created', !!race); ok('zeros chart instance created', !!zeros); ok('trails chart instance created', !!trails); ok('heatmap chart instance created', !!heat); }catch(e){ ok('render with demo data succeeds', false); }
+        ok('page title rendered', !!document.getElementById('pageTitle'));
+        const s = document.getElementById('heatTimeStart'); const e = document.getElementById('heatTimeEnd');
+        ok('heatmap From lists every month', s.options.length === state.months.length);
+        ok('heatmap To lists every month', e.options.length === state.months.length);
+        ok('race month slider spans race months', +document.getElementById('raceMonth').max === state.raceMonths.length-1);
+        setStatus('Smoke tests results:\n' + out.join('\n'));
+      }
+      document.getElementById('btn-test').addEventListener('click', runSmokeTests);
+
+      document.getElementById('source-open').addEventListener('click', ()=>{ document.getElementById('file-source').click(); });
+      document.getElementById('zero-open').addEventListener('click', ()=>{ document.getElementById('file-zero').click(); });
+
+      if(window.innerWidth < 560){ state.trailsN = 4; $('#trailsN').value = '4'; $('#trailsNVal').textContent = '4'; }
+      if(window.matchMedia('(hover: none)').matches) document.querySelectorAll('.hover-hint').forEach(el=> el.textContent = 'Tap');
+      initHelp();
+      autoLoadDefaults();
+
+      // Re-theme charts when the system colour scheme changes
+      const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const onScheme = ()=>{ if(state.sourceRaw.length) renderAll(); };
+      darkQuery.addEventListener ? darkQuery.addEventListener('change', onScheme) : darkQuery.addListener(onScheme);
+      // Fonts can arrive after the first render; re-measure labels once they do
+      if(document.fonts && document.fonts.status !== 'loaded') document.fonts.ready.then(()=>{ if(state.sourceRaw.length){ Object.values(state.charts).forEach(c=>{ if(c) c.__sig = 'stale'; }); renderAll(); } });
+
+      // A chart whose box changes width (filter stacks the cards, a column wraps) is re-laid out, ticks included.
+      if(window.ResizeObserver){ const widths = new Map(); let t = null; const ro = new ResizeObserver(entries=>{ let changed = false; for(const e of entries){ const w = Math.round(e.contentRect.width); if(widths.get(e.target) !== w){ if(widths.has(e.target)) changed = true; widths.set(e.target, w); } } if(changed){ clearTimeout(t); t = setTimeout(()=>{ Object.values(state.charts).forEach(c=> c?.resize?.()); if(state.sourceRaw.length && !fullscreenState.chartEl) renderAll(); }, 120); } }); ['race','zeros','trails','heatmap'].forEach(id=>{ const el = document.getElementById(id); if(el) ro.observe(el); }); }
+      window.addEventListener('resize', ()=>{ state.charts.race?.resize?.(); state.charts.zeros?.resize?.(); state.charts.trails?.resize?.(); state.charts.heatmap?.resize?.(); });
+    }
+  })();
+  </script>
+</body>
+</html>
