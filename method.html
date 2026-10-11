@@ -77,8 +77,8 @@
         <h2 id="h-source">The source</h2>
         <p>Everything here is built from Atlassian’s monthly Marketplace search reports, <span id="range">December 2021 to the latest month</span>. They come from the Marketplace reporting API that Atlassian offers to app vendors, for searches made on the Marketplace website. Each month has two reports.</p>
         <div class="sheets">
-          <div><h3>Popular search keywords</h3><p>The top 500 queries by share of all searches. Columns: month, keyword, percentage, rank.</p><span class="n num"><span id="nPop" class="wait">–</span> rows</span></div>
-          <div><h3>Zero-result keywords</h3><p>The 500 queries that most often returned no apps, with how many times. Columns: month, keyword, count.</p><span class="n num"><span id="nZero" class="wait">–</span> rows</span></div>
+          <div><h3>Popular search keywords</h3><p>The top 500 queries by share of all searches. Columns: month, keyword, percentage, rank.</p><span class="n num"><span id="nPop" data-ghost="num"></span> rows</span></div>
+          <div><h3>Zero-result keywords</h3><p>The 500 queries that most often returned no apps, with how many times. Columns: month, keyword, count.</p><span class="n num"><span id="nZero" data-ghost="num"></span> rows</span></div>
         </div>
         <p>The files live in the <a data-link="github" href="https://github.com/rustem-shiriiazdanov/atlassian-marketplace-keywords">GitHub repository</a>, and the site is updated monthly when a new report arrives. <span id="countNote">Row counts include every query.</span></p>
       </section>
@@ -113,8 +113,8 @@
         <p>Atlassian’s reports include searches that are not real questions about apps: bot noise, test strings such as “1234”, pasted links and e-mail addresses, and attempts to inject HTML, scripts or SQL into the search box. Some of them reached the top of a month: in February 2022 “1234” alone took 28.93% of all searches. By default every page shows all queries exactly as Atlassian reports them. Tick <strong>Hide meaningless queries</strong> to leave them out; the setting applies on every page, in every chart, total and ranking, and to files you open yourself, and it is remembered in this browser.</p>
         <p><label class="check"><input type="checkbox" data-junk-toggle> Hide meaningless queries</label></p>
         <p>A query counts as meaningless when it has no letters or digits, is a long string of digits, contains an e-mail address, an HTML tag, a link, or a script or SQL injection pattern. Ordinary words that happen to be technical, such as “iframe”, “svg” or “xss”, and Jira smart values such as “{{issue.key}}” are kept.</p>
-        <p id="removedLine" class="small"><span class="wait">Counting the meaningless rows…</span></p>
-        <ul class="removed" id="removedList" aria-label="Largest meaningless queries" data-ghost="list" data-rows="5"></ul>
+        <p id="removedLine" class="small" data-ghost="text" data-rows="1" data-card="0"></p>
+        <ul class="removed" id="removedList" aria-label="Largest meaningless queries" data-ghost="list" data-rows="5" data-label="Meaningless queries"></ul>
       </section>
 
       <section id="files" aria-labelledby="h-files">

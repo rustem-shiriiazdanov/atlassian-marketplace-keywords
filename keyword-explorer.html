@@ -448,27 +448,27 @@
     </section>
 
     <section id="kpis" class="kpi-grid" aria-label="Query summary">
-      <div class="kpi"><div class="label" id="kpiShareLabel">Latest search share</div><div id="kpiShare" class="value">—</div><div id="kpiShareNote" class="note">Percentage of all searches</div></div>
-      <div class="kpi"><div class="label">Share change</div><div id="kpiDelta" class="value">—</div><div id="kpiDeltaNote" class="note">vs previous month</div></div>
-      <div class="kpi"><div class="label" id="kpiRankLabel">Current rank</div><div id="kpiRank" class="value">—</div><div id="kpiRankNote" class="note">Direct top-500 rank</div></div>
-      <div class="kpi"><div class="label">Empty searches</div><div id="kpiZero" class="value">—</div><div id="kpiZeroNote" class="note">In selected period</div></div>
-      <div class="kpi"><div class="label" id="kpiPeakLabel">Peak search share</div><div id="kpiPeak" class="value">—</div><div id="kpiPeakNote" class="note">Within selected period</div></div>
+      <div class="kpi"><div class="label" id="kpiShareLabel">Latest search share</div><div id="kpiShare" class="value" data-ghost="num"></div><div id="kpiShareNote" class="note">Percentage of all searches</div></div>
+      <div class="kpi"><div class="label">Share change</div><div id="kpiDelta" class="value" data-ghost="num"></div><div id="kpiDeltaNote" class="note">vs previous month</div></div>
+      <div class="kpi"><div class="label" id="kpiRankLabel">Current rank</div><div id="kpiRank" class="value" data-ghost="num"></div><div id="kpiRankNote" class="note">Direct top-500 rank</div></div>
+      <div class="kpi"><div class="label">Empty searches</div><div id="kpiZero" class="value" data-ghost="num"></div><div id="kpiZeroNote" class="note">In selected period</div></div>
+      <div class="kpi"><div class="label" id="kpiPeakLabel">Peak search share</div><div id="kpiPeak" class="value" data-ghost="num"></div><div id="kpiPeakNote" class="note">Within selected period</div></div>
     </section>
 
     <div class="charts">
       <section id="shareCard" class="chart-card" aria-labelledby="shareTitle">
         <div class="chart-head"><div><h3 id="shareTitle">Share of all searches</h3><p class="description">Percentage of all Marketplace searches. Gaps mean the query was outside the top 500 that month.</p></div><div class="chart-actions"><button class="icon-btn" type="button" data-chart-action="fullscreen" data-chart="shareChart" aria-label="Open chart full screen" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button><button class="icon-btn" type="button" data-chart-action="download" data-chart="shareChart" aria-label="Download chart as PNG" title="Download PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
-        <div id="shareChart" class="chart"><div class="chart-placeholder" data-ghost="line"></div></div>
+        <div id="shareChart" class="chart"><div class="chart-placeholder" data-ghost="line" data-label="Share of all searches"></div></div>
       </section>
 
       <section id="rankCard" class="chart-card" aria-labelledby="rankTitle">
         <div class="chart-head"><div><h3 id="rankTitle">Top-500 rank</h3><p class="description">Rank from the monthly report on a log scale, so moves near the top stay visible. Gaps mean the query was outside the top 500.</p></div><div class="chart-actions"><button class="icon-btn" type="button" data-chart-action="fullscreen" data-chart="rankChart" aria-label="Open chart full screen" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button><button class="icon-btn" type="button" data-chart-action="download" data-chart="rankChart" aria-label="Download chart as PNG" title="Download PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
-        <div id="rankChart" class="chart rank"><div class="chart-placeholder" data-ghost="line"></div></div>
+        <div id="rankChart" class="chart rank"><div class="chart-placeholder" data-ghost="line" data-label="Top-500 rank"></div></div>
       </section>
 
       <section id="zeroCard" class="chart-card" aria-labelledby="zeroTitle">
         <div class="chart-head"><div><h3 id="zeroTitle">Searches that found no apps</h3><p class="description">How many times the query found no apps: a count of searches, not a rate.</p></div><div class="chart-actions"><button class="icon-btn" type="button" data-chart-action="fullscreen" data-chart="zeroChart" aria-label="Open chart full screen" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button><button class="icon-btn" type="button" data-chart-action="download" data-chart="zeroChart" aria-label="Download chart as PNG" title="Download PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
-        <div id="zeroChart" class="chart zero"><div class="chart-placeholder" data-ghost="bars" data-rows="8"></div></div>
+        <div id="zeroChart" class="chart zero"><div class="chart-placeholder" data-ghost="bars" data-rows="8" data-label="Searches that found no apps"></div></div>
       </section>
     </div>
 
@@ -477,7 +477,7 @@
       <div class="table-wrap">
         <table>
           <thead><tr><th id="thName">Query</th><th>Queries</th><th>Latest share</th><th id="thDelta">Share change</th><th>Current rank</th><th>Best rank</th><th>Peak share</th><th>Empty searches</th></tr></thead>
-          <tbody id="summaryBody"><tr><td colspan="8" class="empty-state">Pick queries above to compare them here.</td></tr></tbody>
+          <tbody id="summaryBody" data-ghost="rows" data-rows="3" data-cols="8" data-label="Comparison"></tbody>
         </table>
       </div>
     </section>
@@ -486,8 +486,8 @@
       <h2 id="dataTitle">Use your own data</h2>
       <p>The page loads the latest reports from this repository. You can open your own exports instead; files are read in your browser and never uploaded.</p>
       <div class="data-grid">
-        <div class="file-tile"><div><strong>Popular search keywords</strong><span>Raw sheet with month, keyword, percentage, rank</span><em id="popularFileStatus" class="file-status">Not loaded</em></div><input id="popularFile" type="file" accept=".xlsx,.xls" /><button id="popularFileButton" class="btn ghost small" type="button">Choose file</button></div>
-        <div class="file-tile"><div><strong>Zero-result keywords</strong><span>Raw sheet with month, keyword, count</span><em id="zeroFileStatus" class="file-status">Not loaded</em></div><input id="zeroFile" type="file" accept=".xlsx,.xls" /><button id="zeroFileButton" class="btn ghost small" type="button">Choose file</button></div>
+        <div class="file-tile"><div><strong>Popular search keywords</strong><span>Raw sheet with month, keyword, percentage, rank</span><em id="popularFileStatus" class="file-status"><span class="file-loading"><span data-ghost="num"></span> Loading from the repository…</span></em></div><input id="popularFile" type="file" accept=".xlsx,.xls" /><button id="popularFileButton" class="btn ghost small" type="button">Choose file</button></div>
+        <div class="file-tile"><div><strong>Zero-result keywords</strong><span>Raw sheet with month, keyword, count</span><em id="zeroFileStatus" class="file-status"><span class="file-loading"><span data-ghost="num"></span> Loading from the repository…</span></em></div><input id="zeroFile" type="file" accept=".xlsx,.xls" /><button id="zeroFileButton" class="btn ghost small" type="button">Choose file</button></div>
       </div>
       <div class="data-actions"><span id="status" class="status" role="status">Loading libraries…</span><button id="reloadDefaults" class="link-btn" type="button">Reload repository data</button></div>
     </section>

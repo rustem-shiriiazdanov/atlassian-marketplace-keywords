@@ -113,16 +113,26 @@
     if(load.done) return { p: 1, text: '' };
     const allIn = load.files.size && Array.from(load.files.values()).every(f=> f.complete);
     if(load.reading || allIn) return { p: .9, text: 'Reading the spreadsheets…' };
-    if(!load.files.size) return { p: .04, text: 'Getting Atlassian’s latest reports…' };
-    if(known && total) return { p: .05 + .8 * got / total, text: `Downloading Atlassian’s reports · ${MB(got)} of ${MB(total)} MB` };
-    return { p: .3, text: `Downloading Atlassian’s reports · ${MB(got)} MB` };
+    if(!load.files.size) return { p: .04, text: 'Connecting…' };
+    if(known && total) return { p: .05 + .8 * got / total, text: `Downloading the reports · ${MB(got)} of ${MB(total)} MB` };
+    return { p: .3, text: `Downloading the reports · ${MB(got)} MB` };
   }
   function paintLoad(){
     const st = loadState();
     let bar = document.querySelector('.mk-load');
     if(!bar && document.body){ bar = document.createElement('div'); bar.className = 'mk-load'; bar.setAttribute('aria-hidden', 'true'); bar.innerHTML = '<i></i>'; document.body.prepend(bar); }
     if(bar){ bar.firstChild.style.transform = `scaleX(${st.p})`; bar.classList.toggle('done', load.done || load.failed); }
-    document.querySelectorAll('[data-load-note]').forEach(n=>{ if(n.textContent !== st.text) n.textContent = st.text; });
+    // One status for screen readers; the cards on the page are visual only.
+    let live = document.getElementById('mkLoadStatus');
+    if(!live && document.body && document.querySelector('[data-ghost]')){ live = document.createElement('div'); live.id = 'mkLoadStatus'; live.className = 'sr-only'; live.setAttribute('role', 'status'); document.body.append(live); }
+    if(live){ const msg = load.done ? 'Loaded' : st.text; if(live.textContent !== msg) live.textContent = msg; }
+    document.querySelectorAll('[data-load-note]').forEach(n=>{ const t = st.text || 'Drawing…'; if(n.textContent !== t) n.textContent = t; });
+    const pct = Math.round(st.p * 100) + '%';
+    document.querySelectorAll('[data-load-pct]').forEach(n=>{ n.textContent = load.failed ? '' : pct; });
+    document.querySelectorAll('[data-load-bar]').forEach(n=>{ n.style.width = pct; });
+    document.querySelectorAll('.load-card').forEach(c=> c.classList.toggle('failed', load.failed));
+    // Figures that a page leaves empty once the reports are in show a dash instead of spinning on.
+    if(load.done || load.failed){ document.querySelectorAll('.file-loading').forEach(m=> m.replaceWith(load.failed ? 'Not loaded' : 'Loaded')); document.querySelectorAll('.mini-load').forEach(m=> m.replaceWith('—')); }
   }
   // Pages call this once the first view is drawn; the line fills up and fades out.
   function loadDone(){ if(load.done) return; load.done = true; paintLoad(); }
@@ -147,19 +157,35 @@
     }
     throw new Error('Report file not found');
   }
-  // Placeholders shaped like the chart that will replace them: bars, a line, a grid, list rows or cards.
-  function ghostHTML(kind, n){
-    const note = '<p class="ghost-note" data-load-note></p>';
-    const w = [92, 84, 77, 70, 61, 55, 49, 44, 40, 36, 33, 30, 28, 26, 24, 22, 21, 20, 19, 18];
-    if(kind === 'bars'){ n = n || 10; return `<div class="skel g-bars" aria-hidden="true">${Array.from({length:n}, (_, i)=> `<span><b style="width:${40 + (i*37)%45}%"></b><i style="width:${w[i] || 18}%"></i></span>`).join('')}</div>${note}`; }
-    if(kind === 'line'){ const pts = [62,58,66,55,60,48,52,44,50,41,46,38,42,36,40,33,30,34,28,26].map((y,i)=> `${(i/19*100).toFixed(1)},${y}`).join(' ');
-      return `<div class="skel g-line" aria-hidden="true"><svg viewBox="0 0 100 80" preserveAspectRatio="none"><path d="M0 20H100M0 40H100M0 60H100" class="gl-grid"/><polyline points="${pts}" class="gl-line"/></svg></div>${note}`; }
-    if(kind === 'heat'){ n = n || 10; return `<div class="skel g-heat" aria-hidden="true">${Array.from({length:n}, (_, r)=> `<span><b style="width:${45 + (r*29)%40}%"></b>${Array.from({length:12}, (_, c)=> `<i style="opacity:${(.25 + ((r*7 + c*5) % 9)/12).toFixed(2)}"></i>`).join('')}</span>`).join('')}</div>${note}`; }
-    if(kind === 'list'){ n = n || 6; return Array.from({length:n}, (_, i)=> `<li class="skel g-li" aria-hidden="true"><b style="width:${30 + (i*23)%40}%"></b><i style="width:${w[i] || 30}%"></i></li>`).join(''); }
-    if(kind === 'cards'){ n = n || 12; return `<div class="skel g-cards" aria-hidden="true">${Array.from({length:n}, (_, i)=> `<span><b style="width:${35 + (i*17)%30}%"></b><i style="width:${55 + (i*13)%35}%"></i><i style="width:${30 + (i*11)%25}%"></i></span>`).join('')}</div>${note}`; }
-    return note;
+  // Every element that shows report data has its own loading state until it is drawn: a placeholder shaped like
+  // the element (bars, a line, a grid, list or table rows, cards, text lines) under a card that names the element
+  // and shows the shared progress; figures get a small spinner in place of the number.
+  const W = [92, 84, 77, 70, 61, 55, 49, 44, 40, 36, 33, 30, 28, 26, 24, 22, 21, 20, 19, 18];
+  function loadCardHTML(label){
+    return `<div class="load-card" aria-hidden="true"><span class="spin"></span><span class="load-label">${escapeHtml(label || 'Loading')}</span><span class="load-pct" data-load-pct></span>`
+      + `<span class="load-sub" data-load-note>Connecting…</span><i class="load-track"><b data-load-bar></b></i></div>`;
   }
-  function fillGhosts(root){ (root || document).querySelectorAll('[data-ghost]').forEach(el=>{ if(!el.dataset.ghosted){ el.dataset.ghosted = '1'; el.innerHTML = ghostHTML(el.dataset.ghost, +el.dataset.rows || 0); } }); paintLoad(); }
+  function ghostHTML(kind, n, label, card = true, cols = 1){
+    const wrap = (inner, tag = 'div')=> `<${tag} class="skel-wrap">${inner}${card ? loadCardHTML(label) : ''}</${tag}>`;
+    const rows = (k, f)=> Array.from({length:k}, (_, i)=> f(i)).join('');
+    if(kind === 'num') return `<span class="mini-load"><span class="spin"></span><span class="sr-only">Loading</span></span>`;
+    if(kind === 'text'){ n = n || 3; return wrap(`<span class="skel g-text" aria-hidden="true">${rows(n, i=> `<b style="width:${i === n-1 ? 58 : 96 - (i*7)%14}%"></b>`)}</span>`, 'span'); }
+    if(kind === 'bars'){ n = n || 10; return wrap(`<div class="skel g-bars" aria-hidden="true">${rows(n, i=> `<span><b style="width:${40 + (i*37)%45}%"></b><i style="width:${W[i] || 18}%"></i></span>`)}</div>`); }
+    if(kind === 'line'){ const pts = [62,58,66,55,60,48,52,44,50,41,46,38,42,36,40,33,30,34,28,26].map((y,i)=> `${(i/19*100).toFixed(1)},${y}`).join(' ');
+      return wrap(`<div class="skel g-line" aria-hidden="true"><svg viewBox="0 0 100 80" preserveAspectRatio="none"><path d="M0 20H100M0 40H100M0 60H100" class="gl-grid"/><polyline points="${pts}" class="gl-line"/></svg></div>`); }
+    if(kind === 'heat'){ n = n || 10; return wrap(`<div class="skel g-heat" aria-hidden="true">${rows(n, r=> `<span><b style="width:${45 + (r*29)%40}%"></b>${rows(12, c=> `<i style="opacity:${(.25 + ((r*7 + c*5) % 9)/12).toFixed(2)}"></i>`)}</span>`)}</div>`); }
+    if(kind === 'list'){ n = n || 6; return `<li class="skel-holder">${wrap(`<div class="skel g-list" aria-hidden="true">${rows(n, i=> `<span><b style="width:${30 + (i*23)%40}%"></b><i style="width:${W[i] || 30}%"></i></span>`)}</div>`)}</li>`; }
+    if(kind === 'rows'){ n = n || 4; return `<tr class="skel-holder"><td colspan="${cols}">${wrap(`<div class="skel g-list" aria-hidden="true">${rows(n, i=> `<span><b style="width:${40 + (i*19)%35}%"></b><i style="width:${88 - i*9}%"></i></span>`)}</div>`)}</td></tr>`; }
+    if(kind === 'cards'){ n = n || 12; return wrap(`<div class="skel g-cards" aria-hidden="true">${rows(n, i=> `<span><b style="width:${35 + (i*17)%30}%"></b><i style="width:${55 + (i*13)%35}%"></i><i style="width:${30 + (i*11)%25}%"></i></span>`)}</div>`); }
+    return '';
+  }
+  function fillGhosts(root){
+    (root || document).querySelectorAll('[data-ghost]').forEach(el=>{
+      if(el.dataset.ghosted) return; el.dataset.ghosted = '1';
+      el.innerHTML = ghostHTML(el.dataset.ghost, +el.dataset.rows || 0, el.dataset.label, el.dataset.card !== '0', +el.dataset.cols || 1);
+    });
+    paintLoad();
+  }
   // Raw sheet rows → clean rows. Every row is kept; meaningless ones are flagged (junk), judged on the raw text,
   // so the reader can choose to hide them on every page.
   function prepPopular(rows){
@@ -346,7 +372,7 @@
   const HEAT_BINS = [0, 1, 5, 10, 20, 50];
   const heatBin = (n)=>{ let b = 0; for(let i=0;i<HEAT_BINS.length;i++) if(n >= HEAT_BINS[i]) b = i; return n > 0 ? Math.max(1, b) : 0; };
 
-  window.MK = { XLSX_URLS, ECHARTS_URLS, LINKS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, loadDone, loadFailed, fillGhosts, ghostHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
+  window.MK = { XLSX_URLS, ECHARTS_URLS, LINKS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, loadDone, loadFailed, fillGhosts, ghostHTML, loadCardHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
     toMonthKey, monthLabel, monthLong, monthShort, monthName, monthAbbr, addMonths, monthsBetween,
     escapeHtml, fmtInt, fmtPct, cleanKeyword, isJunkQuery, num, REPORT_BREAK, BREAK_NOTE, NOISE_NOTE, ZERO_NOTE,
     attachLookup, lookupIndex, tokens, HEAT_BINS, heatBin, isSpike, inkOn };

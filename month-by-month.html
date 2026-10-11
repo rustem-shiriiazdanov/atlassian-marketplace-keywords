@@ -416,7 +416,7 @@
           <div class="card-controls">
             <div class="ctrl"><label for="topN">Show</label><span class="sel-note" hidden></span><select id="topN" class="select-sm"><option value="5">Top 5</option><option value="10" selected>Top 10</option><option value="15">Top 15</option><option value="20">Top 20</option></select><span id="topNVal" hidden>10</span></div>
           </div>
-          <div class="card-body"><div id="race" class="chart" data-testid="race"><div class="placeholder" data-ghost="bars" data-rows="10"></div></div></div>
+          <div class="card-body"><div id="race" class="chart" data-testid="race"><div class="placeholder" data-ghost="bars" data-rows="10" data-label="Top queries by share"></div></div></div>
           <p class="card-note" id="raceNote"></p>
         </div>
         <div class="card" id="zeros-card">
@@ -425,14 +425,14 @@
             <div class="head-tools"><div data-toolbar-for="zeros"></div></div>
           </div>
           <div class="card-controls"><div class="seg" role="group" aria-label="Zero-result view"><button type="button" id="zeroModeTotals" aria-pressed="true">Total per month</button><button type="button" id="zeroModeKeywords" aria-pressed="false">By query</button></div></div>
-          <div class="card-body"><div id="zeros" class="chart" data-testid="zeros"><div class="placeholder" data-ghost="line"></div></div></div>
+          <div class="card-body"><div id="zeros" class="chart" data-testid="zeros"><div class="placeholder" data-ghost="line" data-label="Searches that found no apps"></div></div></div>
           <p class="card-note" id="zerosNote"></p>
         </div>
         <div class="scrubber card player" aria-label="Month player">
           <button id="btn-play" class="btn play" type="button" aria-label="Play">▶ Play</button>
           <label for="raceMonth" class="visually-hidden">Month</label>
           <div class="track"><input id="raceMonth" type="range" min="0" max="0" value="0" /><div class="ticks" id="raceTicks" aria-hidden="true"></div></div>
-          <span id="raceMonthVal" class="month-val">–</span>
+          <span id="raceMonthVal" class="month-val" data-ghost="num"></span>
           <div class="ctrl speed"><label for="speed" class="visually-hidden">Speed</label><select id="speed" class="select-sm"><option value="2000">0.5× speed</option><option value="1200" selected>1× speed</option><option value="600">2× speed</option></select><span id="speedVal" hidden>1.2s</span></div>
         </div>
       </div>
@@ -454,7 +454,7 @@
           <div class="seg" role="group" aria-label="Time range"><button type="button" id="trailsRecent" aria-pressed="true">Since Nov 2024</button><button type="button" id="trailsAll" aria-pressed="false">All years</button></div>
           <div class="ctrl"><label for="trailsN">Show</label><span class="sel-note" hidden></span><select id="trailsN" class="select-sm"><option value="3">3 queries</option><option value="4">4 queries</option><option value="5">5 queries</option><option value="6" selected>6 queries</option><option value="8">8 queries</option><option value="10">10 queries</option></select><span id="trailsNVal" hidden>6</span></div>
         </div>
-        <div class="card-body"><div id="trails" class="chart wide" data-testid="trails"><div class="placeholder" data-ghost="line"></div></div></div>
+        <div class="card-body"><div id="trails" class="chart wide" data-testid="trails"><div class="placeholder" data-ghost="line" data-label="The biggest queries over the years"></div></div></div>
         <p class="card-note" id="trailsNote"></p>
       </div>
       <div class="card" id="heatmap-card" style="margin-top:20px">
@@ -467,7 +467,7 @@
           <div class="ctrl"><label for="heatTopK">Show</label><span class="sel-note" hidden></span><select id="heatTopK" class="select-sm"><option value="10">10 queries</option><option value="15" selected>15 queries</option><option value="20">20 queries</option><option value="30">30 queries</option></select><span id="heatTopKVal" hidden>15</span></div>
           <div class="ctrl" id="heatTimeRangeChip" hidden><label for="heatTimeStart">From</label><select id="heatTimeStart" class="select-sm"></select><label for="heatTimeEnd">to</label><select id="heatTimeEnd" class="select-sm"></select><span id="heatTimeStartVal" hidden></span><span id="heatTimeEndVal" hidden></span></div>
         </div>
-        <div class="card-body"><div id="heatmap" class="chart heat" data-testid="heatmap"><div class="placeholder" data-ghost="heat" data-rows="12"></div></div></div>
+        <div class="card-body"><div id="heatmap" class="chart heat" data-testid="heatmap"><div class="placeholder" data-ghost="heat" data-rows="12" data-label="Queries that most often found no apps"></div></div></div>
         <div id="heatLegend" class="heat-legend" aria-label="Colour key"></div>
       </div>
     </section>
@@ -481,12 +481,12 @@
       </div>
       <div class="data-grid">
         <div class="file-tile">
-          <div><strong>Popular search keywords</strong><span>Raw sheet with month, keyword, percentage, rank</span><em id="source-display" class="file-status">Not loaded</em></div>
+          <div><strong>Popular search keywords</strong><span>Raw sheet with month, keyword, percentage, rank</span><em id="source-display" class="file-status"><span class="file-loading"><span data-ghost="num"></span> Loading from the repository…</span></em></div>
           <input id="file-source" type="file" accept=".xlsx,.xls" />
           <button id="source-open" class="btn ghost small" type="button">Choose file</button>
         </div>
         <div class="file-tile">
-          <div><strong>Zero-result keywords</strong><span>Raw sheet with month, keyword, count</span><em id="zero-display" class="file-status">Not loaded</em></div>
+          <div><strong>Zero-result keywords</strong><span>Raw sheet with month, keyword, count</span><em id="zero-display" class="file-status"><span class="file-loading"><span data-ghost="num"></span> Loading from the repository…</span></em></div>
           <input id="file-zero" type="file" accept=".xlsx,.xls" />
           <button id="zero-open" class="btn ghost small" type="button">Choose file</button>
         </div>
