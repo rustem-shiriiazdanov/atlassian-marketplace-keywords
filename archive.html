@@ -92,10 +92,10 @@
       const ms = issues.filter(m=> m.startsWith(y)).reverse();
       return `<section class="year" id="y${y}" aria-labelledby="h${y}"><div><h2 id="h${y}">${y}</h2><div class="count">${ms.length} ${ms.length === 1 ? 'issue' : 'issues'}</div></div><div class="cards">${ms.map(m=>{
         const a = lead(m), z = zeroOf(m), href = m === latest ? './index.html' : `./index.html?month=${m}`;
-        const zero = D.zeroPartial.has(m) || z == null ? `<div class="zero na">${z == null ? 'No zero-result report for this month' : 'The zero-result report for this month is partial'}</div>` : `<div class="zero"><strong class="num">${fmtInt(z)}</strong> reported searches found no apps${D.zeroLow.has(m) ? ' <span class="na">(unusually low)</span>' : ''}</div><div class="track" aria-hidden="true"><span class="bar" style="width:${(z/zMax*100).toFixed(1)}%"></span></div>`;
+        const zero = z == null ? `<div class="zero na">No zero-result report for this month</div>` : `<div class="zero"><strong class="num">${fmtInt(z)}</strong> reported searches found no apps${D.zeroPartial.has(m) ? ' <span class="na">(partial report)</span>' : D.zeroLow.has(m) ? ' <span class="na">(unusually low)</span>' : ''}</div><div class="track" aria-hidden="true"><span class="bar" style="width:${Math.min(100, z/zMax*100).toFixed(1)}%"></span></div>`;
         return `<article class="card${m === latest ? ' current' : ''}"><div class="mhead"><h3><a href="${href}">${monthName(m)}</a></h3>${m === latest ? '<span class="tag">Current</span>' : ''}</div>
           <span class="lbl">#1 query</span>
-          ${a ? `<a class="q" href="./keyword-explorer.html?q=${encodeURIComponent(a.keyword)}">${escapeHtml(a.keyword)}</a><span class="share num">${fmtPct(a.percentage)} of searches${spike(m) ? ' · <span class="spike">unusual spike</span>' : ''}</span>` : '<span class="q na">No report</span>'}
+          ${a ? `<a class="q" href="./keyword-explorer.html?q=${encodeURIComponent(a.keyword)}">${escapeHtml(a.keyword)}</a><span class="share num">${fmtPct(a.percentage)} of searches${spike(m) ? ' · <span class="spike">unusual spike</span>' : ''}${D.popularPartial.has(m) ? ' · <span class="na">partial report</span>' : ''}</span>` : '<span class="q na">No report</span>'}
           ${zero}</article>`;
       }).join('')}</div></section>`;
     }).join('');

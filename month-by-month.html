@@ -1028,7 +1028,7 @@
         state.heroSrc = state.sourceRaw; state.heroZero = state.zeroRaw;
         const months = Array.from(new Set(state.sourceRaw.map(r=>toMonthKey(r.month)))).sort();
         if(months.length){
-          const gaps0 = incompleteMonths(state.sourceRaw); const first0 = months.find(m=>!gaps0.has(m)) || months[0], last0 = months[months.length-1];
+          const first0 = months[0], last0 = months[months.length-1];
           $('#dataRange').textContent = `Reports from ${monthLabel(first0)} to ${monthLabel(last0)}`;
           $('#pageKicker').textContent = `All charts · ${monthLabel(first0)} – ${monthLabel(last0)}`;
         }
@@ -1192,10 +1192,10 @@
         const f = state.keywordFilter, n = f.length;
         const when = monthLabel(month,{month:'short', year:'numeric'});
         const who = n ? ` for ${n <= 3 ? f.join(', ') : n + ' picked queries'}` : '';
-        if(state.gapsZero.has(month)) return `${when}: no data, the report is incomplete.`;
+        const partialNote = (state.partialZero||new Set()).has(month) ? ' The report for this month is partial.' : '';
         const row = (state.zeroTotalsCache||[]).find(x=>x.month===month);
         const v = row ? row.value : (n ? 0 : null);
-        return v == null ? `Total per month${who}.` : `${when}: ${Math.round(v).toLocaleString('en-US')} ${Math.round(v) === 1 ? 'search' : 'searches'}${who}.`;
+        return v == null ? `Total per month${who}.` : `${when}: ${Math.round(v).toLocaleString('en-US')} ${Math.round(v) === 1 ? 'search' : 'searches'}${who}.${partialNote}`;
       }
 
       function detectBreak(months, series){
@@ -1378,7 +1378,10 @@
         // Months step without tweening: an animated re-sort leaves labels and bars out of step mid-frame.
         const mode = !state.timelinePlaying ? 'static' : fromChart === 'play' ? 'play' : 'prep';
         drawRace('race', state.raceFrame, i, mode, i-1);
-        $('#raceNote').textContent = state.trailsBreak && months[i] < state.trailsBreak ? breakIsMarketplace() ? `Before Atlassian’s redesigned Marketplace arrived in ${monthLabel(state.trailsBreak)}, broad queries such as “automation” and “jira” took a much larger share, so these shares are not directly comparable with later months.` : `Shares before ${monthLabel(state.trailsBreak)} are not directly comparable with later months: the report changed that month.` : '';
+        const breakText = state.trailsBreak && months[i] < state.trailsBreak ? breakIsMarketplace() ? `Before Atlassian’s redesigned Marketplace arrived in ${monthLabel(state.trailsBreak)}, broad queries such as “automation” and “jira” took a much larger share, so these shares are not directly comparable with later months.` : `Shares before ${monthLabel(state.trailsBreak)} are not directly comparable with later months: the report changed that month.` : '';
+        // A partial report is shown as published, with a word on why its shares look different.
+        const partialText = (state.partialPopular||new Set()).has(months[i]) ? `Atlassian’s ${monthLabel(months[i])} report is partial: it lists fewer queries than the usual 500, so its shares are not comparable with other months.` : '';
+        $('#raceNote').textContent = [partialText, breakText].filter(Boolean).join(' ');
         if(state.zeroMode==='keywords' && state.zeroFrame){ const zi = (state.zeroRaceMonths||[]).indexOf(months[i]); if(zi>=0){ drawRace('zeros', state.zeroFrame, zi, mode, zi-1); $('#zerosDesc').textContent = `Empty searches per query in ${when}.`; } else { $('#zerosDesc').textContent = `No zero-result report for ${when}.`; } }
         if(state.zeroMode==='totals' && state.zeroTotalsCache){ safeSetOption('zeros', buildZerosOption(state.months, state.zeroTotalsCache, months[i], state.gapsZero, state.keywordFilter.length > 0)); $('#zerosDesc').textContent = zerosDescText(months[i]); }
       }
@@ -1403,13 +1406,15 @@
         // Everything that depends only on the loaded files is worked out once per load, not on every click.
         if(state.lookupSrc !== state.sourceRaw || state.lookupZero !== state.zeroRaw){
           state.lookupSrc = state.sourceRaw; state.lookupZero = state.zeroRaw;
-          state.gapsPopular = incompleteMonths(state.sourceRaw);
-          state.gapsZero = incompleteMonths(state.zeroRaw);
+          // Partial reports are shown as Atlassian publishes them and marked; nothing is left out.
+          state.partialPopular = incompleteMonths(state.sourceRaw);
+          state.partialZero = incompleteMonths(state.zeroRaw);
+          state.gapsPopular = new Set(); state.gapsZero = new Set();
           const ms = Array.from(new Set(state.sourceRaw.map(r=>r.month))).sort();
           state.colorRank = new Map(latestRanking(state.sourceRaw,'percentage',ms[ms.length-1]).map((r,i)=>[r.keyword,i]));
           state.popLookup = monthLookup(state.sourceRaw, 'percentage'); state.zeroLookup = monthLookup(state.zeroRaw, 'count');
-          let f = 0; while(f < ms.length-1 && state.gapsPopular.has(ms[f])) f++;
-          const full = ms.slice(f);
+          // The report-change search skips partial months, whose shares are not comparable.
+          const full = ms.filter(m=> !state.partialPopular.has(m));
           state.trailsBreak = detectBreak(full, computeTrailsSeries(state.sourceRaw, full, 6, [], state.gapsPopular));
         }
         // With picked queries, the month-by-month charts shrink to fit them instead of keeping room for ten bars.
@@ -1429,16 +1434,16 @@
         state.raceFrame = buildRaceOption(raceMonths, topByMonth, state.raceIndex);
         const race = ensureChart('race');
         // Only the zero-result months inside the charted range are worth a note.
-        const skipped = Array.from(state.gapsZero).filter(m=> m >= months[0]).sort().map(m=>monthLabel(m,{month:'short', year:'numeric'}));
-        $('#zerosNote').textContent = skipped.length && state.zeroMode === 'totals' ? `The ${skipped.join(' and ').replace(/ and (?=.* and )/g, ', ')} zero-result ${skipped.length===1?'report is':'reports are'} partial and left out.` : '';
+        const skipped = Array.from(state.partialZero || []).filter(m=> m >= months[0]).sort().map(m=>monthLabel(m,{month:'short', year:'numeric'}));
+        $('#zerosNote').textContent = skipped.length && state.zeroMode === 'totals' ? `The ${skipped.join(' and ').replace(/ and (?=.* and )/g, ', ')} zero-result ${skipped.length===1?'report is':'reports are'} partial (hollow dots).` : '';
         if(state.zeroMode === 'totals' && (document.getElementById('zeros')?.clientWidth || 999) < 380) state.zerosPhoneNote = true; else state.zerosPhoneNote = false;
         if(state.zeroMode === 'totals' && !state.keywordFilter.length){
           // Months whose total is far below every neighbour look like incomplete exports; say so instead of hiding them.
-          const tot = (state.zeroTotals.length ? state.zeroTotals : totalsByMonth(state.zeroRaw,'count')).filter(x=>!state.gapsZero.has(x.month));
+          const tot = (state.zeroTotals.length ? state.zeroTotals : totalsByMonth(state.zeroRaw,'count')).filter(x=>!(state.partialZero||new Set()).has(x.month));
           const oddRows = tot.filter((x,i)=>{ const near = tot.slice(Math.max(0,i-3), i).concat(tot.slice(i+1, i+4)).map(y=>y.value).filter(v=>v>0).sort((p,q)=>p-q); const med = near[Math.floor(near.length/2)]; return near.length >= 4 && x.value < med*0.5; });
-          state.zeroOdd = oddRows.map(x=>x.month);
+          state.zeroOdd = oddRows.map(x=>x.month).concat(Array.from(state.partialZero || []));
           const odd = oddRows.map(x=>monthLabel(x.month,{month:'short', year:'numeric'}));
-          if(odd.length) $('#zerosNote').textContent = `${skipped.length ? `The ${skipped.join(' and ')} zero-result ${skipped.length===1?'report is':'reports are'} partial and left out; t` : 'T'}otals for ${odd.join(' and ').replace(/ and (?=.* and )/g, ', ')} are unusually low in Atlassian’s reports (hollow dots).`;
+          if(odd.length) $('#zerosNote').textContent = `${skipped.length ? `The ${skipped.join(' and ')} zero-result ${skipped.length===1?'report is':'reports are'} partial; t` : 'T'}otals for ${odd.join(' and ').replace(/ and (?=.* and )/g, ', ')} are unusually low in Atlassian’s reports (hollow dots).`;
         }
         if(state.zeroMode === 'totals' && !state.keywordFilter.length) $('#zerosNote').textContent = (MK.ZERO_NOTE + ' ' + $('#zerosNote').textContent).trim();
         if(state.zerosPhoneNote && state.trailsBreak) $('#zerosNote').textContent += ` Grey band: no data. Dashed line: ${breakIsMarketplace() ? 'the new Marketplace' : 'the report change'}, ${monthLabel(state.trailsBreak,{month:'short', year:'numeric'})}.`;
@@ -1481,8 +1486,9 @@
             const after = new Map(latestRanking(state.sourceRaw, 'percentage', state.trailsBreak).map(r=>[r.keyword, r.value]));
             const fell = before.filter(r=> (after.get(r.keyword) || 0) < r.value*0.4).map(r=>r.keyword);
             const who = fell.length ? fell.slice(0,3).join(', ').replace(/, (?=[^,]*$)/, ' and ') : 'several of the biggest queries';
-            notes.push(`In ${monthLabel(state.trailsBreak)} the shares of ${who} fall at once. That points to a change in how Atlassian's report counts searches, not a loss of interest, so the two periods are best read separately.`);
+            notes.push(`In ${monthLabel(state.trailsBreak)} the shares of ${who} fall at once, ${breakIsMarketplace() ? 'as Atlassian rolled out its redesigned Marketplace with autocomplete and new categories' : 'which points to a change in the report rather than a loss of interest'}, so the two periods are best read separately.`);
           }
+          { const pm = tMonths.filter(m=> (state.partialPopular||new Set()).has(m)).map(m=>monthLabel(m,{month:'short', year:'numeric'})); if(pm.length) notes.push(`The ${pm.join(' and ')} report is partial, so its shares are not comparable with other months.`); }
           if(state.trailsBridged) notes.push('Dotted segments bridge months a query spent outside the top 500.');
           if(state.trailsFaded) notes.push('Grey lines are queries that have since dropped far behind.');
           $('#trailsNote').textContent = notes.join(' '); }

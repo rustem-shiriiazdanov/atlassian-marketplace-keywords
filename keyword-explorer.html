@@ -596,8 +596,9 @@
     }
     function finalizeData(){
       state.months=Array.from(new Set([...state.popular.map(row=>row.month),...state.zero.map(row=>row.month)])).filter(Boolean).sort();
+      // Partial reports (fewer rows than usual) are kept and shown as Atlassian publishes them.
       { const c=new Map(); state.popular.forEach(r=>c.set(r.month,(c.get(r.month)||0)+1)); const v=[...c.values()].sort((a,b)=>a-b); const med=v[Math.floor(v.length/2)]||0;
-        while(state.months.length>1 && (c.get(state.months[0])||0) < med*0.8) state.months.shift(); }
+        state.partialMonths=new Set(state.months.filter(m=>(c.get(m)||0) < med*0.8)); }
       const names=new Map(); for(const row of [...state.popular,...state.zero]) if(!names.has(normalize(row.keyword))) names.set(normalize(row.keyword),row.keyword);
       state.allKeywords=Array.from(names.values()).sort((a,b)=>a.localeCompare(b));
       if(!state.urlHadSelection&&!state.selections.length){
@@ -611,7 +612,7 @@
         const tot=new Map(); state.popular.forEach(r=>tot.set(normalize(r.keyword),(tot.get(normalize(r.keyword))||0)+r.percentage));
         const big=new Set([...tot.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k])=>k)); const by=state.months.map(m=>0); const idx=new Map(state.months.map((m,i)=>[m,i]));
         state.popular.forEach(r=>{ if(big.has(normalize(r.keyword))&&idx.has(r.month)) by[idx.get(r.month)]+=r.percentage; });
-        state.reportBreak=null; for(let i=1;i<by.length;i++){ if(by[i-1]>0&&by[i]<by[i-1]*0.4){ state.reportBreak=state.months[i]; break; } } }
+        state.reportBreak=null; for(let i=1;i<by.length;i++){ if(state.partialMonths.has(state.months[i])||state.partialMonths.has(state.months[i-1])) continue; if(by[i-1]>0&&by[i]<by[i-1]*0.4){ state.reportBreak=state.months[i]; break; } } }
       indexRows(); state.colorRank=null; populateDateControls(); state.dataReady=true; renderControls(); renderAll(); setStatus(`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}`,true);
     }
     function populateDateControls(){

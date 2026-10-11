@@ -154,7 +154,7 @@
       <div class="titles">
         <span class="kicker">4 · Still finding nothing</span>
         <h2 class="sec" id="heatTitle">Queries that most often found no apps, last 12 months</h2>
-        <p class="cap">Each cell is the number of empty searches that month. Gaps in someone’s portfolio, or an app that people expect but nobody has built.</p>
+        <p class="cap" id="heatCap">Each cell is the number of empty searches that month. Gaps in someone’s portfolio, or an app that people expect but nobody has built.</p>
       </div>
       <div class="heat-tools">
         <label class="check"><input type="checkbox" id="showValues" checked> Show values</label>
@@ -236,7 +236,7 @@
     // A #1 far above the usual leaders of the surrounding year is called out as a spike.
     if(MK.isSpike(D, f.m)) return { spike:true, clause: `an unusual spike put ${q(a.keyword)} on top with ${fmtPct(a.percentage)} of all searches` };
     if(tie) return { clause: `${q(a.keyword)} and ${q(b.keyword)} share the top spot`, alone: `At the top, ${q(a.keyword)} and ${q(b.keyword)} share first place` };
-    if(!prevLead) return { clause: `${q(a.keyword)} leads`, alone: `In the first full report, ${q(a.keyword)} leads with ${fmtPct(a.percentage)} of all searches` };
+    if(!prevLead) return { clause: `${q(a.keyword)} leads`, alone: `In the first report, ${q(a.keyword)} leads with ${fmtPct(a.percentage)} of all searches` };
     if(prevLead && prevLead.keyword !== a.keyword) return { clause: `${q(a.keyword)} takes the top spot from ${q(prevLead.keyword)}`, alone: `A new #1: ${q(a.keyword)} takes the top spot from ${q(prevLead.keyword)}` };
     const s = leaderStreak(f.m);
     const c = s >= 3 ? `${q(a.keyword)} leads for ${aOrAn(s)} ${ordinal(s)} month in a row` : `${q(a.keyword)} stays on top`;
@@ -252,6 +252,8 @@
   }
   function dek(f){
     const zs = zeroStory(f), out = [];
+    if(D.popularPartial.has(f.m)) out.push(`Atlassian’s ${monthLong(f.m)} report is partial: it lists ${fmtInt(D.popular.filter(r=> r.month === f.m).length)} queries instead of the usual 500, so its shares are not comparable with other months.`);
+    if(f.z != null && D.zeroPartial.has(f.m)) out.push(`The zero-result report for ${monthName(f.m)} is partial: it counts only ${fmtInt(f.z)} ${f.z === 1 ? 'search' : 'searches'} that found no apps.`);
     if(f.z != null && !D.zeroPartial.has(f.m)){
       // Atlassian's zero-result report lists the 500 queries that most often found no apps; the total adds those up.
       let s = `${zs && zs.kind === 'low' ? 'Just ' : ''}${fmtInt(f.z)} searches found no apps in ${monthName(f.m)}, as Atlassian reports them`;
@@ -298,9 +300,10 @@
       const d = f.zPrev ? Math.round((f.z - f.zPrev) / f.zPrev * 100) : null;
       const note = D.zeroLow.has(f.m) ? 'unusually low in Atlassian’s report' : d == null ? '' : d === 0 ? `about the same as ${monthName(f.zPrevMonth)}` : `${Math.abs(d)}% ${d < 0 ? 'fewer' : 'more'} than ${monthName(f.zPrevMonth)}`;
       cells.push(`<div class="kpi"><span class="big accent num">${fmtInt(f.z)}</span><span class="what">searches found no apps, as Atlassian reports them${note ? ` <span class="muted">· ${note}</span>` : ''}</span></div>`);
-    } else cells.push(`<div class="kpi"><span class="big accent num">—</span><span class="what">searches found no apps <span class="muted">· ${f.z == null ? 'the zero-result report for this month is not available' : 'the report for this month is partial'}</span></span></div>`);
+    } else if(f.z != null) cells.push(`<div class="kpi"><span class="big accent num">${fmtInt(f.z)}</span><span class="what">searches found no apps, as Atlassian reports them <span class="muted">· partial report</span></span></div>`);
+    else cells.push(`<div class="kpi"><span class="big accent num">—</span><span class="what">searches found no apps <span class="muted">· the zero-result report for this month is not available</span></span></div>`);
     if(a){ const tie = b && a.percentage.toFixed(2) === b.percentage.toFixed(2); cells.push(`<div class="kpi"><span class="big num">${fmtPct(a.percentage)}</span><span class="what">of all searches went to <strong>${escapeHtml(a.keyword)}</strong>, ${tie ? `level with <strong>${escapeHtml(b.keyword)}</strong>` : 'the #1 query'}</span></div>`); }
-    if(z0 && zeroUsable(f.m)) cells.push(`<div class="kpi"><span class="big word">${escapeHtml(z0.keyword)}</span><span class="what">was the most frequent empty search <span class="muted">· ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}</span></span></div>`);
+    if(z0) cells.push(`<div class="kpi"><span class="big word">${escapeHtml(z0.keyword)}</span><span class="what">was the most frequent empty search <span class="muted">· ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}</span></span></div>`);
     if(c) cells.push(`<div class="kpi"><span class="big num">+${c.gain}</span><span class="what">places climbed by <strong>${escapeHtml(c.keyword)}</strong>, to #${c.rk}</span></div>`);
     else if(f.entries[0]) cells.push(`<div class="kpi"><span class="big num">#${f.entries[0].rk}</span><span class="what">where <strong>${escapeHtml(f.entries[0].keyword)}</strong> entered the top 100</span></div>`);
     k.innerHTML = cells.join('');
@@ -327,18 +330,20 @@
     // The last 12 months up to this issue; partial reports show as hatched cells.
     const months = []; for(let i = 11; i >= 0; i--){ const x = addMonths(f.m, -i); if(x >= D.issues[0]) months.push(x); }
     const tot = new Map();
-    for(const m of months){ if(D.zeroPartial.has(m)) continue; for(const r of D.zeroByMonth.get(m) || []) tot.set(r.keyword, (tot.get(r.keyword)||0) + r.count); }
+    for(const m of months){ for(const r of D.zeroByMonth.get(m) || []) tot.set(r.keyword, (tot.get(r.keyword)||0) + r.count); }
     const rows = Array.from(tot.entries()).sort((a,b)=> b[1]-a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, 10);
     const cell = new Map(); for(const m of months) for(const r of D.zeroByMonth.get(m) || []) cell.set(m + '|' + r.keyword, r.count);
-    const head = months.map((m,i)=> `<th scope="col">${i === 0 || m.endsWith('-01') ? `${monthAbbr(m)} ’${m.slice(2,4)}` : monthAbbr(m)}</th>`).join('');
+    const head = months.map((m,i)=> `<th scope="col"${D.zeroPartial.has(m) ? ' title="Partial report"' : ''}>${i === 0 || m.endsWith('-01') ? `${monthAbbr(m)} ’${m.slice(2,4)}` : monthAbbr(m)}${D.zeroPartial.has(m) ? '*' : ''}</th>`).join('');
     const tk = MK.tokens();
     const body = rows.map(([k, t])=> `<tr><td class="q">${qLink(k)}</td>${months.map(m=>{
-      if(D.zeroPartial.has(m) || !D.zeroByMonth.has(m)) return `<td class="c na" title="${D.zeroByMonth.has(m) ? 'Partial report' : 'No report'}">–</td>`;
+      if(!D.zeroByMonth.has(m)) return `<td class="c na" title="No report">–</td>`;
       const n = cell.get(m + '|' + k) || 0, b = MK.heatBin(n);
-      return `<td class="c" style="background:${tk.heat[b]};color:${MK.inkOn(tk.heat[b], tk.heatInkLight, tk.heatInkDark)}" title="${escapeHtml(k)}, ${monthShort(m)}: ${n ? fmtInt(n) + ' empty searches' : 'not listed'}">${n ? fmtInt(n) : '·'}</td>`;
+      return `<td class="c" style="background:${tk.heat[b]};color:${MK.inkOn(tk.heat[b], tk.heatInkLight, tk.heatInkDark)}" title="${escapeHtml(k)}, ${monthShort(m)}: ${n ? fmtInt(n) + ' empty searches' : 'not listed'}${D.zeroPartial.has(m) ? ' (partial report)' : ''}">${n ? fmtInt(n) : '·'}</td>`;
     }).join('')}<td class="t num">${fmtInt(t)}</td></tr>`).join('');
     $('#heat').innerHTML = `<caption class="sr-only">Empty searches per month for the queries that most often found no apps</caption><thead><tr><th scope="col" class="q">Query</th>${head}<th scope="col" class="t">Total</th></tr></thead><tbody>${body || `<tr><td class="empty-note" colspan="${months.length + 2}">No zero-result report for these months.</td></tr>`}</tbody>`;
     $('#heatTitle').textContent = `Queries that most often found no apps, ${monthShort(months[0])} – ${monthShort(f.m)}`;
+    const part = months.filter(m=> D.zeroPartial.has(m)).map(monthShort);
+    $('#heatCap').textContent = 'Each cell is the number of empty searches that month. Gaps in someone’s portfolio, or an app that people expect but nobody has built.' + (part.length ? ` * The ${part.join(' and ')} report is partial.` : '');
   }
 
   function renderZeroChart(){
@@ -349,7 +354,7 @@
     const n = zeroRange === 'all' ? all.length : +zeroRange;
     const win = all.slice(-n);
     const months = win.map(x=>x.month);
-    const vals = win.map(x=> D.zeroPartial.has(x.month) ? null : x.value);
+    const vals = win.map(x=> x.value);
     const usable = win.filter(x=> zeroUsable(x.month));
     const peak = usable.reduce((a,x)=> !a || x.value > a.value ? x : a, null);
     const low = usable.reduce((a,x)=> !a || x.value < a.value ? x : a, null);
@@ -361,15 +366,15 @@
       label:{ show:true, formatter:text, position: below ? 'bottom' : 'top', align:pos, distance:14, backgroundColor:t.paper, padding:[2,4], color:t.ink2, fontSize:12, lineHeight:16, fontFamily:'Public Sans', width:150, overflow:'break', rich:{ b:{ fontWeight:700, color:t.ink, fontSize:12 } } } });
     const points = [];
     if(peak && (!cur || peak.month !== cur.month)) points.push(mark(peak, `{b|${fmtInt(peak.value)}} in ${monthLong(peak.month)}, the highest month ${span}`, false, monthsBetween(peak.month, win.at(-1).month) < 4 ? 'right' : 'center'));
-    if(cur && cur.value != null && !D.zeroPartial.has(cur.month)) points.push(mark(cur, `{b|${fmtInt(cur.value)}} in ${monthName(cur.month)}${low && low.month === cur.month ? `, the lowest month ${span}` : peak && peak.month === cur.month ? `, the highest month ${span}` : ''}`, true, 'right', low && low.month === cur.month));
-    const lowDots = win.filter(x=> D.zeroLow.has(x.month)).map(x=>({ coord:[x.month, x.value], symbol:'circle', symbolSize:8, itemStyle:{ color:t.paper, borderColor:t.accent, borderWidth:2 }, label:{ show:false } }));
+    if(cur && cur.value != null) points.push(mark(cur, `{b|${fmtInt(cur.value)}} in ${monthName(cur.month)}${low && low.month === cur.month ? `, the lowest month ${span}` : peak && peak.month === cur.month ? `, the highest month ${span}` : ''}`, true, 'right', low && low.month === cur.month));
+    const lowDots = win.filter(x=> (D.zeroLow.has(x.month) || D.zeroPartial.has(x.month)) && (!cur || x.month !== cur.month)).map(x=>({ coord:[x.month, x.value], symbol:'circle', symbolSize:8, itemStyle:{ color:t.paper, borderColor:t.accent, borderWidth:2 }, label:{ show:false } }));
     const yearOnly = months.length > 30;
     const fit = Math.max(2, Math.floor((el.clientWidth - 64) / 72)); const step = [1,2,3,4,6,12].find(k=> Math.ceil(months.length / k) <= fit) || 12;
     chart.setOption({
       animation:false, backgroundColor:'transparent', textStyle:{ fontFamily:'Public Sans' },
       grid:{ left:48, right:16, top:58, bottom:30 },
       tooltip:{ trigger:'axis', backgroundColor:t.surface, borderColor:t.ink, borderWidth:1, padding:[8,10], textStyle:{ color:t.ink, fontSize:13 }, axisPointer:{ type:'line', lineStyle:{ color:t.rule } },
-        formatter:(ps)=>{ const p = ps[0]; const m = p.axisValue; return `<b>${monthLong(m)}</b><br/>${p.value == null ? 'Partial report, left out' : `${fmtInt(p.value)} searches found no apps (reported)${D.zeroLow.has(m) ? '<br/><span style="color:' + t.muted + '">Unusually low in Atlassian’s report</span>' : ''}`}`; } },
+        formatter:(ps)=>{ const p = ps[0]; const m = p.axisValue; const why = D.zeroPartial.has(m) ? 'Partial report' : D.zeroLow.has(m) ? 'Unusually low in Atlassian’s report' : ''; return `<b>${monthLong(m)}</b><br/>${p.value == null ? 'No report' : `${fmtInt(p.value)} searches found no apps (reported)${why ? '<br/><span style="color:' + t.muted + '">' + why + '</span>' : ''}`}`; } },
       xAxis:{ type:'category', data:months, boundaryGap:false, axisLine:{ lineStyle:{ color:t.ink } }, axisTick:{ show:false },
         axisLabel:{ color:t.muted, fontSize:12, hideOverlap:true, interval:(i)=> yearOnly ? months[i].endsWith('-01') : i % step === 0,
           formatter:(v)=> yearOnly ? v.slice(0,4) : `${monthAbbr(v)} ’${v.slice(2,4)}` } },
@@ -379,8 +384,8 @@
     }, true);
     const notes = [MK.ZERO_NOTE, 'A count of searches, not a rate.'];
     const partial = win.filter(x=> D.zeroPartial.has(x.month)).map(x=> monthShort(x.month));
-    if(partial.length) notes.push(`The ${partial.join(' and ')} ${partial.length === 1 ? 'report is' : 'reports are'} partial and left out.`);
-    if(win.some(x=> D.zeroLow.has(x.month))) notes.push('Hollow dots mark months that are unusually low in Atlassian’s reports.');
+    if(partial.length) notes.push(`The ${partial.join(' and ')} ${partial.length === 1 ? 'report is' : 'reports are'} partial.`);
+    if(partial.length || win.some(x=> D.zeroLow.has(x.month))) notes.push('Hollow dots mark partial reports and months that are unusually low in Atlassian’s reports.');
     $('#zeroNote').innerHTML = escapeHtml(notes.join(' ')) + ' <a href="./month-by-month.html">All charts, month by month</a>';
   }
 

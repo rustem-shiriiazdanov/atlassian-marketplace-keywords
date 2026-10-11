@@ -189,17 +189,18 @@
     for(const t of zeroTotals || []) if(t.month && !zeroByMonth.has(t.month)) totals.push({ ...t });
     totals.sort((a,b)=> a.month < b.month ? -1 : 1);
     const popularPartial = smallReports(byMonth);
-    // Zero-result report: a month with almost nothing in it is a partial export (Dec 2021, Nov 2023);
+    // Zero-result report: a month with almost nothing in it is a partial export (Dec 2021, Nov 2023), shown with a note;
     // a month far below every neighbour is kept but marked as unusually low (Oct and Dec 2023).
     const vals = totals.map(t=>t.value).filter(v=>v>0).sort((a,b)=>a-b); const med = vals[Math.floor(vals.length/2)] || 0;
     const zeroPartial = new Set(totals.filter(t=> t.value < med*0.15).map(t=>t.month));
     const kept = totals.filter(t=> !zeroPartial.has(t.month));
     const zeroLow = new Set(kept.filter((x,i)=>{ const near = kept.slice(Math.max(0,i-3), i).concat(kept.slice(i+1, i+4)).map(y=>y.value).sort((p,q)=>p-q); const m = near[Math.floor(near.length/2)]; return near.length >= 4 && x.value < m*0.5; }).map(t=>t.month));
     const months = Array.from(byMonth.keys()).sort();
-    const issues = months.filter(m=> !popularPartial.has(m));
+    // Every month is an issue, partial reports included; they are marked, not hidden.
+    const issues = months.slice();
     return { popular, zero, zeroTotals: totals, byMonth, zeroByMonth, months, issues, popularPartial, zeroPartial, zeroLow };
   }
-  // A report with far fewer rows than usual is a partial export (Dec 2021, Nov 2023).
+  // A report with far fewer rows than usual is a partial export (Dec 2021, Nov 2023). Shown, with a note.
   function smallReports(map){
     const c = Array.from(map.values()).map(l=>l.length).sort((a,b)=>a-b); if(!c.length) return new Set();
     const median = c[Math.floor(c.length/2)];
@@ -266,10 +267,12 @@
       heat:[v('--heat0'),v('--heat1'),v('--heat2'),v('--heat3'),v('--heat4'),v('--heat5')], heatInkLight:v('--heat-ink-light'), heatInkDark:v('--heat-ink-dark'),
       series:[v('--s1'),v('--s2'),v('--s3'),v('--s4'),v('--s5'),v('--s6'),v('--s7'),v('--s8')] };
   }
-  // A month's #1 at least twice the usual #1 of the surrounding year (six issues either side) is an unusual spike.
+  // A month's #1 at least twice the usual #1 of the previous twelve months is an unusual spike.
+  // Only the months before it count, so an old issue never changes when new reports arrive. Partial reports are not compared.
   function isSpike(D, m){
-    const lead = (x)=> (D.byMonth.get(x) || [])[0]; const a = lead(m); if(!a) return false;
-    const near = D.issues.filter(x=> x !== m && Math.abs(monthsBetween(x, m)) <= 6).map(x=> lead(x)?.percentage).filter(Number.isFinite).sort((p,q)=>p-q);
+    const lead = (x)=> (D.byMonth.get(x) || [])[0]; const a = lead(m); if(!a || D.popularPartial.has(m)) return false;
+    const near = D.issues.filter(x=> x < m && monthsBetween(x, m) <= 12 && !D.popularPartial.has(x)).map(x=> lead(x)?.percentage).filter(Number.isFinite).sort((p,q)=>p-q);
+    if(!near.length) return false;
     const med = near[Math.floor(near.length/2)];
     return !!med && a.percentage >= med*2;
   }
