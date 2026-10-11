@@ -88,6 +88,11 @@
     const key=(v)=>{ if(typeof v==='number'){ const d=XLSX.SSF.parse_date_code(v); return d.y+'-'+String(d.m).padStart(2,'0'); } const t=String(v==null?'':v).trim(); const m=/^(\\d{4})-(\\d{2})/.exec(t); if(m) return m[1]+'-'+m[2]; const d=new Date(t); return isNaN(d)?t.slice(0,7):d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0'); };
     self.onmessage=(e)=>{ try{ if(!self.XLSX) throw new Error('no xlsx'); const wb=XLSX.read(e.data,{type:'array'}); const out={}; for(const name of ['Raw','Monthly_Summary']){ if(wb.Sheets[name]) out[name]=XLSX.utils.sheet_to_json(wb.Sheets[name],{defval:null}).map(r=>({...r, month:key(r.month)})); } self.postMessage(out); }catch(err){ self.postMessage({error:String(err&&err.message||err)}); } };`;
   function readWorkbook(buf){
+    load.reading++; paintLoad();
+    const fin = (v)=>{ load.reading = Math.max(0, load.reading - 1); load.read++; paintLoad(); return v; };
+    return readWorkbookRaw(buf).then(fin, (e)=>{ fin(); throw e; });
+  }
+  function readWorkbookRaw(buf){
     return new Promise((resolve, reject)=>{
       let w; try{ w = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], {type:'text/javascript'}))); }catch(e){ w = null; }
       const onPage = ()=> ensureXLSX().then(()=>{ const wb = XLSX.read(buf, {type:'array'}); const out = {}; for(const name of ['Raw','Monthly_Summary']) if(wb.Sheets[name]) out[name] = XLSX.utils.sheet_to_json(wb.Sheets[name], {defval:null}).map(r=>({...r, month: toMonthKey(r.month)})); resolve(out); }).catch(reject);
@@ -98,10 +103,63 @@
       w.postMessage(copy, [copy]);
     });
   }
+  // --- Loading: a progress line at the top of the page, and chart-shaped placeholders that say what is happening ---
+  const load = { files: new Map(), reading: 0, read: 0, done: false, failed: false, timer: 0 };
+  const MB = (b)=> (b / 1048576).toFixed(1);
+  function loadState(){
+    let got = 0, total = 0, known = true;
+    for(const f of load.files.values()){ got += f.loaded; if(f.total) total += f.total; else known = false; }
+    if(load.failed) return { p: 0, text: 'The reports could not be loaded.' };
+    if(load.done) return { p: 1, text: '' };
+    const allIn = load.files.size && Array.from(load.files.values()).every(f=> f.complete);
+    if(load.reading || allIn) return { p: .9, text: 'Reading the spreadsheets…' };
+    if(!load.files.size) return { p: .04, text: 'Getting Atlassian’s latest reports…' };
+    if(known && total) return { p: .05 + .8 * got / total, text: `Downloading Atlassian’s reports · ${MB(got)} of ${MB(total)} MB` };
+    return { p: .3, text: `Downloading Atlassian’s reports · ${MB(got)} MB` };
+  }
+  function paintLoad(){
+    const st = loadState();
+    let bar = document.querySelector('.mk-load');
+    if(!bar && document.body){ bar = document.createElement('div'); bar.className = 'mk-load'; bar.setAttribute('aria-hidden', 'true'); bar.innerHTML = '<i></i>'; document.body.prepend(bar); }
+    if(bar){ bar.firstChild.style.transform = `scaleX(${st.p})`; bar.classList.toggle('done', load.done || load.failed); }
+    document.querySelectorAll('[data-load-note]').forEach(n=>{ if(n.textContent !== st.text) n.textContent = st.text; });
+  }
+  // Pages call this once the first view is drawn; the line fills up and fades out.
+  function loadDone(){ if(load.done) return; load.done = true; paintLoad(); }
+  function loadFailed(){ load.failed = true; paintLoad(); }
+  // Fetches the first file that exists, counting bytes as they arrive for the progress line.
   async function fetchFirst(urls){
-    for(const u of urls){ try{ const res = await fetch(u, {cache:'no-cache'}); if(res.ok) return await res.arrayBuffer(); }catch(e){} }
+    const key = urls[0]; load.failed = false; load.done = false;
+    for(const u of urls){
+      try{
+        const res = await fetch(u, {cache:'no-cache'}); if(!res.ok) continue;
+        const total = +res.headers.get('content-length') || 0, f = { loaded: 0, total };
+        load.files.set(key, f); paintLoad();
+        if(!res.body || !res.body.getReader){ const buf = await res.arrayBuffer(); f.loaded = f.total = buf.byteLength; f.complete = true; paintLoad(); return buf; }
+        const reader = res.body.getReader(), parts = [];
+        for(;;){ const { done, value } = await reader.read(); if(done) break; parts.push(value); f.loaded += value.length; paintLoad(); }
+        // Compressed responses report the compressed size; the bar ends where the bytes end.
+        f.total = f.loaded; f.complete = true;
+        const out = new Uint8Array(f.loaded); let at = 0; for(const c of parts){ out.set(c, at); at += c.length; }
+        paintLoad();
+        return out.buffer;
+      }catch(e){}
+    }
     throw new Error('Report file not found');
   }
+  // Placeholders shaped like the chart that will replace them: bars, a line, a grid, list rows or cards.
+  function ghostHTML(kind, n){
+    const note = '<p class="ghost-note" data-load-note></p>';
+    const w = [92, 84, 77, 70, 61, 55, 49, 44, 40, 36, 33, 30, 28, 26, 24, 22, 21, 20, 19, 18];
+    if(kind === 'bars'){ n = n || 10; return `<div class="skel g-bars" aria-hidden="true">${Array.from({length:n}, (_, i)=> `<span><b style="width:${40 + (i*37)%45}%"></b><i style="width:${w[i] || 18}%"></i></span>`).join('')}</div>${note}`; }
+    if(kind === 'line'){ const pts = [62,58,66,55,60,48,52,44,50,41,46,38,42,36,40,33,30,34,28,26].map((y,i)=> `${(i/19*100).toFixed(1)},${y}`).join(' ');
+      return `<div class="skel g-line" aria-hidden="true"><svg viewBox="0 0 100 80" preserveAspectRatio="none"><path d="M0 20H100M0 40H100M0 60H100" class="gl-grid"/><polyline points="${pts}" class="gl-line"/></svg></div>${note}`; }
+    if(kind === 'heat'){ n = n || 10; return `<div class="skel g-heat" aria-hidden="true">${Array.from({length:n}, (_, r)=> `<span><b style="width:${45 + (r*29)%40}%"></b>${Array.from({length:12}, (_, c)=> `<i style="opacity:${(.25 + ((r*7 + c*5) % 9)/12).toFixed(2)}"></i>`).join('')}</span>`).join('')}</div>${note}`; }
+    if(kind === 'list'){ n = n || 6; return Array.from({length:n}, (_, i)=> `<li class="skel g-li" aria-hidden="true"><b style="width:${30 + (i*23)%40}%"></b><i style="width:${w[i] || 30}%"></i></li>`).join(''); }
+    if(kind === 'cards'){ n = n || 12; return `<div class="skel g-cards" aria-hidden="true">${Array.from({length:n}, (_, i)=> `<span><b style="width:${35 + (i*17)%30}%"></b><i style="width:${55 + (i*13)%35}%"></i><i style="width:${30 + (i*11)%25}%"></i></span>`).join('')}</div>${note}`; }
+    return note;
+  }
+  function fillGhosts(root){ (root || document).querySelectorAll('[data-ghost]').forEach(el=>{ if(!el.dataset.ghosted){ el.dataset.ghosted = '1'; el.innerHTML = ghostHTML(el.dataset.ghost, +el.dataset.rows || 0); } }); paintLoad(); }
   // Raw sheet rows → clean rows. Every row is kept; meaningless ones are flagged (junk), judged on the raw text,
   // so the reader can choose to hide them on every page.
   function prepPopular(rows){
@@ -288,13 +346,13 @@
   const HEAT_BINS = [0, 1, 5, 10, 20, 50];
   const heatBin = (n)=>{ let b = 0; for(let i=0;i<HEAT_BINS.length;i++) if(n >= HEAT_BINS[i]) b = i; return n > 0 ? Math.max(1, b) : 0; };
 
-  window.MK = { XLSX_URLS, ECHARTS_URLS, LINKS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
+  window.MK = { XLSX_URLS, ECHARTS_URLS, LINKS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, loadDone, loadFailed, fillGhosts, ghostHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
     toMonthKey, monthLabel, monthLong, monthShort, monthName, monthAbbr, addMonths, monthsBetween,
     escapeHtml, fmtInt, fmtPct, cleanKeyword, isJunkQuery, num, REPORT_BREAK, BREAK_NOTE, NOISE_NOTE, ZERO_NOTE,
     attachLookup, lookupIndex, tokens, HEAT_BINS, heatBin, isSpike, inkOn };
 
   // Fill links that are configured above; hide the ones that are not.
   const fillLinks = ()=> document.querySelectorAll('[data-link]').forEach(a=>{ const u = LINKS[a.dataset.link]; if(u) a.href = u; else a.hidden = true; });
-  const ready = ()=>{ fillLinks(); bindJunkToggles(); };
+  const ready = ()=>{ fillLinks(); bindJunkToggles(); fillGhosts(); };
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready); else ready();
 })();

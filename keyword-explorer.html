@@ -153,7 +153,7 @@
     #clearSelection[hidden]{display:none}
     .chart{height:400px;width:100%}
     .chart.rank,.chart.zero{height:360px}
-    .chart-placeholder{display:flex;height:260px;align-items:center;justify-content:center;padding:24px;color:var(--muted);font-size:15px;text-align:center}
+    .chart-placeholder{display:flex;flex-direction:column;height:100%;min-height:260px;align-items:center;justify-content:center;padding:24px;color:var(--muted);font-size:15px;text-align:center}
     .chart-card.is-fullscreen{position:fixed;inset:24px;z-index:1000;overflow:auto;box-shadow:0 0 0 100vmax rgba(9,15,28,.62)}
     .chart-card.is-fullscreen .chart{height:calc(100vh - 150px)}
 
@@ -458,17 +458,17 @@
     <div class="charts">
       <section id="shareCard" class="chart-card" aria-labelledby="shareTitle">
         <div class="chart-head"><div><h3 id="shareTitle">Share of all searches</h3><p class="description">Percentage of all Marketplace searches. Gaps mean the query was outside the top 500 that month.</p></div><div class="chart-actions"><button class="icon-btn" type="button" data-chart-action="fullscreen" data-chart="shareChart" aria-label="Open chart full screen" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button><button class="icon-btn" type="button" data-chart-action="download" data-chart="shareChart" aria-label="Download chart as PNG" title="Download PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
-        <div id="shareChart" class="chart"><div class="chart-placeholder">Loading…</div></div>
+        <div id="shareChart" class="chart"><div class="chart-placeholder" data-ghost="line"></div></div>
       </section>
 
       <section id="rankCard" class="chart-card" aria-labelledby="rankTitle">
         <div class="chart-head"><div><h3 id="rankTitle">Top-500 rank</h3><p class="description">Rank from the monthly report on a log scale, so moves near the top stay visible. Gaps mean the query was outside the top 500.</p></div><div class="chart-actions"><button class="icon-btn" type="button" data-chart-action="fullscreen" data-chart="rankChart" aria-label="Open chart full screen" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button><button class="icon-btn" type="button" data-chart-action="download" data-chart="rankChart" aria-label="Download chart as PNG" title="Download PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
-        <div id="rankChart" class="chart rank"><div class="chart-placeholder">Loading…</div></div>
+        <div id="rankChart" class="chart rank"><div class="chart-placeholder" data-ghost="line"></div></div>
       </section>
 
       <section id="zeroCard" class="chart-card" aria-labelledby="zeroTitle">
         <div class="chart-head"><div><h3 id="zeroTitle">Searches that found no apps</h3><p class="description">How many times the query found no apps: a count of searches, not a rate.</p></div><div class="chart-actions"><button class="icon-btn" type="button" data-chart-action="fullscreen" data-chart="zeroChart" aria-label="Open chart full screen" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button><button class="icon-btn" type="button" data-chart-action="download" data-chart="zeroChart" aria-label="Download chart as PNG" title="Download PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div></div>
-        <div id="zeroChart" class="chart zero"><div class="chart-placeholder">Loading…</div></div>
+        <div id="zeroChart" class="chart zero"><div class="chart-placeholder" data-ghost="bars" data-rows="8"></div></div>
       </section>
     </div>
 
@@ -555,7 +555,8 @@
     function loadScriptSeq(urls,globalName){
       return new Promise((resolve,reject)=>{ let index=0; const next=()=>{ if(index>=urls.length){reject(new Error(`Unable to load ${globalName}`));return;} const url=urls[index++]; const script=document.createElement('script'); script.src=url; script.async=true; script.crossOrigin='anonymous'; script.referrerPolicy='no-referrer'; script.onload=()=>window[globalName]?resolve(window[globalName]):next(); script.onerror=next; document.head.appendChild(script); }; next(); });
     }
-    async function fetchFirst(urls){ for(const url of urls){ try{ const response=await fetch(url,{cache:'no-cache'}); if(response.ok) return await response.arrayBuffer(); }catch(error){} } throw new Error('Default workbook not found'); }
+    // Fetching goes through the shared loader, which drives the progress line and notes.
+    const fetchFirst=(urls)=>MK.fetchFirst(urls);
     // Reading a workbook takes about a second of CPU, so it runs in a background worker and the page never freezes (falls back to the page if workers fail).
     const ensureXLSX=()=>window.XLSX?Promise.resolve(window.XLSX):loadScriptSeq(XLSX_URLS,'XLSX');
     const WORKER_SRC=`const URLS=${JSON.stringify(XLSX_URLS)}; for(const u of URLS){ try{ importScripts(u); if(self.XLSX) break; }catch(e){} }
@@ -635,7 +636,7 @@
       const [popularResult,zeroResult]=await Promise.allSettled([fetchFirst(DEFAULT_SOURCE).then(parsePopular),fetchFirst(DEFAULT_ZERO).then(parseZero)]);
       if(popularResult.status==='fulfilled'){ state.popularAll=popularResult.value; applyJunk(); $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`; }
       if(zeroResult.status==='fulfilled'){ state.zeroAll=zeroResult.value; applyJunk(); $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`; }
-      if(!state.popular.length) throw new Error(zeroResult.status==='fulfilled'?'The popular-searches report could not be loaded':'Neither report could be loaded'); finalizeData();
+      if(!state.popular.length){ MK.loadFailed(); throw new Error(zeroResult.status==='fulfilled'?'The popular-searches report could not be loaded':'Neither report could be loaded'); } finalizeData(); MK.loadDone();
     }
     async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); if(type==='popular'){state.popularAll=await parsePopular(buffer);applyJunk();$('#popularFileStatus').textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zeroAll=await parseZero(buffer);applyJunk();$('#zeroFileStatus').textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
     function canonicalKeyword(input){ return state.canon?state.canon.get(normalize(input)):state.allKeywords.find(item=>normalize(item)===normalize(input)); }
