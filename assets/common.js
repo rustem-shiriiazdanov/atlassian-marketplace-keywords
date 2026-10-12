@@ -215,8 +215,8 @@
     if(missing.length) throw new Error(`the Raw sheet has no ${missing.map(c=> '“' + c + '”').join(', ').replace(/, (?=[^,]*$)/, ' and ')} column${missing.length > 1 ? 's' : ''}`);
     if(!rows.some(r=> r.month && r.keyword != null && String(r.keyword).trim())) throw new Error('the Raw sheet has no rows with a month and a query');
     // The figures must be numbers; text such as "3.5%" or "1,234" is read as a number.
-    const fig = kind === 'zero' ? 'count' : 'percentage';
-    if(!rows.some(r=> num(r[fig], kind === 'zero') != null)) throw new Error(`the “${fig}” column has no numbers`);
+    const figs = kind === 'zero' ? ['count'] : kind === 'popularRank' ? ['percentage', 'rank'] : ['percentage'];
+    for(const fig of figs) if(!rows.some(r=> num(r[fig], fig !== 'percentage') != null)) throw new Error(`the “${fig}” column has no numbers`);
     return rows;
   }
   // Raw sheet rows → clean rows. Every row is kept; meaningless ones are flagged (junk), judged on the raw text,
