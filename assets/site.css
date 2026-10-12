@@ -28,7 +28,7 @@
     --pos:#5CC48F; --neg:#F08A5D; --new:#7EAAF2;
     --sel-bg:#ECECEA; --sel-ink:#111214;
     --focus:#7EAAF2;
-    --heat0:#222428; --heat1:#4A2A20; --heat2:#7A3722; --heat3:#B44E2A; --heat4:#E2703F; --heat5:#FFA77D;
+    --heat0:#222428; --heat1:#4A2A20; --heat2:#7A3722; --heat3:#AC4A28; --heat4:#E2703F; --heat5:#FFA77D;
     --heat-ink-light:#ECECEA; --heat-ink-dark:#111214;
     --s1:#ECECEA; --s2:#6FA3F2; --s3:#E0AE45; --s4:#4FBE9F; --s5:#B48BE6; --s6:#EE7AA8; --s7:#3FC1DD; --s8:#B6C35A;
     --dropped:#5E6168;
@@ -43,7 +43,7 @@
   --pos:#5CC48F; --neg:#F08A5D; --new:#7EAAF2;
   --sel-bg:#ECECEA; --sel-ink:#111214;
   --focus:#7EAAF2;
-  --heat0:#222428; --heat1:#4A2A20; --heat2:#7A3722; --heat3:#B44E2A; --heat4:#E2703F; --heat5:#FFA77D;
+  --heat0:#222428; --heat1:#4A2A20; --heat2:#7A3722; --heat3:#AC4A28; --heat4:#E2703F; --heat5:#FFA77D;
   --heat-ink-light:#ECECEA; --heat-ink-dark:#111214;
   --s1:#ECECEA; --s2:#6FA3F2; --s3:#E0AE45; --s4:#4FBE9F; --s5:#B48BE6; --s6:#EE7AA8; --s7:#3FC1DD; --s8:#B6C35A;
   --dropped:#5E6168;
@@ -62,6 +62,8 @@ button,input,select{font:inherit;color:inherit}
 .serif{font-family:var(--serif)}
 .skip{position:absolute;left:-9999px;top:8px;z-index:200;padding:10px 14px;background:var(--surface);color:var(--ink);border:2px solid var(--ink);font-weight:600;text-decoration:none}
 .skip:focus{left:16px}
+/* Focus moved here by a script (after Try again or a jump link) is only a starting point, not a control. */
+main[tabindex="-1"]:focus{outline:0}
 .sr-only{position:absolute !important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 [hidden]{display:none !important}
 .wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px}
@@ -252,7 +254,6 @@ tr.skel-holder > td{display:table-cell}
   .site-nav{flex-wrap:wrap;overflow:visible;gap:0 18px}
   .site-nav a{padding:9px 0 7px}
   .lookup{width:100%;margin:8px 0 12px}
-  .lookup label{display:none}
   .lookup input{flex:1 1 auto;width:auto;min-width:0}
 }
 @media (max-width:420px){

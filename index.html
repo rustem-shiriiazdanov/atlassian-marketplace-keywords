@@ -57,6 +57,8 @@
   table.heat{border-collapse:separate;border-spacing:3px;width:100%;min-width:720px;font-size:13px}
   .heat th{font-weight:500;color:var(--muted);text-align:center;padding:4px 2px;white-space:nowrap}
   .heat th.q,.heat td.q{text-align:left;min-width:180px;max-width:280px;padding:0 12px 0 0}
+  /* The query names stay in view while the months scroll sideways on narrow screens */
+  .heat th.q,.heat td.q{position:sticky;left:0;z-index:1;background:var(--paper);box-shadow:-3px 0 0 var(--paper)}
   .heat td.q{font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .heat td.q a{text-decoration:none}
   .heat td.q a:hover{text-decoration:underline}
@@ -78,6 +80,7 @@
   @media (max-width:720px){
     .dek{font-size:17px}
     #zeroChart{height:260px}
+    .heat th.q,.heat td.q{min-width:104px;max-width:136px}
     .site-header .wrap{padding-bottom:12px}
   }
 </style>
@@ -188,7 +191,12 @@
   let D = null, issue = null, chart = null, zeroRange = '24';
   const params = new URLSearchParams(location.search);
 
-  const qLink = (k, label)=> `<a href="./keyword-explorer.html?q=${encodeURIComponent(k)}">${escapeHtml(label ?? k)}</a>`;
+  // Names that may be cut short with an ellipsis carry the full name as a tooltip.
+  const qLink = (k, label, full)=> `<a href="./keyword-explorer.html?q=${encodeURIComponent(k)}"${full ? ` title="${escapeHtml(k)}"` : ''}>${escapeHtml(label ?? k)}</a>`;
+  // "pipedrive and zephyr", "a, b and c", or "a, b and 3 others".
+  const andList = (xs)=> xs.length <= 1 ? (xs[0] || '') : xs.length <= 3 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : `${xs.slice(0, 2).join(', ')} and ${xs.length - 2} others`;
+  // The empty searches that share the highest count (more than one when there is a tie).
+  const zeroLeaders = (f)=>{ const z0 = f.zRows[0]; return z0 ? f.zRows.filter(r=> r.count === z0.count) : []; };
   // "January" in the same year as the issue, "December 2025" otherwise.
   const when = (m, ref)=> m.slice(0,4) === ref.slice(0,4) ? monthName(m) : monthLong(m);
   const ordinal = (n)=> n + (['th','st','nd','rd'][(n%100-20)%10] || ['th','st','nd','rd'][n%100] || 'th');
@@ -227,7 +235,8 @@
     const S = 'Searches that found no apps';
     const lowerBefore = [...hist].reverse().find(t=> t.value <= f.z);
     const higherBefore = [...hist].reverse().find(t=> t.value >= f.z);
-    const change = f.zPrev ? (f.z - f.zPrev) / f.zPrev : null;
+    // A rise from an unusually low month is not a story of its own.
+    const change = f.zPrev && !D.zeroLow.has(f.zPrevMonth) ? (f.z - f.zPrev) / f.zPrev : null;
     if(!lowerBefore) return { kind:'low', rank:3, text:`${S} hit a record low`, ref: maxSince(hist, m, 12) };
     if(!higherBefore) return { kind:'high', rank:3, text:`${S} hit a record high`, ref: minSince(hist, m, 12) };
     const gapLow = monthsBetween(lowerBefore.month, m), gapHigh = monthsBetween(higherBefore.month, m);
@@ -239,7 +248,8 @@
   }
   function maxSince(hist, m, n){ const w = hist.filter(t=> monthsBetween(t.month, m) <= n); return w.reduce((a,t)=> !a || t.value > a.value ? t : a, null); }
   function minSince(hist, m, n){ const w = hist.filter(t=> monthsBetween(t.month, m) <= n); return w.reduce((a,t)=> !a || t.value < a.value ? t : a, null); }
-  function leaderStreak(m){ let n = 0, k = (D.byMonth.get(m)||[])[0]?.keyword; for(let i = D.issues.indexOf(m); i >= 0; i--){ if((D.byMonth.get(D.issues[i])||[])[0]?.keyword === k) n++; else break; } return n; }
+  // Months in a row: a month with no report ends the run.
+  function leaderStreak(m){ let n = 0, k = (D.byMonth.get(m)||[])[0]?.keyword; for(let i = D.issues.indexOf(m); i >= 0; i--){ if((D.byMonth.get(D.issues[i])||[])[0]?.keyword !== k) break; n++; if(i > 0 && monthsBetween(D.issues[i-1], D.issues[i]) !== 1) break; } return n; }
   // The top query: a spike, a new #1, a tie, a long run at the top, or no change.
   function topStory(f){
     const [a, b] = f.rows; if(!a) return null;
@@ -282,13 +292,19 @@
       let s = `In ${monthName(f.m)}, ${zs && zs.kind === 'low' ? 'just ' : ''}${fmtInt(f.z)} searches found no apps, as Atlassian reports them`;
       // Compared with last month, and for a low or high also with the extreme of the past year.
       const dir = (v)=> f.z < v ? 'down' : 'up';
+      // "down from 1,603 in November", or "the same as in November" when the totals match.
+      const vs = (v, m, lead = true)=> f.z === v ? `the same as in ${when(m, f.m)}` : `${lead ? dir(v) + ' from ' : ''}${fmtInt(v)} in ${when(m, f.m)}`;
+      const lowNote = (m)=> D.zeroLow.has(m) ? ', an unusually low month' : '';
       const far = zs && zs.ref && (zs.kind === 'low' || zs.kind === 'high') && zs.ref.month !== f.m && zs.ref.month !== f.zPrevMonth ? zs.ref : null;
-      if(f.zPrev && far) s += `, ${dir(f.zPrev)} from ${fmtInt(f.zPrev)} in ${when(f.zPrevMonth, f.m)} and ${fmtInt(far.value)} in ${when(far.month, f.m)}`;
-      else if(f.zPrev) s += `, ${dir(f.zPrev)} from ${fmtInt(f.zPrev)} in ${when(f.zPrevMonth, f.m)}`;
-      else if(far) s += `, ${dir(far.value)} from ${fmtInt(far.value)} in ${when(far.month, f.m)}`;
-      if(D.zeroLow.has(f.m)) s += `, far below the full reports around it`;
-      const z0 = f.zRows[0];
-      empty.push(s + '.' + (z0 ? ` The most frequent empty search was ${q(z0.keyword)}, ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}${f.zRows.length && f.zRows.filter(r=> r.count === 1).length / f.zRows.length >= 0.5 ? '; most others came up only once' : ''}.` : ''));
+      if(f.zPrev && far) s += f.z !== f.zPrev && dir(f.zPrev) === dir(far.value) ? `, ${vs(f.zPrev, f.zPrevMonth)}${lowNote(f.zPrevMonth)} and ${vs(far.value, far.month, false)}` : `, ${vs(f.zPrev, f.zPrevMonth)}${lowNote(f.zPrevMonth)} and ${vs(far.value, far.month)}`;
+      else if(f.zPrev) s += `, ${vs(f.zPrev, f.zPrevMonth)}${lowNote(f.zPrevMonth)}`;
+      else if(far) s += `, ${vs(far.value, far.month)}`;
+      if(D.zeroLow.has(f.m)) s += `, far below the full reports before it`;
+      const lead = zeroLeaders(f), z0 = lead[0];
+      const most = !z0 ? '' : lead.length > 1
+        ? ` The most frequent empty searches were ${andList(lead.map(r=> q(r.keyword)))}, ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'} each`
+        : ` The most frequent empty search was ${q(z0.keyword)}, ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}`;
+      empty.push(s + '.' + (z0 ? `${most}${f.zRows.length && f.zRows.filter(r=> r.count === 1).length / f.zRows.length >= 0.5 ? '; most others came up only once' : ''}.` : ''));
     }
     const zeroFirst = pickStory(f)?.about === 'zero';
     return out.concat(zeroFirst ? empty : top, zeroFirst ? top : empty).join(' ');
@@ -303,7 +319,8 @@
     $('#headline').textContent = headline(f);
     $('#dek').textContent = dek(f);
     const first = D.issues[0];
-    $('#source').innerHTML = (badMonth ? `<strong>${escapeHtml(`There is no issue for “${badMonth}”, so this is the latest one.`)}</strong> ` : '') + (isLatest ? escapeHtml(`From Atlassian’s monthly Marketplace search reports, ${monthShort(first)} – ${monthShort(latest)}. Updated monthly by Rustem Shiriiazdanov.`)
+    const range = first === latest ? monthShort(latest) : `${monthShort(first)} – ${monthShort(latest)}`;
+    $('#source').innerHTML = (badMonth ? `<strong>${escapeHtml(`There is no issue for “${badMonth}”, so this is the latest one.`)}</strong> ` : '') + (isLatest ? escapeHtml(`From Atlassian’s monthly Marketplace search reports, ${range}. Updated monthly by Rustem Shiriiazdanov.`)
       : escapeHtml(`This issue is rebuilt from the ${monthLong(m)} report, as it looked then.`) + (m < MK.REPORT_BREAK ? ' Shares before November 2024 run much higher than today’s; see the <a href="./method.html#breaks">method</a>.' : ''));
     const i = D.issues.indexOf(m), prev = D.issues[i-1], next = D.issues[i+1];
     const nav = $('#issueNav');
@@ -317,15 +334,17 @@
     const k = $('#kpis'); const [a, b] = f.rows; const z0 = f.zRows[0]; const c = f.gains[0];
     const cells = [];
     if(a){ const tie = b && a.percentage.toFixed(2) === b.percentage.toFixed(2); cells.push(`<div class="kpi"><span class="big num">${fmtPct(a.percentage)}</span><span class="what">of all searches went to <strong>${escapeHtml(a.keyword)}</strong>, ${tie ? `level with <strong>${escapeHtml(b.keyword)}</strong>` : 'the #1 query'}</span></div>`); }
-    if(c) cells.push(`<div class="kpi"><span class="big num">+${c.gain}</span><span class="what">places climbed by <strong>${escapeHtml(c.keyword)}</strong>, to #${c.rk}</span></div>`);
+    if(c) cells.push(`<div class="kpi"><span class="big num">+${c.gain}</span><span class="what">${c.gain === 1 ? 'place' : 'places'} climbed by <strong>${escapeHtml(c.keyword)}</strong>, to #${c.rk}</span></div>`);
     else if(f.entries[0]) cells.push(`<div class="kpi"><span class="big num">#${f.entries[0].rk}</span><span class="what">where <strong>${escapeHtml(f.entries[0].keyword)}</strong> entered the top 100</span></div>`);
     if(f.z != null && !D.zeroPartial.has(f.m)){
       const d = f.zPrev ? Math.round((f.z - f.zPrev) / f.zPrev * 100) : null;
-      const note = D.zeroLow.has(f.m) ? 'unusually low in Atlassian’s report' : d == null ? '' : d === 0 ? `about the same as ${monthName(f.zPrevMonth)}` : `${Math.abs(d)}% ${d < 0 ? 'fewer' : 'more'} than ${monthName(f.zPrevMonth)}`;
+      const note = D.zeroLow.has(f.m) ? 'unusually low in Atlassian’s report' : d == null ? '' : (d === 0 ? `${f.z === f.zPrev ? 'the same' : 'about the same'} as ${monthName(f.zPrevMonth)}` : `${Math.abs(d)}% ${d < 0 ? 'fewer' : 'more'} than ${monthName(f.zPrevMonth)}`) + (D.zeroLow.has(f.zPrevMonth) ? ', an unusually low month' : '');
       cells.push(`<div class="kpi"><span class="big accent num">${fmtInt(f.z)}</span><span class="what">searches found no apps, as Atlassian reports them${note ? ` <span class="muted">· ${note}</span>` : ''}</span></div>`);
     } else if(f.z != null) cells.push(`<div class="kpi"><span class="big accent num">${fmtInt(f.z)}</span><span class="what">searches found no apps, as Atlassian reports them <span class="muted">· partial report</span></span></div>`);
     else cells.push(`<div class="kpi"><span class="big accent num">—</span><span class="what">searches found no apps <span class="muted">· the zero-result report for this month is not available</span></span></div>`);
-    if(z0) cells.push(`<div class="kpi"><span class="big word">${escapeHtml(z0.keyword)}</span><span class="what">was the most frequent empty search <span class="muted">· ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}</span></span></div>`);
+    // A partial report has too few searches to name a most frequent one (the summary leaves it out too).
+    const lead = zeroLeaders(f), others = lead.slice(1).map(r=> `<strong>${escapeHtml(r.keyword)}</strong>`);
+    if(z0 && !D.zeroPartial.has(f.m)) cells.push(`<div class="kpi"><span class="big word">${escapeHtml(z0.keyword)}</span><span class="what">${others.length ? `shared the most empty searches with ${others.length <= 2 ? andList(others) : `${others[0]} and ${others.length - 1} others`}` : 'was the most frequent empty search'} <span class="muted">· ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}${others.length ? ' each' : ''}</span></span></div>`);
     k.innerHTML = cells.join('');
     k.style.gridTemplateColumns = window.matchMedia('(max-width:900px)').matches ? '' : `repeat(${cells.length},minmax(0,1fr))`;
   }
@@ -333,7 +352,7 @@
   function renderTop(f){
     $('#topTitle').textContent = `Share of all searches, ${monthName(f.m)}`;
     const max = f.top[0]?.percentage || 1;
-    $('#topTen').innerHTML = f.top.length ? f.top.map(r=>`<li><span class="r num">${r.pos}</span><span class="q">${qLink(r.keyword)}<span class="track"><span class="bar" style="display:block;width:${(r.percentage/max*100).toFixed(1)}%"></span></span></span><span class="v num">${fmtPct(r.percentage)}</span></li>`).join('') : '<li class="empty-note">No report for this month.</li>';
+    $('#topTen').innerHTML = f.top.length ? f.top.map(r=>`<li><span class="r num">${r.pos}</span><span class="q">${qLink(r.keyword, null, true)}<span class="track"><span class="bar" style="display:block;width:${(r.percentage/max*100).toFixed(1)}%"></span></span></span><span class="v num">${fmtPct(r.percentage)}</span></li>`).join('') : '<li class="empty-note">No report for this month.</li>';
   }
 
   function renderClimbers(f){
@@ -345,7 +364,9 @@
       : `<li><span class="kw">${qLink(r.keyword)}<small class="num">entered at #${r.rk} · ${fmtPct(r.percentage)} of searches</small></span><span class="gain new">New</span></li>`).join('') : '<li class="empty-note">No climbers this month.</li>';
     const more = f.entries.slice(2);
     const all = './keyword-explorer.html?' + more.slice(3).map(r=>'q=' + encodeURIComponent(r.keyword)).join('&');
-    $('#also').innerHTML = more.length ? `Also new: ${more.slice(0,3).map(r=> `${qLink(r.keyword)} #${r.rk}`).join(', ')}${more.length > 3 ? `, and <a href="${all}">${more.length - 3} more</a>` : ''}.` : '';
+    // With no report for the month before, ranks are compared with the latest earlier report, and the list says so.
+    const base = f.rankBase && monthsBetween(f.rankBase, f.m) > 1 ? `Compared with ${monthLong(f.rankBase)}, the latest earlier report. ` : '';
+    $('#also').innerHTML = escapeHtml(base) + (more.length ? `Also new: ${more.slice(0,3).map(r=> `${qLink(r.keyword)} #${r.rk}`).join(', ')}${more.length > 3 ? `, and <a href="${all}">${more.length - 3} more</a>` : ''}.` : '');
   }
 
   function renderHeat(f){
@@ -361,7 +382,7 @@
     const colW = `style="width:${(64 / months.length).toFixed(2)}%"`;
     const head = months.map((m,i)=> `<th scope="col" ${colW}${D.zeroPartial.has(m) ? ' title="Partial report"' : ''}>${i === 0 || m.endsWith('-01') ? `${monthAbbr(m)} ’${m.slice(2,4)}` : monthAbbr(m)}${D.zeroPartial.has(m) ? '*' : ''}</th>`).join('');
     const tk = MK.tokens();
-    const body = rows.map(([k, t])=> `<tr><td class="q">${qLink(k)}</td>${months.map(m=>{
+    const body = rows.map(([k, t])=> `<tr><td class="q">${qLink(k, null, true)}</td>${months.map(m=>{
       if(!D.zeroByMonth.has(m)) return `<td class="c na" title="No report">–</td>`;
       const n = cell.get(m + '|' + k) || 0, b = MK.heatBin(n);
       return `<td class="c" style="background:${tk.heat[b]};color:${MK.inkOn(tk.heat[b], tk.heatInkLight, tk.heatInkDark)}" title="${escapeHtml(k)}, ${monthShort(m)}: ${n ? fmtInt(n) + ' empty searches' : 'not listed'}${D.zeroPartial.has(m) ? ' (partial report)' : ''}">${n ? fmtInt(n) : '·'}</td>`;
@@ -369,24 +390,34 @@
     $('#heat').innerHTML = `<caption class="sr-only">Empty searches per month for the queries that most often found no apps</caption><thead><tr><th scope="col" class="q">Query</th>${head}<th scope="col" class="t">Total</th></tr></thead><tbody>${body || `<tr><td class="empty-note" colspan="${months.length + 2}">No zero-result report for these months.</td></tr>`}</tbody>`;
     $('#heatTitle').textContent = `Queries that most often found no apps, ${months[0] === f.m ? monthShort(f.m) : `${monthShort(months[0])} – ${monthShort(f.m)}`}`;
     const part = months.filter(m=> D.zeroPartial.has(m)).map(monthShort);
-    $('#heatCap').textContent = 'Each cell is the number of empty searches that month. Gaps in someone’s portfolio, or an app that people expect but nobody has built.' + (part.length ? ` * The ${part.join(' and ')} report is partial.` : '');
+    $('#heatCap').textContent = 'Each cell is the number of empty searches that month. Gaps in someone’s portfolio, or an app that people expect but nobody has built.' + (part.length ? ` * The ${part.join(' and ')} ${part.length === 1 ? 'report is' : 'reports are'} partial.` : '');
   }
 
+  // The chart library loads on its own: the issue is written as soon as the reports are in, the chart follows.
+  let chartLib = 'loading';
   function renderZeroChart(){
-    if(!window.echarts){ $('#zeroChart').innerHTML = '<p class="empty-note">The chart library could not load. Refresh the page to try again.</p>'; return; }
-    const el = $('#zeroChart'); if(!chart){ el.innerHTML = ''; chart = echarts.init(el, null, { renderer:'svg' }); }
+    if(!D) return;
+    const el = $('#zeroChart');
+    // Until the library arrives the placeholder stays; only a real failure says so.
+    if(!window.echarts){ if(chartLib === 'failed') el.innerHTML = '<p class="empty-note">The chart library could not load. Refresh the page to try again.</p>'; return; }
+    // A retry puts the placeholder back over an old chart; that chart is started afresh.
+    if(chart && (chart.isDisposed() || el.querySelector('.skel-wrap'))){ if(!chart.isDisposed()) chart.dispose(); chart = null; }
+    if(!chart){ el.innerHTML = ''; chart = echarts.init(el, null, { renderer:'svg' }); }
     const t = MK.tokens();
-    const all = D.zeroTotals.filter(x=> x.month <= issue && x.month >= D.issues[0]);
+    // Every calendar month up to the issue; a month with no report is a gap in the line, not a skipped step.
+    const byMonth = new Map(D.zeroTotals.map(x=> [x.month, x.value]));
+    const from = D.zeroTotals.find(x=> x.month >= D.issues[0])?.month;
+    const all = []; if(from) for(let m = from; m <= issue; m = addMonths(m, 1)) all.push({ month:m, value: byMonth.has(m) ? byMonth.get(m) : null });
     const n = zeroRange === 'all' ? all.length : +zeroRange;
     const win = all.slice(-n);
     const months = win.map(x=>x.month);
     const vals = win.map(x=> x.value);
-    const usable = win.filter(x=> zeroUsable(x.month));
+    const usable = win.filter(x=> x.value != null && zeroUsable(x.month));
     // "Highest" and "lowest" need at least three full months to compare; partial reports are left out of both.
     const peak = usable.length >= 3 ? usable.reduce((a,x)=> !a || x.value > a.value ? x : a, null) : null;
     const low = usable.length >= 3 ? usable.reduce((a,x)=> !a || x.value < a.value ? x : a, null) : null;
-    if(!win.length){ chart.clear(); $('#zeroNote').textContent = 'No zero-result report for these months.'; return; }
-    const cur = win.at(-1).month === issue ? win.at(-1) : null;
+    if(!win.some(x=> x.value != null)){ chart.clear(); $('#zeroNote').textContent = 'No zero-result report for these months.'; return; }
+    const cur = win.at(-1).month === issue && win.at(-1).value != null ? win.at(-1) : null;
     const span = 'shown';
     // Callouts are outlined in the page colour instead of sitting in a box, so they never hide the line; near either
     // edge they are aligned to stay inside the chart.
@@ -395,7 +426,8 @@
       itemStyle:{ color: filled ? t.accent : t.paper, borderColor:t.accent, borderWidth:2 },
       label:{ show:true, formatter:text, position: below ? 'bottom' : 'top', align:pos, distance:12, color:t.ink2, fontSize:12, lineHeight:16, fontFamily:'Public Sans', width:150, overflow:'break', textBorderColor:t.paper, textBorderWidth:4, rich:{ b:{ fontWeight:700, color:t.ink, fontSize:12, textBorderColor:t.paper, textBorderWidth:4 } } } });
     const points = [];
-    if(peak && (!cur || peak.month !== cur.month)) points.push(mark(peak, `{b|${fmtInt(peak.value)}} in ${monthLong(peak.month)}, the highest month ${span}`, false, edge(peak)));
+    // Hollow dots are kept for partial and unusually low months, so the highest month is a filled dot.
+    if(peak && (!cur || peak.month !== cur.month)) points.push(mark(peak, `{b|${fmtInt(peak.value)}} in ${monthLong(peak.month)}, the highest month ${span}`, true, edge(peak)));
     // The issue's own month is a filled dot, or a hollow one when its report is partial or unusually low (as the note says).
     const odd = cur && (D.zeroPartial.has(cur.month) || D.zeroLow.has(cur.month));
     if(cur && cur.value != null) points.push(mark(cur, `{b|${fmtInt(cur.value)}} in ${monthName(cur.month)}${low && low.month === cur.month ? `, the lowest month ${span}` : peak && peak.month === cur.month ? `, the highest month ${span}` : ''}`, !odd, edge(cur), low && low.month === cur.month));
@@ -406,7 +438,7 @@
       animation:false, backgroundColor:'transparent', textStyle:{ fontFamily:'Public Sans' },
       grid:{ left:48, right:16, top:58, bottom:30 },
       tooltip:{ trigger:'axis', backgroundColor:t.surface, borderColor:t.ink, borderWidth:1, padding:[8,10], textStyle:{ color:t.ink, fontSize:13 }, axisPointer:{ type:'line', lineStyle:{ color:t.rule } },
-        formatter:(ps)=>{ const p = ps[0]; const m = p.axisValue; const why = D.zeroPartial.has(m) ? 'Partial report' : D.zeroLow.has(m) ? 'Unusually low in Atlassian’s report' : ''; return `<b>${monthLong(m)}</b><br/>${p.value == null ? 'No report' : `${fmtInt(p.value)} searches found no apps (reported)${why ? '<br/><span style="color:' + t.muted + '">' + why + '</span>' : ''}`}`; } },
+        formatter:(ps)=>{ const p = ps[0]; const m = p.axisValue; const why = D.zeroPartial.has(m) ? 'Partial report' : D.zeroLow.has(m) ? 'Unusually low in Atlassian’s report' : ''; return `<b>${monthLong(m)}</b><br/>${p.value == null || !Number.isFinite(+p.value) ? 'No report' : `${fmtInt(p.value)} searches found no apps (reported)${why ? '<br/><span style="color:' + t.muted + '">' + why + '</span>' : ''}`}`; } },
       xAxis:{ type:'category', data:months, boundaryGap:false, axisLine:{ lineStyle:{ color:t.ink } }, axisTick:{ show:false },
         axisLabel:{ color:t.muted, fontSize:12, hideOverlap:true, interval:(i)=> yearOnly ? months[i].endsWith('-01') : i % step === 0,
           formatter:(v)=> yearOnly ? v.slice(0,4) : `${monthAbbr(v)} ’${v.slice(2,4)}`, alignMinLabel:'left', alignMaxLabel:'right' } },
@@ -418,6 +450,7 @@
     const partial = win.filter(x=> D.zeroPartial.has(x.month)).map(x=> monthShort(x.month));
     if(partial.length) notes.push(`The ${partial.join(' and ')} ${partial.length === 1 ? 'report is' : 'reports are'} partial.`);
     if(partial.length || win.some(x=> D.zeroLow.has(x.month))) notes.push('Hollow dots mark partial reports and months that are unusually low in Atlassian’s reports.');
+    if(win.some(x=> x.value == null)) notes.push('Breaks in the line are months with no zero-result report.');
     $('#zeroNote').innerHTML = escapeHtml(notes.join(' ')) + ' <a href="./month-by-month.html">All charts, month by month</a>';
   }
 
@@ -434,12 +467,15 @@
 
   function start(){
     $('#loadAlert').hidden = true;
-    Promise.all([MK.loadData(), MK.ensureECharts().catch(()=>null)]).then(([data])=>{
+    MK.loadData().then((data)=>{
       D = data; index = MK.lookupIndex(D);
-      const want = params.get('month');
+      // ?month= accepts the usual spellings of a month ("2024-1", "2024-01-01") and is rewritten as 2024-01.
+      const raw = (params.get('month') || '').trim(), want = raw ? (/^\d{4}-\d{1,2}$/.test(raw) ? raw.slice(0,5) + raw.slice(5).padStart(2,'0') : MK.toMonthKey(raw)) : '';
       issue = want && D.issues.includes(want) ? want : D.issues.at(-1);
-      // A ?month= that is not an issue: say so, and show the latest issue under its own address.
-      if(want && !D.issues.includes(want)){ badMonth = want; history.replaceState(null, '', location.pathname); }
+      const url = new URLSearchParams(location.search), address = ()=> location.pathname + (url.toString() ? '?' + url : '') + location.hash;
+      // A ?month= that is not an issue: say so, and show the latest issue under its own address (other parameters stay).
+      if(raw && !D.issues.includes(want)){ badMonth = raw; url.delete('month'); history.replaceState(null, '', address()); }
+      else if(raw && want !== url.get('month')){ url.set('month', want); history.replaceState(null, '', address()); }
       // The example in the search box is a real query, even when meaningless ones are shown.
       const lead = (D.byMonth.get(D.issues.at(-1)) || []).find(r=> !r.junk);
       if(lead) $('#lookupInput').placeholder = `e.g. ${lead.keyword}`;
@@ -448,7 +484,8 @@
       window.MKIssue = { headline:(m)=> headline(facts(m)), dek:(m)=> dek(facts(m)), issues: D.issues };
     }).catch(err=>{ console.error(err); MK.loadFailed(); $('#loadAlert').hidden = false; $('#headline').textContent = 'The reports could not be loaded.'; $('#dek').textContent = ''; });
   }
-  $('#retry').addEventListener('click', ()=>{ MK.refillGhosts(); start(); });
+  $('#retry').addEventListener('click', ()=>{ MK.focusMain(); if(chart){ chart.dispose(); chart = null; } MK.refillGhosts(); start(); });
+  MK.ensureECharts().then(()=>{ chartLib = 'ok'; }, ()=>{ chartLib = 'failed'; }).then(()=> renderZeroChart());
   start();
 })();
 </script>

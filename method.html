@@ -134,14 +134,15 @@
   const $ = (s)=> document.querySelector(s);
   const { escapeHtml, fmtInt, fmtPct, monthLong, monthShort } = MK;
   function render(D){
-    $('#range').textContent = `${monthLong(D.issues[0])} to ${monthLong(D.issues.at(-1))}`;
+    $('#range').textContent = D.issues[0] === D.issues.at(-1) ? monthLong(D.issues[0]) : `${monthLong(D.issues[0])} to ${monthLong(D.issues.at(-1))}`;
     $('#nPop').textContent = fmtInt(D.popular.length); $('#nZero').textContent = fmtInt(D.zero.length);
     $('#countNote').textContent = D.hideJunk ? 'Row counts leave out meaningless queries, as you chose.' : 'Row counts include every query.';
     const j = D.junk;
-    $('#removedLine').textContent = `${fmtInt(j.popular.length)} rows of the popular-search report and ${fmtInt(j.zero.length)} of the zero-result report count as meaningless. The largest ones, as they appear in the reports:`;
     const top = j.popular.map(x=>({ k:x.raw, m:x.month, p:+x.percentage || 0 })).sort((a,b)=> b.p - a.p).slice(0, 5);
+    $('#removedLine').textContent = `${fmtInt(j.popular.length)} ${j.popular.length === 1 ? 'row' : 'rows'} of the popular-search report and ${fmtInt(j.zero.length)} of the zero-result report count as meaningless.` + (top.length ? ` The largest ${top.length === 1 ? 'one, as it appears' : 'ones, as they appear'} in the reports:` : '');
+    $('#removedList').hidden = !top.length;
     const clip = (t)=> t.length > 64 ? t.slice(0, 61) + '…' : t;
-    $('#removedList').innerHTML = top.map(x=> `<li><span><code>${escapeHtml(clip(x.k))}</code></span><span class="num">${fmtPct(x.p)} · ${monthShort(x.m)}</span></li>`).join('');
+    $('#removedList').innerHTML = top.map(x=> `<li><span><code${x.k.length > 64 ? ` title="${escapeHtml(x.k)}"` : ''}>${escapeHtml(clip(x.k))}</code></span><span class="num">${fmtPct(x.p)} · ${monthShort(x.m)}</span></li>`).join('');
   }
   let loaded = false;
   window.addEventListener('mk:junk', ()=>{ if(loaded) render(MK.currentData()); });
@@ -149,7 +150,7 @@
     $('#loadAlert').hidden = true;
     MK.loadData().then(D=>{ loaded = true; render(D); MK.loadDone(); }).catch(err=>{ console.error(err); MK.loadFailed(); $('#loadAlert').hidden = false; });
   }
-  $('#retry').addEventListener('click', ()=>{ MK.refillGhosts(); start(); });
+  $('#retry').addEventListener('click', ()=>{ MK.focusMain(); MK.refillGhosts(); start(); });
   start();
 })();
 </script>

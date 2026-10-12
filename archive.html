@@ -16,6 +16,8 @@
     .arch-tools{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
     .arch-tools .check{font-size:13px;color:var(--muted)}
     .year{display:grid;grid-template-columns:184px minmax(0,1fr);gap:24px;padding:28px 0 36px;border-top:3px solid var(--ink);scroll-margin-top:16px}
+    .year h2:focus{outline:0}
+    .year h2:focus-visible{outline:2px solid var(--focus);outline-offset:4px}
     .year h2{margin:0;font-family:var(--serif);font-weight:500;font-size:44px;line-height:1}
     .year .count{margin-top:8px;font-size:14px;color:var(--muted)}
     .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 24px}
@@ -87,7 +89,7 @@
     const lead = (m)=> (D.byMonth.get(m) || [])[0];
     const spike = (m)=> MK.isSpike(D, m);
     const years = Array.from(new Set(issues.map(m=>m.slice(0,4)))).sort().reverse();
-    $('#kicker').textContent = `${issues.length} issues · ${monthLong(issues[0])} – ${monthLong(latest)}`;
+    $('#kicker').textContent = `${issues.length} ${issues.length === 1 ? 'issue' : 'issues'} · ${issues[0] === latest ? monthLong(latest) : `${monthLong(issues[0])} – ${monthLong(latest)}`}`;
     $('#yearNav').innerHTML = years.map(y=>`<button type="button" data-y="${y}">${y}</button>`).join('');
     $('#archive').innerHTML = years.map(y=>{
       const ms = issues.filter(m=> m.startsWith(y)).reverse();
@@ -96,19 +98,22 @@
         const zero = z == null ? `<div class="zero na">No zero-result report for this month</div>` : `<div class="zero"><strong class="num">${fmtInt(z)}</strong> reported searches found no apps${D.zeroPartial.has(m) ? ' <span class="na">(partial report)</span>' : D.zeroLow.has(m) ? ' <span class="na">(unusually low)</span>' : ''}</div><div class="track" aria-hidden="true"><span class="bar" style="width:${Math.min(100, z/zMax*100).toFixed(1)}%"></span></div>`;
         return `<article class="card${m === latest ? ' current' : ''}"><div class="mhead"><h3><a href="${href}">${monthName(m)}</a></h3>${m === latest ? '<span class="tag">Current</span>' : ''}</div>
           <span class="lbl">#1 query${(()=>{ const r = D.byMonth.get(m) || []; return r[1] && r[0].percentage.toFixed(2) === r[1].percentage.toFixed(2) ? ' (a tie)' : ''; })()}</span>
-          ${a ? `${(()=>{ const b = (D.byMonth.get(m) || [])[1]; const link = (r)=> `<a class="q" href="./keyword-explorer.html?q=${encodeURIComponent(r.keyword)}">${escapeHtml(r.keyword)}</a>`; return b && b.percentage.toFixed(2) === a.percentage.toFixed(2) ? `${link(a)} <span class="tie">and</span> ${link(b)}` : link(a); })()}<span class="share num">${fmtPct(a.percentage)} of searches${spike(m) ? ' · <span class="spike">unusual spike</span>' : ''}${D.popularPartial.has(m) ? ' · <span class="na">partial report</span>' : ''}</span>` : '<span class="q na">No report</span>'}
+          ${a ? `${(()=>{ const b = (D.byMonth.get(m) || [])[1]; const link = (r)=> `<a class="q" href="./keyword-explorer.html?q=${encodeURIComponent(r.keyword)}">${escapeHtml(r.keyword)}</a>`; return b && b.percentage.toFixed(2) === a.percentage.toFixed(2) ? `${link(a)} <span class="tie">and</span> ${link(b)}` : link(a); })()}<span class="share num">${fmtPct(a.percentage)} of searches${(()=>{ const b = (D.byMonth.get(m) || [])[1]; return b && b.percentage.toFixed(2) === a.percentage.toFixed(2) ? ' each' : ''; })()}${spike(m) ? ' · <span class="spike">unusual spike</span>' : ''}${D.popularPartial.has(m) ? ' · <span class="na">partial report</span>' : ''}</span>` : '<span class="q na">No report</span>'}
           ${zero}</article>`;
       }).join('')}</div></section>`;
     }).join('');
   }
-  $('#yearNav').addEventListener('click', e=>{ const b = e.target.closest('button'); if(!b) return; document.getElementById('y' + b.dataset.y)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); });
+  // Jumping to a year also moves keyboard focus there, so the next Tab continues in that year.
+  $('#yearNav').addEventListener('click', e=>{ const b = e.target.closest('button'); if(!b) return; const sec = document.getElementById('y' + b.dataset.y); if(!sec) return;
+    sec.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    const h = sec.querySelector('h2'); h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); });
   let loaded = false;
   window.addEventListener('mk:junk', ()=>{ if(loaded) render(MK.currentData()); });
   function start(){
     $('#loadAlert').hidden = true;
     MK.loadData().then(D=>{ loaded = true; render(D); MK.loadDone(); }).catch(err=>{ console.error(err); MK.loadFailed(); $('#loadAlert').hidden = false; $('#archive').innerHTML = ''; });
   }
-  $('#retry').addEventListener('click', ()=>{ MK.refillGhosts(); start(); });
+  $('#retry').addEventListener('click', ()=>{ MK.focusMain(); MK.refillGhosts(); start(); });
   start();
 })();
 </script>
