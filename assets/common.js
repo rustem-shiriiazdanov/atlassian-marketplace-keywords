@@ -188,11 +188,25 @@
     });
     paintLoad();
   }
+  // Checks an opened report before it replaces the data on screen; the message says what is wrong in plain words.
+  const REQUIRED = { popular: ['month', 'keyword', 'percentage'], popularRank: ['month', 'keyword', 'percentage', 'rank'], zero: ['month', 'keyword', 'count'] };
+  function checkReport(wb, kind){
+    const rows = wb && wb.Raw;
+    if(!rows) throw new Error('there is no sheet named “Raw” (every Marketplace report export has one)');
+    const cols = new Set(rows.slice(0, 50).flatMap(r=> Object.keys(r)));
+    const missing = REQUIRED[kind].filter(c=> !cols.has(c));
+    if(missing.length) throw new Error(`the Raw sheet has no ${missing.map(c=> '“' + c + '”').join(', ').replace(/, (?=[^,]*$)/, ' and ')} column${missing.length > 1 ? 's' : ''}`);
+    if(!rows.some(r=> r.month && r.keyword != null && String(r.keyword).trim())) throw new Error('the Raw sheet has no rows with a month and a query');
+    return rows;
+  }
   // Raw sheet rows → clean rows. Every row is kept; meaningless ones are flagged (junk), judged on the raw text,
   // so the reader can choose to hide them on every page.
+  // SheetJS 0.18 reads emoji outside the basic plane 0x10000 too low (🚀 U+1F680 arrives as U+F680). Queries never
+  // use U+F000–U+FAFF themselves, so those characters are moved back up to the emoji block they came from.
+  const fixText = (v)=> typeof v === 'string' ? v.replace(/[\uF000-\uFAFF]/g, (c)=> String.fromCodePoint(c.charCodeAt(0) + 0x10000)) : v;
   function prepPopular(rows){
     const out = [];
-    for(const r of rows || []){
+    for(const r0 of rows || []){ const r = { ...r0, keyword: fixText(r0.keyword) };
       const month = toMonthKey(r.month); if(!month) continue;
       const keyword = cleanKeyword(r.keyword) || String(r.keyword ?? '').trim(); if(!keyword) continue;
       out.push({ month, keyword, raw: String(r.keyword ?? ''), junk: isJunkQuery(r.keyword), percentage: num(r.percentage), rank: num(r.rank) });
@@ -201,7 +215,7 @@
   }
   function prepZero(rows){
     const out = [];
-    for(const r of rows || []){
+    for(const r0 of rows || []){ const r = { ...r0, keyword: fixText(r0.keyword) };
       const month = toMonthKey(r.month); if(!month) continue;
       const keyword = cleanKeyword(r.keyword) || String(r.keyword ?? '').trim(); if(!keyword) continue;
       out.push({ month, keyword, raw: String(r.keyword ?? ''), junk: isJunkQuery(r.keyword), count: num(r.count) || 0 });
@@ -322,7 +336,10 @@
       if(!q || !index){ close(); return; }
       const starts = [], has = [];
       for(const it of index){ if(it.k.startsWith(q)) starts.push(it); else if(has.length < 8 && it.k.includes(q)) has.push(it); if(starts.length >= 8) break; }
-      items = starts.concat(has).slice(0, 8);
+      // The query exactly as typed comes first and meaningless queries last, so Enter opens what was meant.
+      const exact = index.find(it=> it.k === q);
+      items = (exact ? [exact] : []).concat(starts, has).filter((it,i,a)=> a.indexOf(it) === i)
+        .map((it,i)=>({ it, i, j: isJunkQuery(it.k) ? 1 : 0 })).sort((a,b)=> a.j - b.j || a.i - b.i).map(x=> x.it).slice(0, 8);
       box.innerHTML = items.length ? items.map((it,i)=>{ const at = it.k.indexOf(q); const name = escapeHtml(it.k.slice(0,at)) + '<b>' + escapeHtml(it.k.slice(at, at+q.length)) + '</b>' + escapeHtml(it.k.slice(at+q.length)); return `<button type="button" role="option" id="${box.id}-o${i}" data-i="${i}"><span>${name}</span><span>${escapeHtml(it.note||'')}</span></button>`; }).join('')
         : `<div class="none">No query contains “${escapeHtml(input.value.trim())}”. Press Enter to see every query that contains ${q.includes(' ') ? 'all of these words' : 'it'}.</div>`;
       active = items.length ? 0 : -1; mark(); box.hidden = false; input.setAttribute('aria-expanded','true');
@@ -332,7 +349,8 @@
     input.addEventListener('blur', close);
     input.addEventListener('keydown', e=>{
       if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ if(!items.length) return; e.preventDefault(); active = (active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length; mark(); }
-      else if(e.key === 'Escape'){ close(); }
+      // Escape closes the list first; only a second Escape clears the text (the search field's own behaviour).
+      else if(e.key === 'Escape'){ if(!box.hidden){ e.preventDefault(); close(); } }
     });
     box.addEventListener('mousedown', e=> e.preventDefault());
     box.addEventListener('click', e=>{ const b = e.target.closest('button'); if(b) go(items[+b.dataset.i].k); });
@@ -375,7 +393,7 @@
   const HEAT_BINS = [0, 1, 5, 10, 20, 50];
   const heatBin = (n)=>{ let b = 0; for(let i=0;i<HEAT_BINS.length;i++) if(n >= HEAT_BINS[i]) b = i; return n > 0 ? Math.max(1, b) : 0; };
 
-  window.MK = { XLSX_URLS, ECHARTS_URLS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, fetchFirst, loadDone, loadFailed, fillGhosts, refillGhosts, ghostHTML, loadCardHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
+  window.MK = { XLSX_URLS, ECHARTS_URLS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, checkReport, fixText, fetchFirst, loadDone, loadFailed, fillGhosts, refillGhosts, ghostHTML, loadCardHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
     toMonthKey, monthLabel, monthLong, monthShort, monthName, monthAbbr, addMonths, monthsBetween,
     escapeHtml, fmtInt, fmtPct, cleanKeyword, isJunkQuery, num, REPORT_BREAK, ZERO_NOTE,
     attachLookup, lookupIndex, tokens, HEAT_BINS, heatBin, isSpike, inkOn };
