@@ -180,6 +180,7 @@
     .chart.flip{animation:flipY .6s}
     @keyframes flipY{0%{transform:rotateY(0)}50%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
     .card.is-fullscreen{position:fixed;inset:24px;margin:0 !important;z-index:1000;overflow:auto;display:flex;flex-direction:column;box-shadow:0 0 0 100vmax rgba(9,15,28,.62)}
+    #race-card.is-fullscreen .card-body .chart{min-height:0}
     .card.is-fullscreen .player{border:0;border-top:1px solid var(--grid);border-radius:0;align-self:stretch;margin-top:auto}
     .fs-tabs{margin:0 8px 0 0}
     .fs-table{margin:14px 20px 20px;flex:0 1 auto;min-height:0;overflow:auto;border:1px solid var(--line);border-radius:8px}
@@ -604,6 +605,8 @@
         const rb = document.getElementById('keywordFilterReset'); if(rb) rb.hidden = !n;
         disp.textContent = !n ? 'All queries' : n <= 3 ? state.keywordFilter.join(', ') : `${state.keywordFilter.slice(0,2).join(', ')} and ${n-2} more`;
       }
+      // The race and trails palette has 48 distinct colours; more picks would have to share one.
+      const MAX_PICKS = 48;
       function populateKeywordOptions(){
         const list = document.getElementById('keywordOptions');
         if(!list) return;
@@ -630,7 +633,11 @@
             const span = document.createElement('span');
             label.append(cb, span); nodes.set(k, label);
             cb.addEventListener('change', ()=>{
-              if(cb.checked){ if(!state.keywordFilter.includes(k)) state.keywordFilter.push(k); }
+              if(cb.checked){
+                // Every picked query keeps a colour of its own, so the number of picks is capped at the palette size.
+                if(!state.keywordFilter.includes(k) && state.keywordFilter.length >= MAX_PICKS){ cb.checked = false; const c = list.querySelector('#kwCount'); if(c) c.textContent = `Up to ${MAX_PICKS} queries can be picked.`; return; }
+                if(!state.keywordFilter.includes(k)) state.keywordFilter.push(k);
+              }
               else state.keywordFilter = state.keywordFilter.filter(x=>x!==k);
               updateKeywordDisplay(); scheduleRender();
             });
@@ -664,7 +671,7 @@
           };
           search.addEventListener('input', apply);
           search.addEventListener('keydown', e=>{
-            if(e.key === 'Enter'){ const k = current.find(x=> !state.keywordFilter.includes(x)); if(k){ const cb = node(k).firstChild; cb.checked = true; cb.dispatchEvent(new Event('change')); } search.value=''; apply(); e.preventDefault(); }
+            if(e.key === 'Enter'){ e.preventDefault(); const k = current.find(x=> !state.keywordFilter.includes(x)); if(k){ const cb = node(k).firstChild; cb.checked = true; cb.dispatchEvent(new Event('change')); if(!state.keywordFilter.includes(k)) return; } search.value=''; apply(); }
           });
           foot.querySelector('#kwClear').addEventListener('click', ()=> document.getElementById('keywordFilterReset').click());
           list._apply = apply;
@@ -672,7 +679,7 @@
         }
         list.querySelectorAll('#keywordCheckboxes input').forEach(cb=> cb.checked = state.keywordFilter.includes(cb.value));
         const n = state.keywordFilter.length;
-        const c = list.querySelector('#kwCount'); if(c) c.textContent = n ? `${n} picked` : 'Biggest first, all reports combined. Type to search.';
+        const c = list.querySelector('#kwCount'); if(c) c.textContent = n ? `${n} picked${n >= MAX_PICKS ? ' (the most allowed)' : ''}` : 'Biggest first, all reports combined. Type to search.';
         list.querySelector('#kwClear').hidden = !n;
         updateKeywordDisplay();
       }
@@ -692,7 +699,14 @@
           return String(v).trim().slice(0,7);
         }catch(e){ return String(v).trim().slice(0,7); }
       };
-      const asNumber = (x)=>{ if(x==null) return NaN; const n = Number(String(x).replace(',','.')); return Number.isFinite(n)?n:NaN; };
+      // Numbers typed as text: "3.5%", "3,5" (decimal comma), "1,234" or "1 234" (thousands separators, counts only).
+      const asNumber = (x, thousands=false)=>{
+        if(x==null) return NaN; if(typeof x === 'number') return Number.isFinite(x) ? x : NaN;
+        let s = String(x).trim().replace(/[\s  ]/g,'').replace(/%$/,'');
+        if(/^-?\d{1,3}(,\d{3}){2,}(\.\d+)?$/.test(s) || (thousands && /^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(s))) s = s.replace(/,/g,'');
+        else if(/^-?\d{1,3}(\.\d{3})+,\d+$/.test(s)) s = s.replace(/\./g,'').replace(',','.');
+        else s = s.replace(',','.');
+        const n = s === '' ? NaN : Number(s); return Number.isFinite(n)?n:NaN; };
       // Wrap to two lines at a sensible point (space if possible), keep start visible
       function wrapLabel(s, max=22){
         s = String(s||'');
@@ -760,17 +774,23 @@
           const box = document.createElement('div');
           box.className = 'share-box';
           box.setAttribute('role','dialog');
-          box.setAttribute('aria-label','Share');
-          box.innerHTML = `<h3>Share</h3><ul></ul><input readonly aria-label="Link"><button class="btn" type="button">Close</button>`;
+          box.setAttribute('aria-modal','true');
+          box.setAttribute('aria-labelledby','shareTitle');
+          box.innerHTML = `<h3 id="shareTitle">Share</h3><ul></ul><input readonly aria-label="Link"><button class="btn" type="button">Close</button>`;
           overlay.appendChild(box);
-          box.querySelector('button').addEventListener('click', ()=> overlay.style.display='none');
-          overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.style.display='none'; });
+          // Closing hands keyboard focus back to whatever opened the chooser.
+          const close = ()=>{ if(overlay.style.display === 'none') return; overlay.style.display = 'none'; const back = overlay._back; overlay._back = null; if(back && document.contains(back)) back.focus({ preventScroll:true }); };
+          box.querySelector('button').addEventListener('click', close);
+          overlay.addEventListener('click', e=>{ if(e.target===overlay) close(); });
+          overlay.addEventListener('keydown', e=>{ if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); close(); } });
           document.body.appendChild(overlay);
         }
+        overlay._back = document.activeElement && document.activeElement !== document.body ? document.activeElement : null;
         const list = overlay.querySelector('ul');
         list.innerHTML = options.map(o=>`<li><a href="${o.href}" target="_blank" rel="noopener">${o.label}</a></li>`).join('');
         overlay.querySelector('input').value = url;
         overlay.style.display = 'flex';
+        overlay.querySelector('li a')?.focus();
       }
 
       function sharePage(){
@@ -785,8 +805,8 @@
       }
 
       function makeDataTable(chart){
-        const opt = chart.getOption();
-        const series = opt.series || [];
+        const opt = chart && !chart.isDisposed?.() ? chart.getOption() : null;
+        const series = (opt && opt.series) || [];
         let rows = [];
         const fmtCat = (c)=> /^\d{4}-\d{2}$/.test(String(c)) ? monthLabel(c,{month:'short', year:'numeric'}) : c;
         if(series[0]?.type === 'heatmap'){
@@ -818,18 +838,33 @@
         return table;
       }
 
+      // The chart on screen for an element: views that rebuild a chart (zero-result view, trails period) dispose the old one.
+      const liveChart = (el)=>{ const c = el && state.charts[el.id]; return c && !c.isDisposed?.() ? c : null; };
       function fitFullscreenChart(card, chartEl, chart){
-        // The chart takes whatever height the modal has left after its header, controls and footer.
-        const used = [...card.children].reduce((a, c)=> a + c.getBoundingClientRect().height, 0);
-        let h = chartEl.offsetHeight + (card.clientHeight - used) - 12;
-        if(chartEl.id === 'heatmap'){ const rows = (chart.getOption().yAxis?.[0]?.data || []).length; h = Math.min(h, rows*44 + 44); }
-        if(chartEl.id === 'race' && state.keywordFilter.length){ h = Math.min(h, Math.max(160, Math.min(state.keywordFilter.length, 20)*52 + 70)); card.style.bottom = 'auto'; card.style.top = Math.max(24, (innerHeight - (used - chartEl.offsetHeight + h + 12))/2) + 'px'; }
+        chart = liveChart(chartEl) || chart; if(!chart || chart.isDisposed?.()) return;
+        // The chart takes whatever height the modal has left after its header, controls and footer
+        // (measured without the chart's own box, which a flex layout may have stretched).
+        card.style.top = ''; card.style.bottom = '';
+        const body = chartEl.closest('.card-body'), bs = getComputedStyle(body);
+        const others = [...card.children].filter(c=> c !== body).reduce((a, c)=> a + c.getBoundingClientRect().height, 0);
+        const bodyPad = (parseFloat(bs.paddingTop)||0) + (parseFloat(bs.paddingBottom)||0);
+        let h = card.clientHeight - others - bodyPad - 12;
+        if(chartEl.id === 'heatmap'){ const rows = (chart.getOption()?.yAxis?.[0]?.data || []).length; h = Math.min(h, rows*44 + 44); }
+        if(chartEl.id === 'race' && state.keywordFilter.length){ h = Math.min(h, Math.max(160, Math.min(state.keywordFilter.length, 20)*52 + 70)); card.style.bottom = 'auto'; card.style.top = Math.max(24, (innerHeight - (others + bodyPad + Math.max(280, h) + 12))/2) + 'px'; }
         chartEl.style.height = Math.max(280, h) + 'px';
         chart.resize();
+      }
+      // Re-fits the open full-screen chart (window resized, heatmap rows changed). Not while its table is shown.
+      function refitFullscreen(){
+        const el = fullscreenState.chartEl; if(!el) return;
+        const card = el.closest('.card'), tbl = card?.querySelector('.fs-table');
+        if(!card || (tbl && !tbl.hidden)) return;
+        fitFullscreenChart(card, el, liveChart(el));
       }
       function exitFullscreen(){
         document.querySelectorAll('.card.is-fullscreen').forEach(c=>{
           c.classList.remove('is-fullscreen'); c.style.top = ''; c.style.bottom = ''; c.querySelector('.fs-table')?.remove(); c.querySelector('.fs-tabs')?.remove();
+          c.removeAttribute('role'); c.removeAttribute('aria-modal'); c.removeAttribute('aria-label');
           c.querySelectorAll('.card-body,.heat-legend,.scrubber').forEach(el=> el.style.display = '');
           const ch = c.querySelector('.chart'); ch.style.height = ch.dataset.h || '';
           const b = c.querySelector('[data-action="exitfullscreen"]'); if(b){ b.innerHTML = ICON_FULLSCREEN; b.dataset.action = 'fullscreen'; b.setAttribute('aria-label','Open chart full screen'); b.title = 'Full screen'; }
@@ -839,14 +874,16 @@
         // Keyboard focus goes back to the button that opened full screen.
         const back = fullscreenState.chartEl && document.querySelector(`[data-toolbar-for="${fullscreenState.chartEl.id}"] [data-action="fullscreen"]`);
         if(back && (document.activeElement === document.body || fullscreenState.chartEl.closest('.card')?.contains(document.activeElement))) back.focus({ preventScroll:true });
-        const was = fullscreenState.chart;
+        const was = fullscreenState.chartEl;
         fullscreenState.chartEl = null; fullscreenState.chart = null; fullscreenState.btn = null;
         document.body.style.overflow = '';
-        if(was) requestAnimationFrame(()=>{ was.resize(); if(was === state.charts.heatmap) renderAll(); });
+        // Back on the page, every chart gets its page size again (a period or view may have changed in full screen).
+        if(was) requestAnimationFrame(()=>{ if(fullscreenState.chartEl) return; Object.values(state.charts).forEach(c=>{ if(c && !c.isDisposed?.()) c.resize(); }); if(state.sourceRaw.length) renderAll(); });
       }
       function refreshFullscreenTable(){
         const card = document.querySelector('.card.is-fullscreen'); const wrap = card?.querySelector('.fs-table');
-        if(wrap && fullscreenState.chart){ wrap.replaceChildren(makeDataTable(fullscreenState.chart)); }
+        const live = liveChart(fullscreenState.chartEl);
+        if(wrap && live){ fullscreenState.chart = live; wrap.replaceChildren(makeDataTable(live)); }
       }
       function toggleFullscreen(chartEl, chart, btn){
         const card = chartEl.closest('.card');
@@ -854,20 +891,36 @@
         exitFullscreen();
         if(!entering) return;
         card.classList.add('is-fullscreen');
+        // A modal dialog: named after the card, focus kept inside (see the Tab handler below).
+        card.setAttribute('role','dialog'); card.setAttribute('aria-modal','true'); card.setAttribute('aria-label', (card.querySelector('h3')?.textContent || 'Chart').trim() + ', full screen');
         chartEl.dataset.h = chartEl.style.height || '';
         // The month player drives both month-by-month charts, so it comes along into the modal.
         if(card.id === 'race-card' || card.id === 'zeros-card'){ const player = document.querySelector('.player'); if(player) card.appendChild(player); }
         const wrap = document.createElement('div'); wrap.className = 'fs-table'; wrap.hidden = true; wrap.appendChild(makeDataTable(chart));
         const tabs = document.createElement('div'); tabs.className = 'seg fs-tabs'; tabs.setAttribute('role','group'); tabs.setAttribute('aria-label','View');
         tabs.innerHTML = '<button type="button" aria-pressed="true" data-v="chart">Chart</button><button type="button" aria-pressed="false" data-v="table">Table</button>';
-        tabs.addEventListener('click', e=>{ const b = e.target.closest('button'); if(!b) return; const tbl = b.dataset.v === 'table'; tabs.querySelectorAll('button').forEach(x=> x.setAttribute('aria-pressed', String(x===b))); if(tbl && state.timelinePlaying) stopPlay(); if(tbl) refreshFullscreenTable(); wrap.hidden = !tbl; card.querySelectorAll('.card-body,.heat-legend,.scrubber').forEach(el=> el.style.display = tbl ? 'none' : ''); if(!tbl) requestAnimationFrame(()=> fitFullscreenChart(card, chartEl, chart)); });
+        tabs.addEventListener('click', e=>{ const b = e.target.closest('button'); if(!b) return; const tbl = b.dataset.v === 'table'; tabs.querySelectorAll('button').forEach(x=> x.setAttribute('aria-pressed', String(x===b))); if(tbl && state.timelinePlaying) stopPlay(); if(tbl) refreshFullscreenTable(); wrap.hidden = !tbl; card.querySelectorAll('.card-body,.heat-legend,.scrubber').forEach(el=> el.style.display = tbl ? 'none' : ''); if(!tbl) requestAnimationFrame(()=> fitFullscreenChart(card, chartEl, liveChart(chartEl))); });
         card.querySelector('.head-tools').prepend(tabs);
         card.querySelector('.card-body').after(wrap);
         btn.innerHTML = ICON_FULLSCREEN_EXIT; btn.dataset.action = 'exitfullscreen'; btn.setAttribute('aria-label','Exit full screen'); btn.title = 'Exit full screen';
         fullscreenState.chartEl = chartEl; fullscreenState.chart = chart; fullscreenState.btn = btn;
         document.body.style.overflow = 'hidden';
+        if(!card.contains(document.activeElement)) btn.focus({ preventScroll:true });
         requestAnimationFrame(()=>{ fitFullscreenChart(card, chartEl, chart); if(chartEl.id === 'heatmap'){ renderHeatmap(); refreshFullscreenTable(); } });
       }
+      // Keyboard focus stays inside the full-screen view (and inside the share chooser while it is open).
+      const focusables = (root)=> [...root.querySelectorAll('button, select, input, a[href], [tabindex]:not([tabindex="-1"])')].filter(el=> !el.disabled && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
+      document.addEventListener('keydown', e=>{
+        if(e.key !== 'Tab') return;
+        const share = document.getElementById('shareOverlay');
+        const root = share && share.style.display !== 'none' ? share.querySelector('.share-box') : document.querySelector('.card.is-fullscreen');
+        if(!root) return;
+        const f = focusables(root); if(!f.length) return;
+        const first = f[0], last = f[f.length-1], a = document.activeElement;
+        if(!root.contains(a)){ e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+        else if(e.shiftKey && a === first){ e.preventDefault(); last.focus(); }
+        else if(!e.shiftKey && a === last){ e.preventDefault(); first.focus(); }
+      });
 
       function attachChartToolbar(chartEl, chart, name){
         const slot = document.querySelector(`[data-toolbar-for="${name}"]`);
@@ -934,7 +987,7 @@
       // the summary sheet only fills months that have no rows.
       function cleanZeroTotals(summary, rows){
         const fromRows = totalsByMonth(rows, 'count'); const have = new Set(fromRows.map(x=>x.month));
-        const extra = (summary || []).map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0) })).filter(x=> x.month && !have.has(x.month));
+        const extra = (summary || []).map(r=>({ month: toMonthKey(r.month), value: asNumber(r.sum_count||0, true) })).filter(x=> x.month && !have.has(x.month));
         return fromRows.concat(extra).sort((a,b)=> a.month.localeCompare(b.month));
       }
       function totalsByMonth(list, valueField, filter){
@@ -963,7 +1016,7 @@
         if(months.length){
           const first0 = months[0], last0 = months[months.length-1];
           $('#dataRange').textContent = `Reports from ${monthLabel(first0)} to ${monthLabel(last0)}`;
-          $('#pageKicker').textContent = `All charts · ${monthLabel(first0)} – ${monthLabel(last0)}`;
+          $('#pageKicker').textContent = `All charts · ${monthLabel(first0)}${last0 && last0 !== first0 ? ` – ${monthLabel(last0)}` : ''}`;
         }
       }
 
@@ -1034,8 +1087,13 @@
             return isPercent ? `<br/>${d > 0 ? '+' : d < 0 ? '−' : ''}${Math.abs(d).toFixed(2)} pp vs ${when}` : `<br/>${d > 0 ? '+' : d < 0 ? '−' : ''}${Math.abs(Math.round(d)).toLocaleString('en-US')} vs ${when}`;
           };
           const items = rows.map((d,k)=>({ name:d.name, value:d.value, pos:k, color: raceColors[i].get(d.name) || t.muted }));
+          // A month with nothing to show says why instead of leaving an empty axis.
+          const when = monthLabel(m,{month:'short', year:'numeric'}), picked = state.keywordFilter.length > 0;
+          const empty = items.length ? null : isPercent ? (picked ? `None of the picked queries is in the top 500 in ${when}.` : `No queries in the ${when} report.`)
+            : (picked ? `None of the picked queries came back empty in ${when}.` : `No queries in the ${when} zero-result report.`);
           return {
           backgroundColor:'transparent', animation:false, textStyle:{ fontFamily:FONT },
+          graphic: empty ? [chartMessage(empty, t, accent ? 'zeros' : 'race')] : [],
           grid:{ left: labelW + 12, right:56, top:24, bottom:28, containLabel:false },
           xAxis:{ type:'value', min:0, max: ax.max, interval: ax.interval, axisLine:{ show:false, onZero:false }, axisTick:{ show:false }, splitLine:{ show:true, lineStyle:{ color: raceGridColors(ax.interval, ax.max) } }, axisLabel:{ show: true, color:t.muted, fontSize:12, hideOverlap:true, formatter: isPercent ? (v)=> v === 0 ? '0%' : `${v.toFixed(ax.decimals)}%` : (v)=> Number(v).toLocaleString('en-US') } },
           // Rows are placed on a hidden numeric axis, so a bar can glide between places while the race plays.
@@ -1045,6 +1103,19 @@
           _race:{ items, n, fmt, labelW, small, wrap: small || !!accent }
         }; };
         return frame;
+      }
+      // A one-line note in the middle of a chart that has nothing to draw.
+      // Too long for the chart's width, it breaks at the space nearest the middle.
+      const chartMessage = (text, t=T(), id=null)=>{
+        const room = (id && document.getElementById(id)?.clientWidth || 600) - 40;
+        if(measureTextWidth(text) * 14/13 > room){ const mid = text.length/2; let at = -1; for(let i = 0; i < text.length; i++) if(text[i] === ' ' && (at < 0 || Math.abs(i - mid) < Math.abs(at - mid))) at = i; if(at > 0) text = text.slice(0, at) + '\n' + text.slice(at + 1); }
+        return { type:'text', left:'center', top:'middle', silent:true, z:100, style:{ text, fill:t.muted, font:`14px ${FONT}`, align:'center', verticalAlign:'middle', lineHeight:20, backgroundColor:t.paper, padding:[6,12] } };
+      };
+      // Clears a race chart to a message (no report for the month on the slider).
+      function emptyRace(id, text){
+        const c = ensureChart(id); if(!c) return;
+        cancelAnimationFrame(tweens[id]); c.__sig = null;
+        c.setOption({ backgroundColor:'transparent', animation:false, series:[], graphic:[chartMessage(text, T(), id)] }, { notMerge:true });
       }
       // Bars, query names and values drawn together, so a row moves as one piece. Rows below the last place fade out.
       function raceSeries(items, { n, t, fmt, labelW, small, wrap, cap }){
@@ -1264,7 +1335,8 @@
         let legendRows = 1; if(useLegend){ const avail = Math.max(120, (document.getElementById('trails')?.clientWidth || 800)); let w = 0; for(const x of tuned){ const iw = 12 + 5 + measureTextWidth(x.name) + 14; if(w && w + iw > avail){ legendRows++; w = 0; } w += iw; } }
         const el = document.getElementById('trails'); const px = Math.max(120, (el?.clientWidth || 800) - right - 48) / Math.max(1, months.length-1);
         return {
-          backgroundColor:'transparent', textStyle:{ fontFamily:FONT }, animationDuration:600,
+          backgroundColor:'transparent', textStyle:{ fontFamily:FONT }, animation: !reduceMotion.matches, animationDuration:600,
+          graphic: tuned.length ? [] : [chartMessage(picked ? 'None of the picked queries is in the top 500 in this period.' : 'No queries to show for this period.', t, 'trails')],
           grid:{ left:4, right, top: useLegend ? 30 + legendRows*24 : 28, bottom:6, containLabel:true },
           legend: useLegend ? { top:0, left:0, right:0, data: tuned.map(x=>x.name), icon:'roundRect', itemWidth:12, itemHeight:4, itemGap:14, textStyle:{ color:t.ink2, fontFamily:FONT, fontSize:13 } } : undefined,
           tooltip:{ trigger:'axis', ...tooltipStyle(t), position: tipAt(useLegend ? 30 + legendRows*24 : 8, 48), axisPointer:{ type:'line', lineStyle:{ color:t.line } }, order:'valueDesc',
@@ -1306,6 +1378,7 @@
         const tick = smartTicks(months, Math.max(60, hostW - labW - 16) / Math.max(1, months.length), 48);
         return {
           backgroundColor:'transparent', textStyle:{ fontFamily:FONT }, animation:false,
+          graphic: yCats.length ? [] : [chartMessage(state.keywordFilter.length ? 'None of the picked queries came back empty in this period.' : 'No zero-result queries in this period.', t, 'heatmap')],
           grid:{ left: labW + 12, right:4, top:30, bottom:4, containLabel:false },
           tooltip:{ ...tooltipStyle(t), formatter:(p)=>{
             const kw = yCats[p.value[1]]; const m = months[p.value[0]]; const v = p.value[2];
@@ -1379,6 +1452,8 @@
       function updateHeatTimeRangeControls(){
         const max = state.months.length;
         if(!state.heatTimeRangeInitialized && max > 0){ state.heatTimeRangeInitialized = true; if(!state.heatPreset) state.heatPreset = '12'; }
+        // "Since <report change>" only exists while the data has one; otherwise the default period is shown and pressed.
+        if(max > 0 && state.heatPreset === 'report' && !state.trailsBreak) state.heatPreset = '12';
         if(max > 0 && state.heatPreset !== 'custom'){
           const bi = state.trailsBreak ? state.months.indexOf(state.trailsBreak) : -1;
           state.heatTimeEndIdx = max - 1;
@@ -1399,6 +1474,7 @@
         i = Math.max(0, Math.min(months.length-1, i)); state.raceIndex = i;
         const r = $('#raceMonth'); r.max = String(months.length-1); r.value = String(i); r.style.setProperty('--p', (i/Math.max(1, months.length-1)*100).toFixed(2) + '%');
         const when = monthLabel(months[i],{month:'short', year:'numeric'});
+        r.setAttribute('aria-valuetext', monthLabel(months[i]));
         $('#raceMonthVal').textContent = when;
         $('#raceDesc').textContent = state.keywordFilter.length ? `Share of all Marketplace searches for the picked queries in ${when}.` : `Share of all Marketplace searches in ${when}.`;
         // While playing, drawRace slides rows to their new places; scrubbing and the first frame are drawn at once.
@@ -1408,7 +1484,12 @@
         // A partial report is shown as published, with a word on why its shares look different.
         const partialText = (state.partialPopular||new Set()).has(months[i]) ? `Atlassian’s ${monthLabel(months[i])} report is partial: it lists fewer queries than the usual 500, so its shares are not comparable with other months.` : '';
         $('#raceNote').textContent = [partialText, breakText].filter(Boolean).join(' ');
-        if(state.zeroMode==='keywords' && state.zeroFrame){ const zi = (state.zeroRaceMonths||[]).indexOf(months[i]); if(zi>=0){ drawRace('zeros', state.zeroFrame, zi, mode, zi-1); $('#zerosDesc').textContent = `Empty searches per query in ${when}.`; } else { $('#zerosDesc').textContent = `No zero-result report for ${when}.`; } }
+        if(state.zeroMode==='keywords'){
+          const zi = state.zeroFrame ? (state.zeroRaceMonths||[]).indexOf(months[i]) : -1;
+          if(zi>=0){ drawRace('zeros', state.zeroFrame, zi, mode, zi-1); $('#zerosDesc').textContent = `Empty searches per query in ${when}.`; }
+          // No report for this month: the chart says so instead of keeping the previous month's bars.
+          else { const msg = state.zeroRaw.length ? `No zero-result report for ${when}.` : 'No zero-result report loaded.'; emptyRace('zeros', msg); $('#zerosDesc').textContent = msg; }
+        }
         if(state.zeroMode==='totals' && state.zeroTotalsCache){ safeSetOption('zeros', buildZerosOption(state.months, state.zeroTotalsCache, months[i], state.gapsZero, state.keywordFilter.length > 0)); $('#zerosDesc').textContent = zerosDescText(months[i]); }
         // A full-screen table (race or zero-result) follows the month while scrubbing, once both charts are updated;
         // playback pauses when a table opens.
@@ -1448,7 +1529,7 @@
           state.trailsBreak = detectBreak(full, computeTrailsSeries(state.sourceRaw, full, 6, [], state.gapsPopular));
         }
         // With picked queries, the month-by-month charts shrink to fit them instead of keeping room for ten bars.
-        { const n = state.keywordFilter.length; document.body.classList.toggle('filtered', n > 0); const h = n ? Math.max(140, Math.min(n, 20)*40 + 60) + 'px' : ''; ['race'].concat(state.zeroMode === 'keywords' ? ['zeros'] : []).forEach(id=>{ const el = document.getElementById(id); if(!fullscreenState.chartEl && el.style.height !== h){ el.style.height = h; state.charts[id]?.resize(); } }); if(state.zeroMode !== 'keywords'){ const z = document.getElementById('zeros'); if(z.style.height){ z.style.height = ''; state.charts.zeros?.resize(); } } }
+        { const n = state.keywordFilter.length; document.body.classList.toggle('filtered', n > 0); const h = n ? Math.max(140, Math.min(n, 20)*40 + 60) + 'px' : ''; ['race'].concat(state.zeroMode === 'keywords' ? ['zeros'] : []).forEach(id=>{ const el = document.getElementById(id); if(!fullscreenState.chartEl && el.style.height !== h){ el.style.height = h; state.charts[id]?.resize(); } }); if(state.zeroMode !== 'keywords' && !fullscreenState.chartEl){ const z = document.getElementById('zeros'); if(z.style.height){ z.style.height = ''; state.charts.zeros?.resize(); } } }
         const { months: allMonths, topByMonth } = groupByMonthTop(state.sourceRaw, 'percentage', state.topN, state.keywordFilter);
         // Partial reports stay in; gapsPopular is empty for the published files, so this only skips months with no report.
         let first = 0; while(first < allMonths.length-1 && state.gapsPopular.has(allMonths[first])) first++;
@@ -1464,7 +1545,8 @@
         state.raceFrame = buildRaceOption(raceMonths, topByMonth, state.raceIndex);
         const race = ensureChart('race');
         // Only the zero-result months inside the charted range are worth a note.
-        const skipped = Array.from(state.partialZero || []).filter(m=> m >= months[0]).sort().map(m=>monthLabel(m,{month:'short', year:'numeric'}));
+        const inRange = (m)=> m >= months[0] && m <= months[months.length-1];
+        const skipped = Array.from(state.partialZero || []).filter(inRange).sort().map(m=>monthLabel(m,{month:'short', year:'numeric'}));
         $('#zerosNote').textContent = skipped.length && state.zeroMode === 'totals' ? `The ${skipped.join(' and ').replace(/ and (?=.* and )/g, ', ')} zero-result ${skipped.length===1?'report is':'reports are'} partial${state.keywordFilter.length ? '' : ' (hollow dots)'}.` : '';
         if(state.zeroMode === 'totals' && (document.getElementById('zeros')?.clientWidth || 999) < 380) state.zerosPhoneNote = true; else state.zerosPhoneNote = false;
         if(state.zeroMode === 'totals' && !state.keywordFilter.length){
@@ -1472,7 +1554,7 @@
           const tot = (state.zeroTotals.length ? state.zeroTotals : totalsByMonth(state.zeroRaw,'count')).filter(x=>!(state.partialZero||new Set()).has(x.month));
           const oddRows = tot.filter((x,i)=>{ const near = tot.slice(Math.max(0,i-3), i).concat(tot.slice(i+1, i+4)).map(y=>y.value).filter(v=>v>0).sort((p,q)=>p-q); const med = near[Math.floor(near.length/2)]; return near.length >= 4 && x.value < med*0.5; });
           state.zeroOdd = oddRows.map(x=>x.month).concat(Array.from(state.partialZero || []));
-          const odd = oddRows.map(x=>monthLabel(x.month,{month:'short', year:'numeric'}));
+          const odd = oddRows.filter(x=> inRange(x.month)).map(x=>monthLabel(x.month,{month:'short', year:'numeric'}));
           if(odd.length) $('#zerosNote').textContent = `${skipped.length ? `The ${skipped.join(' and ')} zero-result ${skipped.length===1?'report is':'reports are'} partial; t` : 'T'}otals for ${odd.join(' and ').replace(/ and (?=.* and )/g, ', ')} are unusually low in Atlassian’s reports${state.keywordFilter.length ? '' : ' (hollow dots)'}.`;
         }
         if(state.zeroMode === 'totals' && !state.keywordFilter.length) $('#zerosNote').textContent = (MK.ZERO_NOTE + ' ' + $('#zerosNote').textContent).trim();
@@ -1500,14 +1582,16 @@
         const recentMonths = state.trailsBreak ? months.slice(months.indexOf(state.trailsBreak)) : months;
         const trailSeries = computeTrailsSeries(state.sourceRaw, tMonths, state.trailsN, state.keywordFilter, state.gapsPopular, recentMonths);
         $('#trailsRecent').textContent = state.trailsBreak ? (narrow('trails') ? `Since ${monthLabel(state.trailsBreak,{month:'short'})} ’${state.trailsBreak.slice(2,4)}` : `Since ${monthLabel(state.trailsBreak,{month:'short', year:'numeric'})}`) : 'Recent';
-        $('#trailsRecent').closest('.card-controls').hidden = !state.trailsBreak;
-        const tEl = document.getElementById('trails'); const wantH = state.trailsRange === 'all' && !narrow('trails') ? '520px' : ''; if(tEl.style.height !== wantH){ tEl.style.height = wantH; state.charts.trails?.resize(); }
+        // Without a report change there is only one period: the period switch goes, the query count stays.
+        $('#trailsRecent').closest('.seg').hidden = !state.trailsBreak;
+        const allYears = state.trailsRange === 'all' && !!state.trailsBreak;
+        const tEl = document.getElementById('trails'); const wantH = allYears && !narrow('trails') ? '520px' : ''; if(!fullscreenState.chartEl && tEl.style.height !== wantH){ tEl.style.height = wantH; state.charts.trails?.resize(); }
         $('#trendsIntro').textContent = state.keywordFilter.length ? 'How the picked queries moved, and how often they came back empty.' : 'How the biggest queries moved, and which searches keep coming back empty.';
         $('#trailsTitle').textContent = state.keywordFilter.length ? 'Share of searches for the picked queries' : 'Share of searches for the biggest queries';
         $('#raceTitle').textContent = state.keywordFilter.length ? 'Picked queries by share of searches' : 'Top queries by share of searches';
         { const hint = document.querySelector('.filterbar .hint'); if(hint) hint.textContent = state.keywordFilter.length ? `Every chart below shows only the ${state.keywordFilter.length} picked ${state.keywordFilter.length===1?'query':'queries'}.` : 'Pick queries to focus every chart below on them.'; }
         $('#trailsDesc').textContent = state.keywordFilter.length ? 'Share of all Marketplace searches for the picked queries. Point at or tap a line to isolate it.' : `The queries with the highest typical monthly share${state.trailsBreak ? (breakIsMarketplace() ? ` since ${monthLabel(state.trailsBreak)}, when Atlassian’s redesigned Marketplace arrived` : ` since the ${monthLabel(state.trailsBreak)} drop`) : ''}${state.trailsRange === 'all' && state.trailsBreak ? ', followed across all years' : ''}. Point at or tap a line to isolate it.`;
-        safeSetOption('trails', buildTrailsOption(tMonths, trailSeries, { breakMonth: recent ? null : state.trailsBreak, allYears: state.trailsRange === 'all' }));
+        safeSetOption('trails', buildTrailsOption(tMonths, trailSeries, { breakMonth: recent ? null : state.trailsBreak, allYears }));
         { const notes = [];
           if(state.trailsBreak && state.trailsRange === 'all'){
             // Name only the charted queries that really collapse in the break month, so the note matches the lines.
@@ -1547,6 +1631,8 @@
         const hOpt = buildHeatmapOption(rangeMonths, yCats, matrix, state.gapsZero);
         renderHeatLegend(hOpt._legend, hOpt._partial); delete hOpt._legend; delete hOpt._partial;
         safeSetOption('heatmap', hOpt);
+        // In full screen the height follows the number of rows shown.
+        if(fullscreenState.chartEl === hEl) refitFullscreen();
       }
 
       // Inputs wiring
@@ -1570,22 +1656,28 @@
       const keywordInput = document.getElementById('keywordFilterInput');
       const keywordReset = document.getElementById('keywordFilterReset');
       const keywordDropdown = document.getElementById('keywordOptions');
+      // One place opens and closes the query list, so aria-expanded always matches what is on screen.
+      const setDropdown = (open)=>{ if(!keywordDropdown) return; keywordDropdown.classList.toggle('open', open); keywordInput?.setAttribute('aria-expanded', open ? 'true' : 'false'); };
       if(keywordInput){
+        keywordInput.setAttribute('aria-expanded', 'false'); keywordInput.setAttribute('aria-controls', 'keywordOptions');
         keywordInput.addEventListener('click', e=>{
           e.stopPropagation();
-          const open = keywordDropdown?.classList.toggle('open');
-          keywordInput.setAttribute('aria-expanded', open ? 'true' : 'false');
+          const open = !keywordDropdown?.classList.contains('open');
+          setDropdown(open);
           if(open) keywordDropdown.querySelector('#keywordSearch')?.focus();
         });
       }
       if(keywordDropdown){
         keywordDropdown.addEventListener('click', e=> e.stopPropagation());
-        keywordDropdown.addEventListener('keydown', e=>{ if(e.key==='Escape'){ keywordDropdown.classList.remove('open'); keywordInput?.focus(); } });
+        keywordDropdown.addEventListener('keydown', e=>{ if(e.key==='Escape'){ e.stopPropagation(); setDropdown(false); keywordInput?.focus(); } });
+        // Tabbing out of the list closes it (a click on a non-focusable part of it moves focus nowhere and keeps it open).
+        keywordDropdown.closest('.keyword-select-wrapper')?.addEventListener('focusout', e=>{ const to = e.relatedTarget; if(to && !e.currentTarget.contains(to)) setDropdown(false); });
       }
-      document.addEventListener('click', ()=> keywordDropdown?.classList.remove('open'));
+      document.addEventListener('click', ()=>{ if(keywordDropdown?.classList.contains('open')) setDropdown(false); });
       if(keywordReset){
         keywordReset.addEventListener('click', ()=>{
           state.keywordFilter = [];
+          state.junkPicks = [];
           updateKeywordDisplay();
           keywordDropdown?.querySelectorAll('input[type="checkbox"]').forEach(cb=> cb.checked=false);
           const s = keywordDropdown?.querySelector('#keywordSearch');
@@ -1605,35 +1697,44 @@
       // File inputs
       // A file that is not a spreadsheet at all reads as a workbook without a Raw sheet; say it plainly either way.
       const readError = (err)=> { const m = String(err && err.message || err || ''); return m && !/^Error/.test(m) ? m.charAt(0).toUpperCase() + m.slice(1) : 'This file could not be read as a spreadsheet'; };
-      $('#file-source').addEventListener('change', async (e)=>{
-        const f = e.target.files[0];
-        if(!f) { updateFileStatus('source-display', 'Not loaded'); return; }
-        setStatus('reading Popular Search Keywords…');
-        updateFileStatus('source-display', `Reading ${f.name}…`);
-        try{
-          // A file that fails the check leaves the charts on the data they had.
-          const wb = await readWorkbook(await f.arrayBuffer());
-          state.sourceAll = sourceRows(MK.checkReport(wb, 'popular')); state.manualSource = true; applyJunk();
-          setNoData(!state.sourceRaw.length);
-          setStatus(`loaded Popular: ${state.sourceRaw.length} rows`);
-          updateFileStatus('source-display', `${f.name} · ${state.sourceRaw.length.toLocaleString('en-US')} rows`);
-          renderAll();
-        }catch(err){ console.error(err); setStatus('error reading Popular file'); updateFileStatus('source-display', `${f.name}: ${readError(err)}${state.sourceRaw.length ? '. The charts still show the previous data.' : '.'}`, true); }
-      });
-
-      $('#file-zero').addEventListener('change', async (e)=>{
-        const f = e.target.files[0];
-        if(!f) { updateFileStatus('zero-display', 'Not loaded'); return; }
-        setStatus('reading Zero-Result Keywords…');
-        updateFileStatus('zero-display', `Reading ${f.name}…`);
-        try{
-          const wb = await readWorkbook(await f.arrayBuffer());
-          state.zeroAll = zeroRows(MK.checkReport(wb, 'zero')); state.manualZero = true; state.zeroSummary = wb.Monthly_Summary || []; applyJunk();
-          setStatus(`loaded Zero: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
-          updateFileStatus('zero-display', `${f.name} · ${state.zeroRaw.length.toLocaleString('en-US')} rows`);
-          renderAll();
-        }catch(err){ console.error(err); setStatus('error reading Zero file'); updateFileStatus('zero-display', `${f.name}: ${readError(err)}${state.zeroRaw.length ? '. The charts still show the previous data.' : '.'}`, true); }
-      });
+      // The file chosen last wins: a slower read of an earlier file (or a repository reload started meanwhile) is dropped.
+      state.loadTok = { source: 0, zero: 0 };
+      function wireUpload(inputId, kind){
+        const isSrc = kind === 'source', display = isSrc ? 'source-display' : 'zero-display', label = isSrc ? 'Popular' : 'Zero';
+        $('#' + inputId).addEventListener('change', async (e)=>{
+          const input = e.target, f = input.files[0];
+          // Cleared at once, so choosing the same (corrected) file again is a new change.
+          input.value = '';
+          if(!f) return;
+          const tok = ++state.loadTok[kind];
+          setStatus(`reading ${isSrc ? 'Popular Search Keywords' : 'Zero-Result Keywords'}…`);
+          updateFileStatus(display, `Reading ${f.name}…`);
+          try{
+            // A file that fails the check leaves the charts on the data they had.
+            const wb = await readWorkbook(await f.arrayBuffer());
+            if(tok !== state.loadTok[kind]) return;
+            const rows = isSrc ? sourceRows(MK.checkReport(wb, 'popular')) : zeroRows(MK.checkReport(wb, 'zero'));
+            if(!rows.length) throw new Error('the Raw sheet has no rows with a month and a query');
+            if(isSrc && !rows.some(r=> Number.isFinite(r.percentage))) throw new Error('the “percentage” column has no numbers');
+            if(!isSrc && !rows.some(r=> Number.isFinite(r.count))) throw new Error('the “count” column has no numbers');
+            if(isSrc){ state.sourceAll = rows; state.manualSource = true; }
+            else { state.zeroAll = rows; state.manualZero = true; state.zeroSummary = wb.Monthly_Summary || []; }
+            applyJunk();
+            if(isSrc){ setNoData(!state.sourceRaw.length); if(state.sourceRaw.length) MK.loadDone(); }
+            const n = (isSrc ? state.sourceRaw : state.zeroRaw).length;
+            setStatus(isSrc ? `loaded Popular: ${n} rows` : `loaded Zero: raw ${n}, totals ${state.zeroTotals.length}`);
+            updateFileStatus(display, `${f.name} · ${n.toLocaleString('en-US')} rows`);
+            renderAll();
+          }catch(err){
+            if(tok !== state.loadTok[kind]) return;
+            console.error(err); setStatus(`error reading ${label} file`);
+            const have = (isSrc ? state.sourceRaw : state.zeroRaw).length;
+            updateFileStatus(display, `${f.name}: ${readError(err)}${have ? '. The charts still show the previous data.' : '.'}`, true);
+          }
+        });
+      }
+      wireUpload('file-source', 'source');
+      wireUpload('file-zero', 'zero');
 
       // --- Default file autoload (for GitHub Pages) ---
       const DEFAULT_SOURCE_CANDIDATES = ['./data/source_search_keywords_marketplace.xlsx','./source_search_keywords_marketplace.xlsx'];
@@ -1646,20 +1747,35 @@
       function readWorkbook(buf){ return MK.readWorkbook(buf); }
       // Every row is kept and meaningless ones are flagged on the raw text; the reader decides whether to hide them.
       const sourceRows = (rows)=> rows.map(r0=> ({ ...r0, keyword: MK.fixText(r0.keyword) })).map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword) || String(r.keyword ?? '').trim(), junk:isJunkQuery(r.keyword), percentage: asNumber(r.percentage), rank: asNumber(r.rank) })).filter(r=> r.keyword && r.month);
-      const zeroRows = (rows)=> rows.map(r0=> ({ ...r0, keyword: MK.fixText(r0.keyword) })).map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword) || String(r.keyword ?? '').trim(), junk:isJunkQuery(r.keyword), count: asNumber(r.count||0) })).filter(r=> r.keyword && r.month);
+      const zeroRows = (rows)=> rows.map(r0=> ({ ...r0, keyword: MK.fixText(r0.keyword) })).map(r=>({ month:toMonthKey(r.month), keyword:sanitizeKeyword(r.keyword) || String(r.keyword ?? '').trim(), junk:isJunkQuery(r.keyword), count: asNumber(r.count||0, true) })).filter(r=> r.keyword && r.month);
       // Rows shown follow the "Hide meaningless queries" setting; totals are added up from the rows shown.
       function applyJunk(){
         const hide = MK.hideJunk();
         if(state.sourceAll) state.sourceRaw = hide ? state.sourceAll.filter(r=>!r.junk) : state.sourceAll;
         if(state.zeroAll){ state.zeroRaw = hide ? state.zeroAll.filter(r=>!r.junk) : state.zeroAll; state.zeroTotals = cleanZeroTotals(state.zeroSummary, state.zeroRaw); }
       }
-      window.addEventListener('mk:junk', ()=>{ applyJunk(); if(state.sourceRaw.length || state.zeroRaw.length) renderAll(); });
+      // Picked queries that the switch hides are set aside (and come back when meaningless queries are shown again),
+      // so the filter never claims queries that no chart can show.
+      function syncJunkPicks(){
+        const hide = MK.hideJunk();
+        if(hide){
+          if(!state.sourceAll && !state.zeroAll) return;
+          const shown = new Set(); for(const r of state.sourceRaw) shown.add(r.keyword); for(const r of state.zeroRaw) shown.add(r.keyword);
+          const gone = state.keywordFilter.filter(k=> !shown.has(k));
+          if(gone.length){ state.junkPicks = Array.from(new Set((state.junkPicks || []).concat(gone))); state.keywordFilter = state.keywordFilter.filter(k=> shown.has(k)); }
+        } else if(state.junkPicks?.length){
+          for(const k of state.junkPicks) if(!state.keywordFilter.includes(k) && state.keywordFilter.length < MAX_PICKS) state.keywordFilter.push(k);
+          state.junkPicks = [];
+        }
+      }
+      window.addEventListener('mk:junk', ()=>{ applyJunk(); syncJunkPicks(); updateKeywordDisplay(); if(state.sourceRaw.length || state.zeroRaw.length) renderAll(); });
 
       async function tryLoadDefaultSource(){
         setStatus('loading default Popular…');
+        const tok = state.loadTok.source;
         const wb = await readWorkbook(await fetchFirst(DEFAULT_SOURCE_CANDIDATES));
         // A file the reader opened while the repository report was downloading wins.
-        if(state.manualSource) return;
+        if(state.manualSource || tok !== state.loadTok.source) return;
         state.sourceAll = sourceRows(wb.Raw || []); applyJunk();
         setStatus(`default Popular loaded: ${state.sourceRaw.length} rows`);
         updateFileStatus('source-display', `${state.sourceRaw.length.toLocaleString('en-US')} rows loaded`);
@@ -1667,8 +1783,9 @@
 
       async function tryLoadDefaultZero(){
         setStatus('loading default Zero…');
+        const tok = state.loadTok.zero;
         const wb = await readWorkbook(await fetchFirst(DEFAULT_ZERO_CANDIDATES));
-        if(state.manualZero) return;
+        if(state.manualZero || tok !== state.loadTok.zero) return;
         state.zeroAll = zeroRows(wb.Raw || []); state.zeroSummary = wb.Monthly_Summary || []; applyJunk();
         setStatus(`default Zero loaded: raw ${state.zeroRaw.length}, totals ${state.zeroTotals.length}`);
         updateFileStatus('zero-display', `${state.zeroRaw.length.toLocaleString('en-US')} rows loaded`);
@@ -1682,7 +1799,9 @@
         const [src, zero] = await Promise.allSettled([shouldLoadSource ? tryLoadDefaultSource() : null, shouldLoadZero ? tryLoadDefaultZero() : null]);
         if(shouldLoadSource){ if(src.status === 'fulfilled') any = true; else { console.info('No default Popular found'); updateFileStatus('source-display', forceLoad ? 'Repository file not found' : 'Not loaded', true); } }
         if(shouldLoadZero){ if(zero.status === 'fulfilled') any = true; else { console.info('No default Zero found'); updateFileStatus('zero-display', forceLoad ? 'Repository file not found' : 'Not loaded', true); } }
-        if(any){ renderAll(); MK.loadDone(); } else MK.loadFailed();
+        if(any) renderAll();
+        // The page counts as loaded only once the popular report is in; the zero-result report alone draws nothing.
+        if(state.sourceRaw.length) MK.loadDone(); else MK.loadFailed();
         if(forceLoad && !any) {
           setStatus('No default files found in /data/ directory');
         } else if(!forceLoad && !any) {
@@ -1698,7 +1817,8 @@
         $('#loadAlert').hidden = !on;
         $('#btn-play').disabled = on; $('#raceMonth').disabled = on;
         if(on){
-          document.querySelectorAll('.chart .placeholder').forEach(p=> p.textContent = 'No data loaded');
+          // The zero-result charts need the popular report's months too; say so when only that one is missing.
+          document.querySelectorAll('.chart .placeholder').forEach(p=>{ const id = p.closest('.chart')?.id; p.textContent = state.zeroRaw.length && (id === 'zeros' || id === 'heatmap') ? 'Zero-result report loaded; the chart also needs the popular searches report.' : 'No data loaded'; });
           state.heroSrc = null;
         }
       }
@@ -1750,6 +1870,8 @@
         setStatus('Loading default files from /data/ directory...');
         state.manualSource = false;
         state.manualZero = false;
+        // Clicked last, so it wins over a file that is still being read.
+        state.loadTok.source++; state.loadTok.zero++;
         const loaded = await loadDefaults(true);
         if(loaded) setStatus('Default files loaded successfully');
       });
@@ -1806,7 +1928,7 @@
 
       // A chart whose box changes width (filter stacks the cards, a column wraps) is re-laid out, ticks included.
       if(window.ResizeObserver){ const widths = new Map(); let t = null; const ro = new ResizeObserver(entries=>{ let changed = false; for(const e of entries){ const w = Math.round(e.contentRect.width); if(widths.get(e.target) !== w){ if(widths.has(e.target)) changed = true; widths.set(e.target, w); } } if(changed){ clearTimeout(t); t = setTimeout(()=>{ Object.values(state.charts).forEach(c=> c?.resize?.()); if(state.sourceRaw.length && !fullscreenState.chartEl) renderAll(); else if(fullscreenState.chartEl?.id === 'heatmap') renderHeatmap(); }, 120); } }); ['race','zeros','trails','heatmap'].forEach(id=>{ const el = document.getElementById(id); if(el) ro.observe(el); }); }
-      window.addEventListener('resize', ()=>{ state.charts.race?.resize?.(); state.charts.zeros?.resize?.(); state.charts.trails?.resize?.(); state.charts.heatmap?.resize?.(); });
+      window.addEventListener('resize', ()=>{ state.charts.race?.resize?.(); state.charts.zeros?.resize?.(); state.charts.trails?.resize?.(); state.charts.heatmap?.resize?.(); refitFullscreen(); });
     }
   })();
   </script>

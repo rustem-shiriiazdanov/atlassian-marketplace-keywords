@@ -72,7 +72,16 @@
     if(/<\/?[a-z][a-z0-9]*(?:[\s>\/=]|$)/i.test(t)) return true;
     return PROBE.test(t);
   }
-  const num = (v)=>{ if(typeof v === 'number') return v; const n = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(n) ? n : null; };
+  // Numbers typed as text are read too, the same way as on Month by month: "3.5%", "3,5 %", "1 234", "1.234,5" and
+  // "1,234,567". A single comma group ("1,234") is a decimal comma for shares and a thousands separator for counts.
+  const num = (v, thousands = false)=>{
+    if(v == null) return null; if(typeof v === 'number') return Number.isFinite(v) ? v : null;
+    let t = String(v).trim().replace(/[\s\u00a0\u202f]/g, '').replace(/%$/, '');
+    if(/^-?\d{1,3}(,\d{3}){2,}(\.\d+)?$/.test(t) || (thousands && /^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(t))) t = t.replace(/,/g, '');
+    else if(/^-?\d{1,3}(\.\d{3})+,\d+$/.test(t)) t = t.replace(/\./g, '').replace(',', '.');
+    else t = t.replace(',', '.');
+    const n = t === '' ? NaN : Number(t); return Number.isFinite(n) ? n : null;
+  };
 
   // --- Reading workbooks: in a background worker, so the page never freezes ---
   const WORKER_SRC = `const URLS=${JSON.stringify(XLSX_URLS)};
@@ -80,23 +89,26 @@
     const key=(v)=>{ if(typeof v==='number'){ const d=XLSX.SSF.parse_date_code(v); return d.y+'-'+String(d.m).padStart(2,'0'); } const t=String(v==null?'':v).trim(); const m=/^(\\d{4})-(\\d{2})/.exec(t); if(m) return m[1]+'-'+m[2]; const d=new Date(t); return isNaN(d)?'':d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); };
     self.onmessage=(e)=>{ try{ if(!self.XLSX) throw new Error('no xlsx'); const wb=XLSX.read(e.data,{type:'array'}); const out={}; for(const name of ['Raw','Monthly_Summary']){ if(wb.Sheets[name]) out[name]=XLSX.utils.sheet_to_json(wb.Sheets[name],{defval:null}).map(r=>({...r, month:key(r.month)})); } self.postMessage(out); }catch(err){ self.postMessage({error:String(err&&err.message||err)}); } };`;
   function readWorkbook(buf){
+    // A read left over from an attempt before a retry does not count towards the new attempt's progress.
+    const epoch = load.epoch;
     load.reading++; paintLoad();
-    const fin = (v)=>{ load.reading = Math.max(0, load.reading - 1); load.read++; paintLoad(); return v; };
+    const fin = (v)=>{ if(epoch === load.epoch){ load.reading = Math.max(0, load.reading - 1); load.read++; paintLoad(); } return v; };
     return readWorkbookRaw(buf).then(fin, (e)=>{ fin(); throw e; });
   }
   function readWorkbookRaw(buf){
     return new Promise((resolve, reject)=>{
-      let w; try{ w = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], {type:'text/javascript'}))); }catch(e){ w = null; }
+      let w, url = null; try{ url = URL.createObjectURL(new Blob([WORKER_SRC], {type:'text/javascript'})); w = new Worker(url); }catch(e){ w = null; }
+      const end = ()=>{ if(w) w.terminate(); if(url){ URL.revokeObjectURL(url); url = null; } };
       const onPage = ()=> ensureXLSX().then(()=>{ const wb = XLSX.read(buf, {type:'array'}); const out = {}; for(const name of ['Raw','Monthly_Summary']) if(wb.Sheets[name]) out[name] = XLSX.utils.sheet_to_json(wb.Sheets[name], {defval:null}).map(r=>({...r, month: toMonthKey(r.month)})); resolve(out); }).catch(reject);
-      if(!w){ onPage(); return; }
+      if(!w){ end(); onPage(); return; }
       const copy = buf.slice(0);
-      w.onmessage = (e)=>{ w.terminate(); if(e.data && e.data.error) onPage(); else resolve(e.data); };
-      w.onerror = ()=>{ w.terminate(); onPage(); };
+      w.onmessage = (e)=>{ end(); if(e.data && e.data.error) onPage(); else resolve(e.data); };
+      w.onerror = ()=>{ end(); onPage(); };
       w.postMessage(copy, [copy]);
     });
   }
   // --- Loading: a progress line at the top of the page, and chart-shaped placeholders that say what is happening ---
-  const load = { files: new Map(), reading: 0, read: 0, done: false, failed: false, timer: 0 };
+  const load = { files: new Map(), reading: 0, read: 0, done: false, failed: false, timer: 0, epoch: 0 };
   const MB = (b)=> (b / 1048576).toFixed(1);
   function loadState(){
     let got = 0, total = 0, known = true;
@@ -136,14 +148,17 @@
   // Pages call this once the first view is drawn; the line fills up and fades out.
   function loadDone(){ if(load.done) return; load.done = true; paintLoad(); }
   function loadFailed(){ load.failed = true; paintLoad(); }
+  // Try again hides the button that has focus; focus moves to the start of the content instead of the top of the page.
+  function focusMain(){ const m = document.getElementById('main'); if(!m) return; if(!m.hasAttribute('tabindex')) m.setAttribute('tabindex', '-1'); m.focus({ preventScroll: true }); }
   // Fetches the first file that exists, counting bytes as they arrive for the progress line.
   async function fetchFirst(urls){
-    const key = urls[0]; load.failed = false; load.done = false; paintLoad();
+    const key = urls[0], epoch = load.epoch; load.failed = false; load.done = false; paintLoad();
     for(const u of urls){
       try{
         const res = await fetch(u, {cache:'no-cache'}); if(!res.ok) continue;
         const total = +res.headers.get('content-length') || 0, f = { loaded: 0, total };
-        load.files.set(key, f); paintLoad();
+        // A download from before a retry keeps going but no longer drives the progress line.
+        if(epoch === load.epoch) load.files.set(key, f); paintLoad();
         if(!res.body || !res.body.getReader){ const buf = await res.arrayBuffer(); f.loaded = f.total = buf.byteLength; f.complete = true; paintLoad(); return buf; }
         const reader = res.body.getReader(), parts = [];
         for(;;){ const { done, value } = await reader.read(); if(done) break; parts.push(value); f.loaded += value.length; paintLoad(); }
@@ -180,7 +195,7 @@
     return '';
   }
   // Before a retry: every element that still waits for data (or shows the failure) gets its loading state back.
-  function refillGhosts(root){ load.failed = false; load.done = false; load.files.clear(); (root || document).querySelectorAll('[data-ghost]').forEach(el=>{ delete el.dataset.ghosted; }); fillGhosts(root); }
+  function refillGhosts(root){ load.epoch++; load.failed = false; load.done = false; load.files.clear(); load.reading = 0; load.read = 0; (root || document).querySelectorAll('[data-ghost]').forEach(el=>{ delete el.dataset.ghosted; }); fillGhosts(root); }
   function fillGhosts(root){
     (root || document).querySelectorAll('[data-ghost]').forEach(el=>{
       if(el.dataset.ghosted) return; el.dataset.ghosted = '1';
@@ -193,10 +208,15 @@
   function checkReport(wb, kind){
     const rows = wb && wb.Raw;
     if(!rows) throw new Error('there is no sheet named “Raw” (every Marketplace report export has one)');
+    // A sheet with only a header row (or nothing at all) has no rows to check columns on.
+    if(!rows.length) throw new Error('the Raw sheet has no rows with a month and a query');
     const cols = new Set(rows.slice(0, 50).flatMap(r=> Object.keys(r)));
     const missing = REQUIRED[kind].filter(c=> !cols.has(c));
     if(missing.length) throw new Error(`the Raw sheet has no ${missing.map(c=> '“' + c + '”').join(', ').replace(/, (?=[^,]*$)/, ' and ')} column${missing.length > 1 ? 's' : ''}`);
     if(!rows.some(r=> r.month && r.keyword != null && String(r.keyword).trim())) throw new Error('the Raw sheet has no rows with a month and a query');
+    // The figures must be numbers; text such as "3.5%" or "1,234" is read as a number.
+    const fig = kind === 'zero' ? 'count' : 'percentage';
+    if(!rows.some(r=> num(r[fig], kind === 'zero') != null)) throw new Error(`the “${fig}” column has no numbers`);
     return rows;
   }
   // Raw sheet rows → clean rows. Every row is kept; meaningless ones are flagged (junk), judged on the raw text,
@@ -218,7 +238,7 @@
     for(const r0 of rows || []){ const r = { ...r0, keyword: fixText(r0.keyword) };
       const month = toMonthKey(r.month); if(!month) continue;
       const keyword = cleanKeyword(r.keyword) || String(r.keyword ?? '').trim(); if(!keyword) continue;
-      out.push({ month, keyword, raw: String(r.keyword ?? ''), junk: isJunkQuery(r.keyword), count: num(r.count) || 0 });
+      out.push({ month, keyword, raw: String(r.keyword ?? ''), junk: isJunkQuery(r.keyword), count: num(r.count, true) || 0 });
     }
     return out;
   }
@@ -244,7 +264,7 @@
   }
   // Another tab changed the setting.
   window.addEventListener('storage', e=>{ if(e.key === JUNK_KEY) announceJunk(hideJunk()); });
-  const zeroTotalsFrom = (summary)=> (summary || []).map(r=>({ month: toMonthKey(r.month), value: num(r.sum_count) || 0 })).filter(r=>r.month);
+  const zeroTotalsFrom = (summary)=> (summary || []).map(r=>({ month: toMonthKey(r.month), value: num(r.sum_count, true) || 0 })).filter(r=>r.month);
 
   let dataPromise = null, rawData = null;
   // Both repository reports, read once per page, then indexed with or without meaningless queries.
@@ -292,11 +312,20 @@
     totals.sort((a,b)=> a.month < b.month ? -1 : 1);
     const popularPartial = smallReports(byMonth);
     // Zero-result report: a month with almost nothing in it is a partial export (Dec 2021, Nov 2023), shown with a note;
-    // a month far below every neighbour is kept but marked as unusually low (Oct and Dec 2023).
+    // a month far below the full reports before it is kept but marked as unusually low (Oct and Dec 2023).
     const vals = totals.map(t=>t.value).filter(v=>v>0).sort((a,b)=>a-b); const med = vals[Math.floor(vals.length/2)] || 0;
     const zeroPartial = new Set(totals.filter(t=> t.value < med*0.15).map(t=>t.month));
     const kept = totals.filter(t=> !zeroPartial.has(t.month));
-    const zeroLow = new Set(kept.filter((x,i)=>{ const near = kept.slice(Math.max(0,i-3), i).concat(kept.slice(i+1, i+4)).map(y=>y.value).sort((p,q)=>p-q); const m = near[Math.floor(near.length/2)]; return near.length >= 4 && x.value < m*0.5; }).map(t=>t.month));
+    // Only the full reports before a month count (up to six from the previous twelve months, at least three), so a
+    // month is judged the same way when it is the newest report and later on. A sudden drop is flagged, a steady decline
+    // is not: below half the usual level of those months and well below even the lowest of them.
+    const zeroLow = new Set();
+    kept.forEach((x, i)=>{
+      const before = kept.slice(0, i).filter(y=> !zeroLow.has(y.month) && monthsBetween(y.month, x.month) <= 12).slice(-6).map(y=> y.value).sort((p,q)=> p-q);
+      if(before.length < 3) return;
+      const m = before[Math.floor(before.length/2)];
+      if(x.value < m*0.5 && x.value < before[0]*0.6) zeroLow.add(x.month);
+    });
     const months = Array.from(byMonth.keys()).sort();
     // Every month is an issue, partial reports included; they are marked, not hidden.
     const issues = months.slice();
@@ -393,7 +422,7 @@
   const HEAT_BINS = [0, 1, 5, 10, 20, 50];
   const heatBin = (n)=>{ let b = 0; for(let i=0;i<HEAT_BINS.length;i++) if(n >= HEAT_BINS[i]) b = i; return n > 0 ? Math.max(1, b) : 0; };
 
-  window.MK = { XLSX_URLS, ECHARTS_URLS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, checkReport, fixText, fetchFirst, loadDone, loadFailed, fillGhosts, refillGhosts, ghostHTML, loadCardHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
+  window.MK = { XLSX_URLS, ECHARTS_URLS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, checkReport, fixText, fetchFirst, loadDone, loadFailed, focusMain, fillGhosts, refillGhosts, ghostHTML, loadCardHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
     toMonthKey, monthLabel, monthLong, monthShort, monthName, monthAbbr, addMonths, monthsBetween,
     escapeHtml, fmtInt, fmtPct, cleanKeyword, isJunkQuery, num, REPORT_BREAK, ZERO_NOTE,
     attachLookup, lookupIndex, tokens, HEAT_BINS, heatBin, isSpike, inkOn };

@@ -147,7 +147,7 @@
     .icon-btn:hover{background:var(--sunken);color:var(--ink)}
     .icon-btn svg{width:17px;height:17px}
     .chart-card.collapsed .chart{height:auto}
-    .chart-card.collapsed .chart-placeholder{display:block;height:auto;padding:4px 18px 16px;text-align:left}
+    .chart-card.collapsed .chart-placeholder{display:block;height:auto;min-height:0;padding:4px 18px 16px;text-align:left}
     .chart-card.collapsed .link-btn{padding:0}
     .chart-card.collapsed .chart-actions,.chart-card.collapsed .description{display:none}
     #clearSelection[hidden]{display:none}
@@ -175,6 +175,8 @@
     .keyword-cell{display:flex;align-items:center;gap:10px;max-width:440px;font-weight:600}
     .keyword-cell span:last-child{overflow:hidden;text-overflow:ellipsis;min-width:0;overflow-wrap:anywhere}
     .selected-chip.hidden-q .text{text-decoration:line-through;opacity:.6}
+    .selected-chip.missing-q .text{opacity:.7;font-style:italic}
+    .selected-chip .chip-note{color:var(--muted);font-size:12px;font-weight:500;white-space:nowrap}
     .keyword-cell.member{padding-left:20px;font-weight:500}
     tr.group-row{background:var(--sunken)}
     .keyword-cell .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
@@ -228,7 +230,9 @@
       .table-wrap td:first-child{grid-column:1 / -1;padding-bottom:4px}
       .table-wrap td:first-child::before{content:none}
       .table-wrap td.empty-state{display:block;grid-column:1 / -1}
-      .keyword-cell{max-width:none}
+      .table-wrap td:first-child{white-space:normal;min-width:0}
+      .keyword-cell{max-width:none;min-width:0}
+      .keyword-cell span:last-child{white-space:normal}
     }
     @media(max-width:720px){
       .wrap{padding:0 16px}
@@ -246,7 +250,6 @@
       .date-selects .field{flex:1 1 0}
       .chart{height:340px}.chart.rank,.chart.zero{height:320px}
       .chart-head > div:first-child{flex:1 1 auto;min-width:0}
-      .match-list{columns:1}
       .file-tile{gap:16px}
       .options .field.half{flex:1 1 calc(50% - 10px);width:auto}
       .options .toggle{margin-top:0}
@@ -354,6 +357,7 @@
       .kpi .value{font-size:28px}
       .focus{padding:16px 0}
     }
+    @media (prefers-reduced-motion: reduce){ .toast,.match-details summary::before{transition:none} }
   </style>
 </head>
 <body>
@@ -391,11 +395,12 @@
       <div class="picker">
         <label for="keywordInput" class="visually-hidden">Search queries</label>
         <div class="search-field">
-          <div id="selectedChips" class="selected-chips" aria-live="polite"></div>
+          <div id="selectedChips" class="selected-chips"></div>
           <input id="keywordInput" type="text" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="suggestions" aria-expanded="false" placeholder="Search queries, then press Enter…" />
           <button id="clearSelection" class="link-btn" type="button">Clear all</button>
         </div>
         <div id="suggestions" class="suggestions" role="listbox" aria-label="Query suggestions"></div>
+        <div id="selAnnounce" class="visually-hidden" role="status" aria-live="polite"></div>
       </div>
       <div id="matchInfo" class="match-info" hidden></div>
       <details id="matchDetails" class="match-details" hidden>
@@ -524,7 +529,7 @@
     function palette(t){
       const hex=(c)=>{ const x=String(c).replace('#',''); const f=x.length===3?x.split('').map(y=>y+y).join(''):x; return [0,2,4].map(i=>parseInt(f.slice(i,i+2),16)); };
       const mix=(a,b,k)=>{ const A=hex(a),B=hex(b); if(A.some(isNaN)||B.some(isNaN)) return a; return '#'+A.map((v,i)=>Math.round(v*(1-k)+B[i]*k).toString(16).padStart(2,'0')).join(''); };
-      const out=[],seen=new Set(); for(const [to,k] of [[null,0],[t.surface,.5],[t.ink,.3],[t.surface,.75],[t.surface,.25],[t.ink,.55]]){ for(const c of t.series){ const v=(to?mix(c,to,k):c).toLowerCase(); if(!seen.has(v)){seen.add(v);out.push(v);} } if(out.length>=24) break; } return out;
+      const out=[],hues=[],seen=new Set(); for(const [to,k] of [[null,0],[t.surface,.5],[t.ink,.3],[t.surface,.75],[t.surface,.25],[t.ink,.55]]){ t.series.forEach((c,h)=>{ const v=(to?mix(c,to,k):c).toLowerCase(); if(!seen.has(v)){seen.add(v);out.push(v);hues.push(h);} }); if(out.length>=24) break; } out.hues=hues; out.base=t.series.length; return out;
     }
     let COLORS = palette(T());
     // Same rule as Month by month: each query prefers a fixed colour by its total share across all reports (the 24 most
@@ -534,8 +539,16 @@
       const hash=(k)=>{let h=0;for(const ch of k)h=(h*31+ch.codePointAt(0))>>>0;return h;};
       const rank=(k)=> state.colorRank.has(k)?state.colorRank.get(k):1e6+hash(k)%1e6;
       const sel=(state.matchMode==='exact'?state.selections.map(canonicalKeyword).filter(Boolean):[]).map(normalize).sort((a,b)=>rank(a)-rank(b));
-      const used=new Set(), out=new Map();
-      for(const k of sel){ const r=state.colorRank.get(k); let i=(r!=null&&r<COLORS.length?r:hash(k))%COLORS.length,t=0; while(used.has(i)&&t<COLORS.length){i=(i+1)%COLORS.length;t++;} used.add(i); out.set(k,COLORS[i]); }
+      // A picked query keeps its own colour unless a bigger picked query already has that hue (a tint of the same series
+      // colour reads as the same line); then it takes the next unused series colour, and only past eight picks a tint.
+      // hue: which of the series colours a palette entry is (or a tint or shade of); the first entries are the series colours themselves.
+      const N=COLORS.length, base=Math.min(COLORS.base||8,N), hue=(i)=>COLORS.hues?COLORS.hues[i]:i%base, used=new Set(), usedHue=new Set(), out=new Map();
+      for(const k of sel){ const r=state.colorRank.get(k); const p=(r!=null&&r<N?r:hash(k))%N; let i=p;
+        if(used.has(i)||usedHue.has(hue(i))){ i=-1;
+          for(let s=1;s<=base&&i<0;s++){ const j=(hue(p)+s)%base; if(!used.has(j)&&!usedHue.has(j)) i=j; }
+          for(let s=1;s<=N&&i<0;s++){ const j=(p+s)%N; if(!used.has(j)) i=j; }
+          if(i<0) i=p; }
+        used.add(i); usedHue.add(hue(i)); out.set(k,COLORS[i]); }
       const k=normalize(keyword); return out.get(k) || COLORS[(state.colorRank.get(k)<COLORS.length?state.colorRank.get(k):hash(k))%COLORS.length];
     }
     const $ = (selector)=>document.querySelector(selector);
@@ -566,9 +579,13 @@
     // Three-month average: a month without a value stays a gap, and gaps are left out of their neighbours' averages.
     function movingAverage(values,size=3){ return values.map((v,i)=>{ if(v==null) return null; const w=values.slice(Math.max(0,i-size+1),i+1).filter(x=>x!=null); return w.reduce((sum,x)=>sum+x,0)/w.length; }); }
     // Averaged over every month, then cut to the period, so the first month shown is averaged with the months before it.
+    function nextMonth(key){ const y=+key.slice(0,4),m=+key.slice(5,7); return m===12?`${y+1}-01`:`${y}-${String(m+1).padStart(2,'0')}`; }
+    // A month with no report at all (popular, or a gap inside the zero-result report) has no value: a gap, never 0.
+    const noReport=(field,month)=>field==='count'?!!state.zeroMissing?.has(month):!!state.missing?.has(month);
     function seriesValues(def,list,field,months){
       const all=state.smooth?state.months:months; let values=aggregate(list,field,def,all);
       if(field==='percentage'&&!def.group){ const r=ranksFor(def.keywords[0],all); values=values.map((v,i)=>r[i]==null&&!v?null:v); }
+      values=values.map((v,i)=>noReport(field,all[i])?null:v);
       if(!state.smooth) return values; const avg=movingAverage(values); return months.map(m=>avg[state.months.indexOf(m)]);
     }
     function loadScriptSeq(urls,globalName){
@@ -585,8 +602,10 @@
     // Same meaningless-query rule as every other page, so they all count the same rows.
     // Meaningless queries (bot noise, test strings, pasted links, injection attempts) are judged on the raw text; see assets/common.js.
     function isJunkQuery(k){ return MK.isJunkQuery(k); }
-    async function parsePopular(buffer){ return (await workbookRows(buffer)).map(r0=>({...r0,keyword:MK.fixText(r0.keyword)})).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),percentage:number(row.percentage),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
-    async function parseZero(buffer){ return (await workbookRows(buffer)).map(r0=>({...r0,keyword:MK.fixText(r0.keyword)})).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),count:number(row.count),rank:number(row.rank)})).filter(row=>row.month&&row.keyword); }
+    async function parsePopular(buffer){ return prepPopularRows(await workbookRows(buffer)); }
+    async function parseZero(buffer){ return prepZeroRows(await workbookRows(buffer)); }
+    function prepPopularRows(rows){ return rows.map(r0=>({...r0,keyword:MK.fixText(r0.keyword)})).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),percentage:MK.num(row.percentage)??0,rank:MK.num(row.rank,true)??0})).filter(row=>row.month&&row.keyword); }
+    function prepZeroRows(rows){ return rows.map(r0=>({...r0,keyword:MK.fixText(r0.keyword)})).map(row=>({month:toMonthKey(row.month),keyword:keywordText(row.keyword),junk:isJunkQuery(row.keyword),count:MK.num(row.count,true)??0,rank:MK.num(row.rank,true)??0})).filter(row=>row.month&&row.keyword); }
     // Every row is kept and meaningless ones are flagged; the rows shown follow the "Hide meaningless queries" setting.
     function applyJunk(){ const hide=MK.hideJunk(); state.popular=hide?state.popularAll.filter(r=>!r.junk):state.popularAll; state.zero=hide?state.zeroAll.filter(r=>!r.junk):state.zeroAll; }
     // Keep the chosen period when the rows change.
@@ -602,7 +621,7 @@
       state.urlFrom=params.get('from'); state.urlTo=params.get('to');
     }
     function updateUrl(){
-      const params=new URLSearchParams(); state.selections.forEach(item=>params.append('q',item)); if(!state.selections.length&&state.dataReady) params.append('q','');
+      const params=new URLSearchParams(); state.selections.forEach(item=>params.append('q',item)); if(!state.selections.length&&(state.dataReady||state.urlHadSelection)) params.append('q','');
       params.set('mode',state.matchMode); if(state.matchMode==='contains') params.set('logic',state.containsLogic);
       params.set('compare',state.compareMode);
       // Until the reports are in, the period from the address is kept as it was.
@@ -623,11 +642,17 @@
       if(state.dataReady&&state.months.length){ state.urlFrom=state.months[state.from]; state.urlTo=state.months[state.to]; }
       $('#examples').textContent='';
       // Months come from the popular-searches report, so a file of your own sets the period even next to the repository's zero-result report.
-      state.months=Array.from(new Set((state.popular.length?state.popular:state.zero).map(row=>row.month))).filter(Boolean).sort();
+      // One month per calendar month from the first report to the last: a month Atlassian published no report for
+      // stays on the axis as a gap (never joined to its neighbours, averaged in or compared against).
+      { const have=Array.from(new Set((state.popular.length?state.popular:state.zero).map(row=>row.month))).filter(Boolean).sort();
+        const all=[]; if(have.length){ for(let m=have[0];m<=have.at(-1)&&all.length<1200;m=nextMonth(m)) all.push(m); }
+        state.months=all; const hs=new Set(have); state.missing=new Set(all.filter(m=>!hs.has(m)));
+        const zm=Array.from(new Set(state.zero.map(r=>r.month))).sort(), zs=new Set(zm);
+        state.zeroMissing=new Set(zm.length?all.filter(m=>m>zm[0]&&m<zm.at(-1)&&!zs.has(m)):[]); }
       state.zeroMismatch=state.popular.length&&state.zero.length&&!state.zero.some(r=>state.months.includes(r.month));
       // Partial reports (fewer rows than usual) are kept and shown as Atlassian publishes them.
       { const c=new Map(); state.popular.forEach(r=>c.set(r.month,(c.get(r.month)||0)+1)); const v=[...c.values()].sort((a,b)=>a-b); const med=v[Math.floor(v.length/2)]||0;
-        state.partialMonths=new Set(state.months.filter(m=>(c.get(m)||0) < med*0.8));
+        state.partialMonths=new Set(state.months.filter(m=>!state.missing.has(m)&&(c.get(m)||0) < med*0.8));
         const zt=new Map(); state.zero.forEach(r=>zt.set(r.month,(zt.get(r.month)||0)+(r.count||0))); const zv=[...zt.values()].filter(v=>v>0).sort((a,b)=>a-b); const zmed=zv[Math.floor(zv.length/2)]||0;
         state.partialZero=new Set([...zt.entries()].filter(([,v])=>v<zmed*0.15).map(([m])=>m)); }
       const names=new Map(); for(const row of [...state.popular,...state.zero]) if(!names.has(normalize(row.keyword))) names.set(normalize(row.keyword),row.keyword);
@@ -635,21 +660,28 @@
       if(!state.urlHadSelection&&!state.selections.length){
         const latest=state.months[state.months.length-1];
         state.selections=state.popular.filter(row=>row.month===latest&&row.rank>=1&&row.rank<=500).sort((a,b)=>a.rank-b.rank).slice(0,3).map(row=>row.keyword);
-      } else if(state.matchMode==='exact'){
-        state.selections=state.selections.map(item=>names.get(normalize(item))||item).filter((item,index,array)=>array.findIndex(x=>normalize(x)===normalize(item))===index);
+      } else {
+        // Same query twice (case, spacing) is kept once, in both match modes.
+        state.selections=state.selections.map(item=>state.matchMode==='exact'?names.get(normalize(item))||item:item).filter((item,index,array)=>array.findIndex(x=>normalize(x)===normalize(item))===index);
       }
+      // From now on the selection is the reader's: an empty one (Clear all) stays empty through reloads, uploads and the junk switch.
+      state.urlHadSelection=true;
       state.loadFailed=false; $('#loadAlert').hidden=true; $('#keywordInput').disabled=false; $('.focus').classList.remove('off'); $('#status').classList.remove('error'); document.body.classList.remove('load-failed');
       { // The month when the shares of the biggest queries collapse at once (Nov 2024: Atlassian's redesigned Marketplace), not a loss of interest.
         const tot=new Map(); state.popular.forEach(r=>tot.set(normalize(r.keyword),(tot.get(normalize(r.keyword))||0)+r.percentage));
         const big=new Set([...tot.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k])=>k)); const by=state.months.map(m=>0); const idx=new Map(state.months.map((m,i)=>[m,i]));
         state.popular.forEach(r=>{ if(big.has(normalize(r.keyword))&&idx.has(r.month)) by[idx.get(r.month)]+=r.percentage; });
-        state.reportBreak=null; for(let i=1;i<by.length;i++){ if(state.partialMonths.has(state.months[i])||state.partialMonths.has(state.months[i-1])) continue; if(by[i-1]>0&&by[i]<by[i-1]*0.4){ state.reportBreak=state.months[i]; break; } } }
+        // Each month is compared with the last full report before it; months without a report are skipped.
+        state.reportBreak=null; let prevI=-1; for(let i=0;i<by.length;i++){ const m=state.months[i]; if(state.missing.has(m)) continue; if(state.partialMonths.has(m)){ prevI=-1; continue; } if(prevI>=0&&by[prevI]>0&&by[i]<by[prevI]*0.4){ state.reportBreak=m; break; } prevI=i; } }
       indexRows(); state.colorRank=null; populateDateControls(); state.dataReady=true; renderControls(); renderAll(); setStatus(state.zeroMismatch?`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}. The zero-result report covers other months, so empty searches show as 0.`:`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}`,true);
     }
     function populateDateControls(){
       const from=$('#fromMonth'),to=$('#toMonth'); from.textContent='';to.textContent='';
-      state.months.forEach((month,index)=>{ for(const select of [from,to]){ const option=document.createElement('option'); option.value=String(index);option.textContent=new Date(Date.UTC(+month.slice(0,4),+month.slice(5,7)-1,1)).toLocaleString('en-US',{month:'short',year:'numeric',timeZone:'UTC'});select.appendChild(option); } });
-      const fromUrl=state.months.indexOf(state.urlFrom),toUrl=state.months.indexOf(state.urlTo);
+      state.months.forEach((month,index)=>{ for(const select of [from,to]){ const option=document.createElement('option'); option.value=String(index);option.textContent=new Date(Date.UTC(+month.slice(0,4),+month.slice(5,7)-1,1)).toLocaleString('en-US',{month:'short',year:'numeric',timeZone:'UTC'})+(state.missing.has(month)?' (no report)':'');select.appendChild(option); } });
+      let fromUrl=state.months.indexOf(state.urlFrom),toUrl=state.months.indexOf(state.urlTo);
+      // A link with the two ends the wrong way round shows the period between them.
+      if(fromUrl>=0&&toUrl>=0&&fromUrl>toUrl) [fromUrl,toUrl]=[toUrl,fromUrl];
+      if(fromUrl<0&&toUrl<0&&!state.customRange) state.preset=state.preset||'12';
       state.to=toUrl>=0?toUrl:Math.max(0,state.months.length-1); state.from=fromUrl>=0?fromUrl:Math.max(0,state.to-11); if(state.from>state.to) state.from=state.to;
       from.value=String(state.from);to.value=String(state.to); syncPresetButtons();
     }
@@ -660,39 +692,61 @@
     }
     async function loadDefaults(){
       setStatus('Loading default Marketplace reports…');
+      // Each report has a load counter: whichever was asked for last (this reload or an opened file) wins, whatever finishes first.
+      const my={popular:++loadSeq.popular,zero:++loadSeq.zero};
       const [popularResult,zeroResult]=await Promise.allSettled([fetchFirst(DEFAULT_SOURCE).then(parsePopular),fetchFirst(DEFAULT_ZERO).then(parseZero)]);
-      if(popularResult.status==='fulfilled'){ state.popularAll=popularResult.value; applyJunk(); $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`; $('#popularFileStatus').classList.remove('bad'); }
-      if(zeroResult.status==='fulfilled'){ state.zeroAll=zeroResult.value; applyJunk(); $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`; $('#zeroFileStatus').classList.remove('bad'); }
-      else { $('#zeroFileStatus').textContent='Not loaded'; $('#zeroFileStatus').classList.add('bad'); }
+      const usePop=my.popular===loadSeq.popular, useZero=my.zero===loadSeq.zero; if(!usePop&&!useZero) return;
+      const popFailed=usePop&&popularResult.status!=='fulfilled', zeroFailed=useZero&&zeroResult.status!=='fulfilled';
+      if(usePop&&!popFailed){ state.popularAll=popularResult.value; $('#popularFileStatus').classList.remove('bad'); }
+      if(useZero){ if(!zeroFailed){ state.zeroAll=zeroResult.value; $('#zeroFileStatus').classList.remove('bad'); } else { state.zeroAll=[]; $('#zeroFileStatus').textContent='Not loaded'; $('#zeroFileStatus').classList.add('bad'); } }
+      applyJunk();
+      if(usePop&&!popFailed) $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`;
+      if(useZero&&!zeroFailed) $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`;
       if(!state.popular.length){ MK.loadFailed(); throw new Error(zeroResult.status==='fulfilled'?'The popular-searches report could not be loaded':'Neither report could be loaded'); } finalizeData(); MK.loadDone();
-      if(zeroResult.status!=='fulfilled') setStatus('The zero-result report could not be loaded, so empty searches show as 0. Reload repository data to try again.');
+      const notes=[]; if(popFailed) notes.push('The popular-searches report could not be reloaded, so the page still shows the previous one.'); if(zeroFailed) notes.push('The zero-result report could not be loaded, so empty searches show as 0.');
+      if(notes.length) setStatus(notes.join(' ')+' Reload repository data to try again.');
     }
-    async function loadUploaded(file,type){ const buffer=await file.arrayBuffer(); const tile=type==='popular'?$('#popularFileStatus'):$('#zeroFileStatus');
+    const loadSeq={popular:0,zero:0};
+    async function loadUploaded(file,type){ const my=++loadSeq[type]; const current=()=>my===loadSeq[type]; const buffer=await file.arrayBuffer(); const tile=type==='popular'?$('#popularFileStatus'):$('#zeroFileStatus');
       // A file that fails the check leaves the page on the data it had and says what is wrong.
-      let rows; try{ rows=await workbookRows(buffer); MK.checkReport({Raw:rows},type==='popular'?'popularRank':'zero'); }catch(error){ const m=String(error&&error.message||error); tile.textContent=`${file.name}: ${/^The workbook has no Raw sheet/.test(m)?'there is no sheet named “Raw” (every Marketplace report export has one)':/^(no xlsx|Error)/i.test(m)||!m?'this file could not be read as a spreadsheet':m}${state.dataReady?'. The page still shows the previous data.':'.'}`; tile.classList.add('bad'); return; }
+      const fail=(m)=>{ if(!current()) return; tile.textContent=`${file.name}: ${m}${state.dataReady?'. The page still shows the previous data.':'.'}`; tile.classList.add('bad'); };
+      let rows; try{ rows=await workbookRows(buffer); MK.checkReport({Raw:rows},type==='popular'?'popularRank':'zero'); }catch(error){ const m=String(error&&error.message||error); fail(/^The workbook has no Raw sheet/.test(m)?'there is no sheet named “Raw” (every Marketplace report export has one)':/^(no xlsx|Error)/i.test(m)||!m?'this file could not be read as a spreadsheet':m); return; }
+      // The workbook is read once: the rows that passed the check are the rows used.
+      const parsed=type==='popular'?prepPopularRows(rows):prepZeroRows(rows);
+      if(!current()) return;
+      if(!parsed.length){ fail('no row has a month the page can read (use a date or YYYY-MM in the “month” column)'); return; }
       tile.classList.remove('bad');
-      if(type==='popular'){state.popularAll=await parsePopular(buffer);applyJunk();$('#popularFileStatus').textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zeroAll=await parseZero(buffer);applyJunk();$('#zeroFileStatus').textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
+      if(type==='popular'){state.popularAll=parsed;applyJunk();tile.textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zeroAll=parsed;applyJunk();tile.textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
     function canonicalKeyword(input){ return state.canon?state.canon.get(normalize(input)):state.allKeywords.find(item=>normalize(item)===normalize(input)); }
     // A query picked from the list (or an example) is added whole: many real queries contain commas.
     // Typed text is split on commas and new lines, unless it is itself a query in the reports.
     function addSelection(input,whole=false){
       const text=String(input), isQuery=state.matchMode==='exact'&&canonicalKeyword(keywordText(text));
       const parts=(whole||isQuery?[text]:text.split(/[\n,]+/)).map(keywordText).filter(Boolean); let added=0;
-      for(let part of parts){ if(state.matchMode==='exact'){ part=canonicalKeyword(part); if(!part) continue; } if(!state.selections.some(item=>normalize(item)===normalize(part))){state.selections.push(part);added++;} }
-      if(!added){toast(state.matchMode==='exact'?'Choose a query from the Marketplace data.':'Enter a word or phrase.');return;}
-      $('#keywordInput').value=''; closeSuggestions(); renderControls(); scheduleRender();
+      const names=[]; let dup=0;
+      for(let part of parts){ if(state.matchMode==='exact'){ part=canonicalKeyword(part); if(!part) continue; } if(!normalize(part)) continue; if(!state.selections.some(item=>normalize(item)===normalize(part))){state.selections.push(part);names.push(part);added++;} else dup++; }
+      // Focus stays in the search field, so the next query can be typed straight away (a clicked option or example is gone).
+      const field=$('#keywordInput');
+      if(!added){toast(dup?'That query is already picked.':state.matchMode==='exact'?'Choose a query from the Marketplace data.':'Enter a word or phrase.');field.focus();return;}
+      field.value=''; closeSuggestions(); renderControls(); scheduleRender(); field.focus();
+      announce(`Added ${names.join(', ')}. ${selectionCount()}`);
     }
-    function removeSelection(index){ state.selections.splice(index,1); renderControls(); scheduleRender(); $('#keywordInput').focus(); }
+    function selectionCount(){ const n=state.selections.length; return n?`${n} ${n===1?'query':'queries'} picked.`:'No queries picked.'; }
+    // Picks and removals are read out once here; the chips themselves are not a live region (they are redrawn often).
+    function announce(text){ const el=$('#selAnnounce'); el.textContent=''; setTimeout(()=>{ el.textContent=text; },50); }
+    function removeSelection(index){ const [gone]=state.selections.splice(index,1); renderControls(); scheduleRender(); $('#keywordInput').focus(); if(gone!=null) announce(`Removed ${gone}. ${selectionCount()}`); }
     function selectedMatches(){
       if(!state.selections.length) return [];
       if(state.matchMode==='exact') return state.selections.map(canonicalKeyword).filter(Boolean);
-      const needles=state.selections.map(normalize).filter(Boolean);
+      // Words that clean up to nothing (only < > or invisible characters) match nothing, in either logic.
+      const needles=state.selections.map(normalize).filter(Boolean); if(!needles.length) return [];
       return state.allKeywords.filter(keyword=>{ const hay=normalize(keyword); return state.containsLogic==='all'?needles.every(term=>hay.includes(term)):needles.some(term=>hay.includes(term)); });
     }
     function seriesDefinitions(){
       const matches=selectedMatches(); if(!matches.length) return [];
       if(state.matchMode==='contains') return [{label:`Contains ${state.containsLogic}: ${state.selections.join(', ')}`,keywords:matches,color:T().group,group:true}];
-      if(state.compareMode==='group') return [{label:`${matches.length} queries combined`,keywords:matches,color:T().group,group:true}];
+      // A group needs two queries; one picked query is drawn as itself (with its gaps), as in the table.
+      if(state.compareMode==='group'&&matches.length>1) return [{label:`${matches.length} queries combined`,keywords:matches,color:T().group,group:true}];
       return matches.map((keyword,index)=>({label:keyword,keywords:[keyword],color:colorOf(keyword),group:false}));
     }
     function rankDefinitions(){ if(state.matchMode!=='exact') return []; return selectedMatches().map((keyword,index)=>({label:keyword,keywords:[keyword],color:colorOf(keyword)})); }
@@ -707,18 +761,23 @@
       const before=state.months[state.months.indexOf(months[0])-1];
       const rank=definition.keywords.length===1?ranksFor(definition.keywords[0],months):[]; const ranked=rank.filter(Number.isFinite);
       // A single query outside the top 500 has no share that month (not 0%): it shows as a gap in the chart and "—" here.
-      const single=definition.keywords.length===1&&!definition.group, listed=(i)=>!single||rank[i]!=null||rawShare[i]>0;
-      const beforeShare=before?aggregate(state.popular,'percentage',definition,[before])[0]:null, beforeListed=before&&(!single||ranksFor(definition.keywords[0],[before])[0]!=null||beforeShare>0);
+      // A month without a report has no value at all, for a single query or a group.
+      const missing=(m)=>!!state.missing?.has(m);
+      const single=definition.keywords.length===1&&!definition.group, listed=(i)=>!missing(months[i])&&(!single||rank[i]!=null||rawShare[i]>0);
+      const beforeShare=before?aggregate(state.popular,'percentage',definition,[before])[0]:null, beforeListed=before&&!missing(before)&&(!single||ranksFor(definition.keywords[0],[before])[0]!=null||beforeShare>0);
       const n=rawShare.length, latest=n&&listed(n-1)?rawShare[n-1]:null;
       const previous=n>1?(listed(n-2)?rawShare[n-2]:null):(beforeListed?beforeShare:null);
-      const shown=rawShare.map((v,i)=>listed(i)?v:null), peakVal=Math.max(...shown.filter(v=>v!=null),0), peak=shown.some(v=>v!=null&&v>0)?peakVal:null, peakIndex=peak==null?-1:shown.indexOf(peak);
-      return {definition,share,zero,latest,delta:previous==null||latest==null?null:Math.abs(latest-previous)<0.005?0:latest-previous,peak,peakMonth:peak!=null&&peakIndex>=0?monthShort(months[peakIndex]):'—',currentRank:rank.length?rank.at(-1):null,bestRank:ranked.length?Math.min(...ranked):null,zeroTotal:zero.reduce((sum,value)=>sum+value,0)};
+      // On a tie the latest month with the peak is named.
+      const shown=rawShare.map((v,i)=>listed(i)?v:null), peakVal=Math.max(...shown.filter(v=>v!=null),0), peak=shown.some(v=>v!=null&&v>0)?peakVal:null;
+      let peakIndex=-1; if(peak!=null) for(let i=shown.length-1;i>=0;i--) if(shown[i]!=null&&Math.abs(shown[i]-peak)<1e-9){ peakIndex=i; break; }
+      const zeroGap=(i)=>!!state.zeroMissing?.has(months[i]);
+      return {definition,share,zero,latest,delta:previous==null||latest==null?null:Math.abs(latest-previous)<0.005?0:latest-previous,peak,peakMonth:peak!=null&&peakIndex>=0?monthShort(months[peakIndex]):'—',currentRank:rank.length?rank.at(-1):null,bestRank:ranked.length?Math.min(...ranked):null,zeroTotal:zero.reduce((sum,value,i)=>sum+(zeroGap(i)?0:value),0),lastMissing:n>0&&missing(months[n-1]),allMissing:n>0&&months.every(missing)};
     }
     function renderControls(){
       $('#matchMode').value=state.matchMode;$('#containsLogic').value=state.containsLogic;$('#compareMode').value=state.compareMode;$('#smoothSeries').checked=state.smooth;
       $('#containsLogicField').style.display=state.matchMode==='contains'&&state.selections.length>1?'flex':'none';$('#compareModeField').style.display=state.matchMode==='exact'?'flex':'none';
       $('#keywordInput').placeholder=state.loadFailed?'No data loaded':state.matchMode==='exact'?'Search queries…':'Add words, then press Enter…';$('#clearSelection').hidden=!state.selections.length;
-      const chips=$('#selectedChips');chips.textContent='';state.selections.forEach((item,index)=>{ const chip=document.createElement('span');chip.className='selected-chip'; const dot=document.createElement('span');dot.className='dot';if(state.matchMode==='exact'){dot.style.background=colorOf(item);}else{dot.hidden=true;} const text=document.createElement('span');text.className='text';text.textContent=item;chip.title=item; if(state.matchMode==='exact'&&MK.hideJunk()&&MK.isJunkQuery(item)){chip.classList.add('hidden-q');chip.title=`${item} — hidden: counts as a meaningless query`;} const remove=document.createElement('button');remove.type='button';remove.setAttribute('aria-label',`Remove ${item}`);remove.textContent='×';remove.addEventListener('click',()=>removeSelection(index));chip.append(dot,text,remove);chips.appendChild(chip); });
+      const chips=$('#selectedChips');chips.textContent='';state.selections.forEach((item,index)=>{ const chip=document.createElement('span');chip.className='selected-chip'; const dot=document.createElement('span');dot.className='dot';if(state.matchMode==='exact'){dot.style.background=colorOf(item);}else{dot.hidden=true;} const text=document.createElement('span');text.className='text';text.textContent=item;chip.title=item; let note=null; if(state.matchMode==='exact'&&MK.hideJunk()&&MK.isJunkQuery(item)){chip.classList.add('hidden-q');chip.title=`${item} — hidden: counts as a meaningless query`;} else if(state.matchMode==='exact'&&state.dataReady&&!canonicalKeyword(item)){ chip.classList.add('missing-q'); dot.hidden=true; chip.title=`${item} — not in the reports`; note=document.createElement('span'); note.className='chip-note'; note.textContent='not in the reports'; } const remove=document.createElement('button');remove.type='button';remove.setAttribute('aria-label',`Remove ${item}`);remove.textContent='×';remove.addEventListener('click',()=>removeSelection(index));chip.append(dot,text);if(note)chip.append(note);chip.append(remove);chips.appendChild(chip); });
       const matches=selectedMatches(); const exact=state.matchMode==='exact';
       const details=$('#matchDetails'); details.hidden=exact||!matches.length;
       const label=`${matches.length.toLocaleString('en-US')} matching ${matches.length===1?'query':'queries'}`;
@@ -744,13 +803,16 @@
       colorOf(''); const pop=(k)=>state.colorRank.get(normalize(k))??1e9;
       const score=(k)=>{ const n=normalize(k); return (MK.isJunkQuery(k)?10:0)+(n===term?0:n.startsWith(term)?1:(' '+n).includes(' '+term)?2:3); };
       const found=state.allKeywords.filter((keyword,i)=>state.allNorm[i].includes(term)).sort((a,b)=>score(a)-score(b)||pop(a)-pop(b)||a.localeCompare(b)); const results=found.slice(0,60);
-      results.forEach(keyword=>{ const button=document.createElement('button');button.type='button';button.className='suggestion';button.setAttribute('role','option'); const text=document.createElement('span');{const k=keyword,lk=normalize(k),at=lk.indexOf(term);text.innerHTML=at>=0?escapeHtml(k.slice(0,at))+'<b>'+escapeHtml(k.slice(at,at+term.length))+'</b>'+escapeHtml(k.slice(at+term.length)):escapeHtml(k);} const badges=document.createElement('span');badges.className='badges'; const key=normalize(keyword); if(popularSet.has(key)){const badge=document.createElement('span');badge.className='badge popular';badge.textContent='Top 500';badges.appendChild(badge);} if(zeroSet.has(key)){const badge=document.createElement('span');badge.className='badge zero';badge.textContent='Found no apps';badges.appendChild(badge);} button.append(text,badges);button.addEventListener('click',()=>state.matchMode==='exact'?addSelection(keyword,true):addSelection($('#keywordInput').value));box.appendChild(button); });
+      results.forEach(keyword=>{ const button=document.createElement('button');button.type='button';button.className='suggestion';button.setAttribute('role','option');button.tabIndex=-1; const text=document.createElement('span');{
+        // The match is found in the text as shown (any case); text that cleaning changes (< >, odd spaces) is shown without bold.
+        const k=keyword,lower=k.toLowerCase(),at=lower.length===k.length?lower.indexOf(term):-1;text.innerHTML=at>=0?escapeHtml(k.slice(0,at))+'<b>'+escapeHtml(k.slice(at,at+term.length))+'</b>'+escapeHtml(k.slice(at+term.length)):escapeHtml(k);} const badges=document.createElement('span');badges.className='badges'; const key=normalize(keyword); if(popularSet.has(key)){const badge=document.createElement('span');badge.className='badge popular';badge.textContent='Top 500';badges.appendChild(badge);} if(zeroSet.has(key)){const badge=document.createElement('span');badge.className='badge zero';badge.textContent='Found no apps';badges.appendChild(badge);} button.append(text,badges);button.addEventListener('click',()=>state.matchMode==='exact'?addSelection(keyword,true):addSelection($('#keywordInput').value));box.appendChild(button); });
       if(!results.length&&state.matchMode==='contains'){const button=document.createElement('button');button.type='button';button.className='suggestion';button.textContent=`Add “${$('#keywordInput').value.trim()}” as a contains filter`;button.addEventListener('click',()=>addSelection($('#keywordInput').value));box.appendChild(button);}
       if(results.length){const foot=document.createElement('div');foot.className='sug-foot';foot.textContent=found.length>results.length?`Showing ${results.length} of ${found.length.toLocaleString('en-US')} matches. Keep typing to narrow down.`:`${found.length} ${found.length===1?'match':'matches'}`;box.appendChild(foot);}
       box.classList.toggle('open',box.childElementCount>0);box.querySelector('.suggestion')?.classList.add('active');
       box.querySelectorAll('.suggestion').forEach((x,j)=>{x.id='sug-'+j;x.setAttribute('aria-selected',String(j===0));}); $('#keywordInput').setAttribute('aria-expanded',String(box.childElementCount>0)); if(box.querySelector('.suggestion')) $('#keywordInput').setAttribute('aria-activedescendant','sug-0'); else $('#keywordInput').removeAttribute('aria-activedescendant');
     }
-    function closeSuggestions(){ $('#suggestions').classList.remove('open'); $('#keywordInput').setAttribute('aria-expanded','false'); $('#keywordInput').removeAttribute('aria-activedescendant'); }
+    // Closing empties the list, so nothing hidden can be picked with Enter or the arrow keys afterwards.
+    function closeSuggestions(){ const box=$('#suggestions'); box.classList.remove('open'); box.textContent=''; $('#keywordInput').setAttribute('aria-expanded','false'); $('#keywordInput').removeAttribute('aria-activedescendant'); }
     function ensureChart(id){ const el=document.getElementById(id); el.querySelector('.chart-placeholder')?.remove(); if(!state.charts[id]||state.charts[id].isDisposed?.()){state.charts[id]=echarts.init(el);state.charts[id].group='keywordExplorer';} return state.charts[id]; }
     // Same picture, same size: the chart is left alone. The draw-in animation plays once; later updates appear at once.
     function drawChart(id,option){ const c=ensureChart(id); const sig=c.getWidth()+'x'+c.getHeight()+'|'+JSON.stringify(option); if(c.__sig===sig) return; if(c.__sig) option.animation=false; c.__sig=sig; c.setOption(option,true); }
@@ -766,7 +828,7 @@
       return {backgroundColor:'transparent',animation:!matchMedia('(prefers-reduced-motion: reduce)').matches,animationDuration:350,textStyle:{fontFamily:FONT},
         legend:{show:many,data:names,type:'plain',top:14,left:18,width:Math.max(120,W-48),icon:'circle',itemWidth:9,itemHeight:9,itemGap:16,textStyle:{color:t.ink2,fontSize:13,fontFamily:FONT},inactiveColor:t.line},
         grid:{left,right,top:many?14+rows*22+22:24,bottom:34,containLabel:false},
-        tooltip:{trigger:'axis',confine:true,position:tipAt(many?14+rows*22+10:8,left),backgroundColor:t.tipBg,borderColor:t.ink,borderWidth:1,padding:innerWidth<560?[6,8]:[8,10],textStyle:{color:t.tipInk,fontFamily:FONT,fontSize:innerWidth<560?12:13},extraCssText:'border-radius:0;box-shadow:0 8px 20px rgba(0,0,0,.12);',axisPointer:{lineStyle:{color:t.line}}},
+        tooltip:{trigger:'axis',confine:true,transitionDuration:matchMedia('(prefers-reduced-motion: reduce)').matches?0:0.4,position:tipAt(many?14+rows*22+10:8,left),backgroundColor:t.tipBg,borderColor:t.ink,borderWidth:1,padding:innerWidth<560?[6,8]:[8,10],textStyle:{color:t.tipInk,fontFamily:FONT,fontSize:innerWidth<560?12:13},extraCssText:'border-radius:0;box-shadow:0 8px 20px rgba(0,0,0,.12);',axisPointer:{lineStyle:{color:t.line}}},
         xAxis:{type:'category',boundaryGap:false,data:months,axisLabel:{color:t.muted,fontSize:12,margin:12,interval:0,hideOverlap:true,formatter:smartTicks(months,px)},axisTick:{show:false},axisLine:{lineStyle:{color:t.line}}}};
     }
     const measure=(()=>{ const c=document.createElement('canvas').getContext('2d'); return (s)=>{ c.font=`13px ${FONT}`; return c.measureText(String(s||'')).width; }; })();
@@ -791,19 +853,26 @@
     function breakSeries(months,inverse=false){ const bi=state.reportBreak?months.indexOf(state.reportBreak):-1; return bi>0?[{name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:inverse?'start':'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,align:bi>months.length*0.8?'right':bi<months.length*0.2?'left':'center',formatter:state.reportBreak===MK.REPORT_BREAK?'New Marketplace':'Sharp drop'},data:[{xAxis:bi}]}}]:[]; }
     // A sentence naming partial reports inside the shown period; they are shown as published.
     function partialNote(months,set,what){ const ms=months.filter(m=>set&&set.has(m)).map(monthShort); return ms.length?` The ${ms.join(' and ')} ${what}${ms.length===1?' is':'s are'} partial, shown as published.`:''; }
+    function missingNote(months,set,what){ const ms=months.filter(m=>set&&set.has(m)).map(monthShort); return ms.length?` There is no ${what} for ${ms.length>3?`${ms.length} months (${ms[0]} to ${ms.at(-1)})`:ms.join(' and ')}: a gap.`:''; }
+    // Picked queries never in the top 500 in this period (for example ones only in the zero-result report): a sentence, not an empty grid.
+    function notRankedMessage(definitions){
+      if(definitions.length===1){ const k=definitions[0].keywords[0]; return state.popularSet?.has(normalize(k))?`“${k}” was not in the top 500 in this period, so there is no share or rank to draw. Try a longer period.`:`“${k}” is only in the zero-result report: it was never in the top 500, so there is no share or rank to draw.`; }
+      return 'None of the picked queries was in the top 500 in this period, so there is no share or rank to draw.';
+    }
     function renderShareChart(definitions,months){
       if(!definitions.length){disposeChart('shareChart','');return;}
       const series=definitions.map(def=>{const values=seriesValues(def,state.popular,'percentage',months);return lineSeries(def,values,definitions.length,months);});
+      if(definitions.every(d=>!d.group)&&series.every(s=>s.data.every(v=>v==null))){ disposeChart('shareChart',notRankedMessage(definitions)); return; }
       const option=commonOption(months,'shareChart',series);
       const ymax=Math.max(0,...series.flatMap(x=>x.data.filter(v=>v!=null))), ax=niceAxis(ymax*1.05,4);
       option.yAxis={type:'value',min:0,max:ax.max,interval:ax.interval,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>value===0?'0%':`${value.toFixed(ax.decimals)}%`},splitLine:{lineStyle:{color:T().grid}}};
-      option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${param.value==null?'not in top 500':formatShare(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
+      option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${param.value==null?(noReport('percentage',param.axisValue)?'no report':'not in top 500'):formatShare(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
       const smoothNote=state.smooth?' Lines show a 3-month average; the summary and table use monthly values.':'';
       $('#shareCard .description').textContent=(definitions.some(d=>d.group)?(state.matchMode==='contains'?'Combined share of all Marketplace searches for the matching queries.':'Combined share of all Marketplace searches for the picked queries.'):'Percentage of all Marketplace searches. Gaps mean the query was outside the top 500 that month.')+smoothNote;
       // Mark the break so the drop is not read as lost interest.
       const bi=state.reportBreak?months.indexOf(state.reportBreak):-1;
       if(bi>0) $('#shareCard .description').textContent+=state.reportBreak===MK.REPORT_BREAK?` The dashed line marks ${monthShort(state.reportBreak)}, when Atlassian rolled out its redesigned Marketplace with autocomplete; broad queries lost most of their share at once.`:` The dashed line marks ${monthShort(state.reportBreak)}, when the biggest queries drop sharply at once.`;
-      $('#shareCard .description').textContent+=partialNote(months,state.partialMonths,'popular-search report');
+      $('#shareCard .description').textContent+=partialNote(months,state.partialMonths,'popular-search report')+missingNote(months,state.missing,'popular-search report');
       if(bi>0) series.push({name:'_break',type:'line',data:[],silent:true,markLine:{silent:true,symbol:'none',lineStyle:{color:T().muted,type:[4,4],width:1},label:{show:true,position:'end',distance:4,color:T().muted,fontSize:11,fontFamily:FONT,formatter:state.reportBreak===MK.REPORT_BREAK?'New Marketplace':'Sharp drop'},data:[{xAxis:bi}]}});
       option.legend.data=definitions.map(d=>d.label);
       option.series=series; drawChart('shareChart',option);
@@ -814,15 +883,16 @@
       if(!definitions.length){card.classList.add('collapsed');disposeChart('rankChart','');return;}
       card.classList.remove('collapsed');
       $('#rankCard .description').textContent=(state.compareMode==='group'?'Per query, as rank can’t be combined. Log scale; gaps mean outside the top 500.':'Monthly rank on a log scale; gaps mean the query was outside the top 500.')+(state.smooth?' Not averaged.':'');
-      $('#rankCard .description').textContent+=partialNote(months,state.partialMonths,'popular-search report');
+      $('#rankCard .description').textContent+=partialNote(months,state.partialMonths,'popular-search report')+missingNote(months,state.missing,'popular-search report');
       const series=definitions.map(def=>({def,ranks:ranksFor(def.keywords[0],months)}));
       const seen=series.flatMap(x=>x.ranks).filter(Number.isFinite);
+      if(!seen.length){ disposeChart('rankChart',notRankedMessage(definitions)); return; }
       // Fit the log scale to the ranks on show: from the power of two at or above the best rank to the one at or below the worst.
       let lo=seen.length?Math.pow(2,Math.floor(Math.log2(Math.min(...seen)))):1, hi=seen.length?Math.min(512,Math.pow(2,Math.ceil(Math.log2(Math.max(...seen))))):16;
       if(hi<=lo) hi=lo*2; if(hi/lo<4) lo=Math.max(1,lo/2);
       const option=commonOption(months,'rankChart',series.map(x=>({name:x.def.label})));
       option.yAxis={type:'log',logBase:2,inverse:true,min:lo,max:hi,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>`#${Math.round(value)}`},axisTick:{show:false},splitLine:{lineStyle:{color:T().grid}}};
-      option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${param.value==null?'outside top 500':'#'+param.value}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
+      option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${param.value==null?(noReport('percentage',param.axisValue)?'no report':'outside top 500'):'#'+param.value}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
       option.series=series.map(({def,ranks},i)=>({...lineSeries(def,ranks,series.length,months),z:10-i,clip:false})).concat(breakSeries(months,true));
       drawChart('rankChart',option);
     }
@@ -831,11 +901,11 @@
       const plural=definitions.length>1||definitions.some(d=>d.keywords.length>1);
       const avgNote=state.smooth?' Lines show a 3-month average.':'';
       $('#zeroCard .description').textContent=(plural?'How many times the matching queries found no apps: a count of searches, not a rate.':'How many times the query found no apps: a count of searches, not a rate.')+avgNote;
-      $('#zeroCard .description').textContent+=partialNote(months,state.partialZero,'zero-result report');
+      $('#zeroCard .description').textContent+=partialNote(months,state.partialZero,'zero-result report')+missingNote(months,state.zeroMissing,'zero-result report');
       const series=definitions.map(def=>{const values=seriesValues(def,state.zero,'count',months);return lineSeries(def,values,definitions.length,months);});
       const option=commonOption(months,'zeroChart',series);
       option.yAxis={type:'value',min:0,minInterval:1,splitNumber:4,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>Number(value).toLocaleString('en-US')},splitLine:{lineStyle:{color:T().grid}}};
-      option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${formatCount(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
+      option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${param.value==null?'no report':formatCount(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
       option.series=series.concat(breakSeries(months)); drawChart('zeroChart',option);
     }
     function renderKpis(definitions,months){
@@ -844,16 +914,17 @@
       const inLatest=matches.length>1?new Set(state.popular.filter(r=>r.month===last).map(r=>normalize(r.keyword))):null;
       const liveCount=inLatest?matches.filter(k=>inLatest.has(normalize(k))).length:0;
       $('#kpiShare').textContent=summary&&summary.latest!=null?formatShare(summary.latest):'—';
-      $('#kpiShareNote').textContent=matches.length<2?(summary&&summary.latest==null?`outside the top 500 in ${monthShort(last)}`:`of all searches, ${monthShort(last)}`):state.matchMode==='contains'?`${liveCount.toLocaleString('en-US')} ${liveCount===1?'query':'queries'} in the ${monthShort(last)} top 500`:`${matches.length} queries · ${monthShort(last)}`;
+      const lastGap=!!state.missing?.has(last), prevGap=!!(prev&&state.missing?.has(prev));
+      $('#kpiShareNote').textContent=lastGap?`no report for ${monthShort(last)}`:matches.length<2?(summary&&summary.latest==null?`outside the top 500 in ${monthShort(last)}`:`of all searches, ${monthShort(last)}`):state.matchMode==='contains'?`${liveCount.toLocaleString('en-US')} ${liveCount===1?'query':'queries'} in the ${monthShort(last)} top 500`:`${matches.length} queries · ${monthShort(last)}`;
       $('#kpiShareLabel').textContent=matches.length>1?'Combined share':'Latest search share';$('#kpiPeakLabel').textContent=matches.length>1?'Combined peak':'Peak search share';
       $('#kpiDelta').innerHTML=summary&&summary.delta!=null?`<span class="${summary.delta>0?'positive':summary.delta<0?'negative':''}">${summary.delta>0?'+':summary.delta<0?'−':''}${Math.abs(summary.delta).toFixed(2)} pp</span>`:'—';$('#kpiDelta').className='value';
-      $('#kpiDeltaNote').textContent=prev?`vs ${monthShort(prev)}`:'vs previous month';
+      $('#kpiDeltaNote').textContent=prevGap?`no report for ${monthShort(prev)}`:prev?`vs ${monthShort(prev)}`:'vs previous month';
       $('#kpiRankLabel').textContent=matches.length>1?'Top rank now':'Current rank';
-      if(state.matchMode==='exact'&&matches.length){const ranked=matches.map(k=>({k,r:ranksFor(k,months).at(-1)})).filter(x=>Number.isFinite(x.r)).sort((a,b)=>a.r-b.r);const best=ranked[0];$('#kpiRank').textContent=best?formatRank(best.r):'Outside 500';$('#kpiRankNote').textContent=matches.length===1?monthShort(last):best?best.k:'None in the top 500';}else{$('#kpiRank').textContent='—';$('#kpiRankNote').textContent=matches.length?'Not ranked as a group':'Pick a query';}
+      if(state.matchMode==='exact'&&matches.length&&lastGap){$('#kpiRank').textContent='—';$('#kpiRankNote').textContent=`No report for ${monthShort(last)}`;}else if(state.matchMode==='exact'&&matches.length){const ranked=matches.map(k=>({k,r:ranksFor(k,months).at(-1)})).filter(x=>Number.isFinite(x.r)).sort((a,b)=>a.r-b.r);const best=ranked[0];$('#kpiRank').textContent=best?formatRank(best.r):'Outside 500';$('#kpiRankNote').textContent=matches.length===1?monthShort(last):best?best.k:'None in the top 500';}else{$('#kpiRank').textContent='—';$('#kpiRankNote').textContent=matches.length?'Not ranked as a group':'Pick a query';}
       $('#kpiRank').closest('.kpi').hidden=state.matchMode!=='exact'&&matches.length>0;
       {const tiles=[...document.querySelectorAll('#kpis .kpi')].filter(k=>!k.hidden);$('#kpis').style.setProperty('--n',tiles.length);$('#kpis').classList.toggle('k5',tiles.length===5);$('#kpis').classList.toggle('k4',tiles.length===4);document.querySelectorAll('#kpis .kpi').forEach(k=>k.classList.remove('span'));if(tiles.length%2)tiles[0].classList.add('span');}
       $('#kpiZero').textContent=summary?formatCount(summary.zeroTotal):'—';$('#kpiZeroNote').innerHTML=`<span style="white-space:nowrap">${monthShort(months[0])} – ${monthShort(last)}</span>`;
-      $('#kpiPeak').textContent=summary&&summary.peak!=null?formatShare(summary.peak):'—';$('#kpiPeakNote').textContent=summary&&summary.peak!=null?summary.peakMonth:summary?'Not in the top 500 in this period':'Within selected period';
+      $('#kpiPeak').textContent=summary&&summary.peak!=null?formatShare(summary.peak):'—';$('#kpiPeakNote').textContent=summary&&summary.peak!=null?summary.peakMonth:summary?(summary.allMissing?'No report in this period':'Not in the top 500 in this period'):'Within selected period';
     }
     function tableDefinitions(){
       const matches=selectedMatches();if(!matches.length)return[];
@@ -867,10 +938,10 @@
       table.classList.toggle('single-only',!hasGroup); table.classList.toggle('no-rank',contains);
       $('#thName').textContent=contains?'Matching queries':hasGroup?'Query or group':'Query'; table.querySelector('th:nth-child(2)').textContent=contains?'Queries (all reports)':'Queries';
       const prev=months.at(-2); $('#thDelta').textContent=prev?`Change vs ${monthShort(prev)}`:'Share change';
-      $('#tableNote').textContent=contains?'All queries that match your words, counted together.':hasGroup?'Rank is shown per query and never combined across a group.':`Latest values are for ${monthLong(months.at(-1))}; empty searches are summed over the period.`;
+      $('#tableNote').textContent=contains?'All queries that match your words, counted together.':hasGroup?'Rank is shown per query and never combined across a group.':`Latest values are for ${monthLong(months.at(-1))}${state.missing?.has(months.at(-1))?', which has no report':''}; empty searches are summed over the period.`;
       $('.table-panel').classList.toggle('single-row',definitions.length<2);
       const HEAD=[contains?'Queries (all reports)':'Queries','Latest share',$('#thDelta').textContent,'Current rank','Best rank','Peak share','Empty searches'];
-      definitions.forEach(def=>{const summary=summaryFor(def,months),row=document.createElement('tr');const d=summary.delta;const values=[def.group?def.keywords.length.toLocaleString('en-US'):'',summary.latest==null?'—':formatShare(summary.latest),d==null?'—':`${d>0?'+':d<0?'−':''}${Math.abs(d).toFixed(2)} pp`,def.group?'—':formatRank(summary.currentRank),def.group?'—':formatRank(summary.bestRank),summary.peak==null?'—':`${formatShare(summary.peak)} · ${summary.peakMonth}`,formatCount(summary.zeroTotal)];const first=document.createElement('td');const cell=document.createElement('div');cell.className='keyword-cell'+(def.member?' member':'');if(def.group&&hasGroup&&!contains)row.className='group-row';const dot=document.createElement('span');dot.className='dot';dot.style.background=def.color;const text=document.createElement('span');text.textContent=def.label;text.title=def.label;cell.append(dot,text);first.appendChild(cell);row.appendChild(first);values.forEach((value,index)=>{const td=document.createElement('td');td.dataset.label=HEAD[index];td.textContent=String(value);if((index===3||index===4)&&String(value).includes('Outside'))td.className='outside';if(index===2&&d>0)td.className='positive';if(index===2&&d<0)td.className='negative';row.appendChild(td);});body.appendChild(row);});
+      definitions.forEach(def=>{const summary=summaryFor(def,months),row=document.createElement('tr');const d=summary.delta;const values=[def.group?def.keywords.length.toLocaleString('en-US'):'',summary.latest==null?'—':formatShare(summary.latest),d==null?'—':`${d>0?'+':d<0?'−':''}${Math.abs(d).toFixed(2)} pp`,def.group||summary.lastMissing?'—':formatRank(summary.currentRank),def.group||summary.allMissing?'—':formatRank(summary.bestRank),summary.peak==null?'—':`${formatShare(summary.peak)} · ${summary.peakMonth}`,formatCount(summary.zeroTotal)];const first=document.createElement('td');const cell=document.createElement('div');cell.className='keyword-cell'+(def.member?' member':'');if(def.group&&hasGroup&&!contains)row.className='group-row';const dot=document.createElement('span');dot.className='dot';dot.style.background=def.color;const text=document.createElement('span');text.textContent=def.label;text.title=def.label;cell.append(dot,text);first.appendChild(cell);row.appendChild(first);values.forEach((value,index)=>{const td=document.createElement('td');td.dataset.label=HEAD[index];td.textContent=String(value);if((index===3||index===4)&&String(value).includes('Outside'))td.className='outside';if(index===2&&d>0)td.className='positive';if(index===2&&d<0)td.className='negative';row.appendChild(td);});body.appendChild(row);});
     }
     function renderEmpty(){
       const empty=state.dataReady&&!state.selections.length; document.body.classList.toggle('empty',empty); $('#emptyPanel').hidden=!empty;
@@ -888,44 +959,61 @@
       const body=$('#summaryBody'); body.textContent=''; const row=document.createElement('tr'),cell=document.createElement('td'); cell.colSpan=8; cell.className='empty-state'; cell.textContent=msg; row.appendChild(cell); body.appendChild(row);
     }
     function renderAll(){ if(!state.dataReady)return; renderEmpty(); if(state.from>state.to)state.from=state.to; if(state.selections.length&&!selectedMatches().length){ renderNoMatch(visibleMonths()); updateUrl(); return; } const months=visibleMonths(),definitions=seriesDefinitions(),rankDefs=rankDefinitions();renderKpis(definitions,months);renderShareChart(definitions,months);renderRankChart(rankDefs,months);renderZeroChart(definitions,months);renderTable(months);echarts.connect('keywordExplorer');updateUrl(); }
-    function syncPresetButtons(){ const length=state.to-state.from+1;let any=false;document.querySelectorAll('.preset').forEach(button=>{const value=button.dataset.months;if(value==='custom')return;const on=!state.customRange&&(value==='all'?state.from===0&&state.to===state.months.length-1:Number(value)===length&&state.to===state.months.length-1);button.classList.toggle('active',on);any=any||on;});if(!any)state.customRange=true;document.querySelector('.preset[data-months="custom"]').classList.toggle('active',!!state.customRange);document.querySelector('.date-selects').hidden=!state.customRange; }
-    function setPreset(value){ if(value==='custom'){state.customRange=true;syncPresetButtons();return;} state.customRange=false; state.to=Math.max(0,state.months.length-1);state.from=value==='all'?0:Math.max(0,state.to-Number(value)+1);$('#fromMonth').value=String(state.from);$('#toMonth').value=String(state.to);syncPresetButtons();scheduleRender(); }
+    // One button is lit: the preset the reader chose (when the data is shorter than it, "12M" stays lit rather than "All"),
+    // else the first preset that gives exactly the period shown.
+    function presetFits(value){ const to=Math.max(0,state.months.length-1),from=value==='all'?0:Math.max(0,to-Number(value)+1); return state.from===from&&state.to===to; }
+    function syncPresetButtons(){ let active=null; if(!state.customRange){ active=state.preset&&presetFits(state.preset)?state.preset:['12','6','24','all'].find(presetFits)||null; } if(!active)state.customRange=true; state.preset=active; document.querySelectorAll('.preset').forEach(button=>{const value=button.dataset.months;if(value==='custom')return;const on=value===active;button.classList.toggle('active',on);button.setAttribute('aria-pressed',String(on));});const c=document.querySelector('.preset[data-months="custom"]');c.classList.toggle('active',!!state.customRange);c.setAttribute('aria-pressed',String(!!state.customRange));document.querySelector('.date-selects').hidden=!state.customRange; }
+    function setPreset(value){ if(value==='custom'){state.customRange=true;syncPresetButtons();return;} state.customRange=false; state.preset=value; state.to=Math.max(0,state.months.length-1);state.from=value==='all'?0:Math.max(0,state.to-Number(value)+1);$('#fromMonth').value=String(state.from);$('#toMonth').value=String(state.to);syncPresetButtons();scheduleRender(); }
     // Text starting with = + - @ (or a tab/return) is prefixed with ' so spreadsheet apps don't run it as a formula.
     function csvEscape(value){let text=String(value??'');if(typeof value==='string'&&/^[=+\-@\t\r]/.test(text))text="'"+text;return /[",\n\r]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;}
+    // The CSV has the same rows as the table (a group and each of its queries); a month with no report is left blank.
     function exportCsv(){
-      const months=visibleMonths(),definitions=seriesDefinitions();if(!definitions.length){toast('Select keywords before exporting.');return;}const rows=[['month','series','search_share_percentage','marketplace_top_500_rank','zero_result_count']];
-      for(const def of definitions){const shares=aggregate(state.popular,'percentage',def,months),zeros=aggregate(state.zero,'count',def,months),ranks=def.keywords.length===1?ranksFor(def.keywords[0],months):months.map(()=>null);const single=def.keywords.length===1&&!def.group;months.forEach((month,index)=>rows.push([month,def.label,single&&!ranks[index]&&!shares[index]?'':Number(Number(shares[index]||0).toFixed(4)),single?(ranks[index]||'Outside top 500'):'',zeros[index]]));}
-      const csv=rows.map(row=>row.map(csvEscape).join(',')).join('\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='keyword-explorer.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('CSV export started.');
+      const months=visibleMonths(),definitions=tableDefinitions();if(!definitions.length){toast('Select keywords before exporting.');return;}const rows=[['month','series','search_share_percentage','marketplace_top_500_rank','zero_result_count']];
+      for(const def of definitions){const label=def.group&&state.matchMode==='exact'?`${def.label}: ${def.keywords.join(' + ')}`:def.label;const shares=aggregate(state.popular,'percentage',def,months),zeros=aggregate(state.zero,'count',def,months),ranks=def.keywords.length===1?ranksFor(def.keywords[0],months):months.map(()=>null);const single=def.keywords.length===1&&!def.group;months.forEach((month,index)=>{const gap=noReport('percentage',month),zgap=noReport('count',month);rows.push([month,label,gap||(single&&!ranks[index]&&!shares[index])?'':Number(Number(shares[index]||0).toFixed(4)),gap||!single?'':(ranks[index]||'Outside top 500'),zgap?'':zeros[index]]);});}
+      // A byte-order mark so Excel reads the file as UTF-8 (queries in other scripts, dashes, emoji).
+      const csv='\uFEFF'+rows.map(row=>row.map(csvEscape).join(',')).join('\r\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='keyword-explorer.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('CSV export started.');
     }
     function downloadChart(id){const chart=state.charts[id];if(!chart){toast('This chart has no data to download.');return;}const link=document.createElement('a');link.href=chart.getDataURL({type:'png',pixelRatio:2,backgroundColor:T().surface});link.download=`keyword-explorer-${{shareChart:'share',rankChart:'rank',zeroChart:'empty-searches'}[id]||id}-${state.months[state.from]||''}-${state.months[state.to]||''}.png`;document.body.appendChild(link);link.click();link.remove();toast('PNG export started.');}
     const ICON_EXPAND='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
     const ICON_COLLAPSE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="14" y1="10" x2="21" y2="3"/></svg>';
-    function setFullscreen(card,on){ card.classList.toggle('is-fullscreen',on); document.body.style.overflow=on?'hidden':''; const b=card.querySelector('[data-chart-action="fullscreen"]'); if(b){b.innerHTML=on?ICON_COLLAPSE:ICON_EXPAND;b.setAttribute('aria-label',on?'Exit full screen':'Open chart full screen');b.title=on?'Exit full screen':'Full screen';} const chart=card.querySelector('.chart'); setTimeout(()=>state.charts[chart.id]?.resize(),50); }
+    // Full screen is a modal dialog: its own name, focus moves in and stays in, Escape or the button closes it and focus returns.
+    function setFullscreen(card,on){ card.classList.toggle('is-fullscreen',on); document.body.style.overflow=on?'hidden':''; if(on){card.setAttribute('role','dialog');card.setAttribute('aria-modal','true');}else{card.removeAttribute('role');card.removeAttribute('aria-modal');} const b=card.querySelector('[data-chart-action="fullscreen"]'); if(b){b.innerHTML=on?ICON_COLLAPSE:ICON_EXPAND;b.setAttribute('aria-label',on?'Exit full screen':'Open chart full screen');b.title=on?'Exit full screen':'Full screen';}
+      if(on){ setFullscreen.opener=document.activeElement; b?.focus(); } else if(setFullscreen.opener&&document.contains(setFullscreen.opener)&&!document.querySelector('.chart-card.is-fullscreen')){ const o=setFullscreen.opener; setFullscreen.opener=null; setTimeout(()=>o.focus(),0); } const chart=card.querySelector('.chart'); setTimeout(()=>state.charts[chart.id]?.resize(),50); }
     function closeFullscreen(){ document.querySelectorAll('.chart-card.is-fullscreen').forEach(card=>setFullscreen(card,false)); }
     function toggleFullscreen(id){ const card=document.getElementById(id).closest('.chart-card'); const on=!card.classList.contains('is-fullscreen'); closeFullscreen(); if(on) setFullscreen(card,true); }
     async function copyShareLink(){updateUrl();try{await navigator.clipboard.writeText(location.href);toast('Link to this view copied');}catch(error){toast('Copy the URL from the address bar.');}}
     function bindEvents(){
-      $('#keywordInput').addEventListener('input',renderSuggestions);$('#keywordInput').addEventListener('keydown',event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){const items=[...document.querySelectorAll('#suggestions .suggestion')];if(items.length){event.preventDefault();let i=items.findIndex(x=>x.classList.contains('active'));items[i]?.classList.remove('active');i=(i+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items[i].classList.add('active');items.forEach((x,j)=>{x.id='sug-'+j;x.setAttribute('aria-selected',String(j===i));});$('#keywordInput').setAttribute('aria-activedescendant','sug-'+i);items[i].scrollIntoView({block:'nearest'});}}if(event.key==='Enter'){event.preventDefault();const first=$('#suggestions .suggestion.active')||$('#suggestions .suggestion');if(state.matchMode==='exact'&&first)first.click();else addSelection(event.currentTarget.value);}if(event.key==='Escape')closeSuggestions();});
+      $('#keywordInput').addEventListener('input',renderSuggestions);$('#keywordInput').addEventListener('keydown',event=>{const open=$('#suggestions').classList.contains('open');if((event.key==='ArrowDown'||event.key==='ArrowUp')&&!open&&event.currentTarget.value.trim()){event.preventDefault();renderSuggestions();return;}if(event.key==='ArrowDown'||event.key==='ArrowUp'){const items=open?[...document.querySelectorAll('#suggestions .suggestion')]:[];if(items.length){event.preventDefault();let i=items.findIndex(x=>x.classList.contains('active'));items[i]?.classList.remove('active');i=(i+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items[i].classList.add('active');items.forEach((x,j)=>{x.id='sug-'+j;x.setAttribute('aria-selected',String(j===i));});$('#keywordInput').setAttribute('aria-activedescendant','sug-'+i);items[i].scrollIntoView({block:'nearest'});}}if(event.key==='Enter'){event.preventDefault();const first=open?($('#suggestions .suggestion.active')||$('#suggestions .suggestion')):null;if(state.matchMode==='exact'&&first)first.click();else if(event.currentTarget.value.trim())addSelection(event.currentTarget.value);}if(event.key==='Escape')closeSuggestions();});
       document.addEventListener('click',event=>{if(!event.target.closest('.picker'))closeSuggestions();});
+      // A click on an option keeps focus in the field; when focus leaves the field (Tab, elsewhere) the list closes.
+      $('#suggestions').addEventListener('mousedown',event=>event.preventDefault());
+      $('#keywordInput').addEventListener('blur',()=>closeSuggestions());
+      $('#keywordInput').addEventListener('focus',event=>{if(event.currentTarget.value.trim())renderSuggestions();});
       // Containing words always draws one combined line; the Show as choice is kept for when Exact query comes back.
       $('#matchMode').addEventListener('change',event=>{state.matchMode=event.target.value;renderControls();scheduleRender();});
       $('#containsLogic').addEventListener('change',event=>{state.containsLogic=event.target.value;renderControls();scheduleRender();});
       $('#compareMode').addEventListener('change',event=>{state.compareMode=event.target.value;renderControls();scheduleRender();});
       $('#smoothSeries').addEventListener('change',event=>{state.smooth=event.target.checked;scheduleRender();});
-      $('#clearSelection').addEventListener('click',()=>{state.selections=[];renderControls();scheduleRender();$('#keywordInput').focus();});
-      $('#keywordInput').addEventListener('keydown',event=>{ if(event.key==='Backspace'&&!event.currentTarget.value&&state.selections.length){ removeSelection(state.selections.length-1); } });
+      $('#clearSelection').addEventListener('click',()=>{state.selections=[];renderControls();scheduleRender();$('#keywordInput').focus();announce('All queries removed.');});
+      $('#keywordInput').addEventListener('keydown',event=>{ if(event.key==='Backspace'&&!event.repeat&&!event.currentTarget.value&&state.selections.length){ removeSelection(state.selections.length-1); } });
       document.querySelectorAll('.preset').forEach(button=>button.addEventListener('click',()=>setPreset(button.dataset.months)));
       $('#fromMonth').addEventListener('change',event=>{state.from=Number(event.target.value);if(state.from>state.to){state.to=state.from;$('#toMonth').value=String(state.to);}syncPresetButtons();scheduleRender();});
       $('#toMonth').addEventListener('change',event=>{state.to=Number(event.target.value);if(state.to<state.from){state.from=state.to;$('#fromMonth').value=String(state.from);}syncPresetButtons();scheduleRender();});
       $('#exportCsv').addEventListener('click',exportCsv);$('#sharePage').addEventListener('click',copyShareLink);$('#reloadDefaults').addEventListener('click',()=>loadDefaults().catch(error=>setStatus(`Error: ${error.message}`)));
       $('#popularFileButton').addEventListener('click',()=>$('#popularFile').click());$('#zeroFileButton').addEventListener('click',()=>$('#zeroFile').click());
-      $('#popularFile').addEventListener('change',event=>{const file=event.target.files[0];if(file)loadUploaded(file,'popular').catch(error=>setStatus(`Error: ${error.message}`));});
-      $('#zeroFile').addEventListener('change',event=>{const file=event.target.files[0];if(file)loadUploaded(file,'zero').catch(error=>setStatus(`Error: ${error.message}`));});
+      // The picker is emptied after each file, so choosing the same (corrected) file again is read again.
+      $('#popularFile').addEventListener('change',event=>{const file=event.target.files[0];event.target.value='';if(file)loadUploaded(file,'popular').catch(error=>setStatus(`Error: ${error.message}`));});
+      $('#zeroFile').addEventListener('change',event=>{const file=event.target.files[0];event.target.value='';if(file)loadUploaded(file,'zero').catch(error=>setStatus(`Error: ${error.message}`));});
       document.querySelectorAll('[data-chart-action]').forEach(button=>button.addEventListener('click',()=>button.dataset.chartAction==='download'?downloadChart(button.dataset.chart):toggleFullscreen(button.dataset.chart)));
-      document.addEventListener('keydown',event=>{if(event.key==='Escape')closeFullscreen();});
+      document.addEventListener('keydown',event=>{if(event.key==='Escape')closeFullscreen();
+        // Tab and Shift+Tab cycle inside the full-screen chart.
+        const card=document.querySelector('.chart-card.is-fullscreen'); if(event.key!=='Tab'||!card) return;
+        const f=[...card.querySelectorAll('button,[href],select,input,[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled&&x.offsetParent!==null); if(!f.length){event.preventDefault();return;}
+        const first=f[0],last=f.at(-1); if(!card.contains(document.activeElement)){event.preventDefault();first.focus();} else if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();} else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();} });
       document.addEventListener('mousedown',event=>{const card=document.querySelector('.chart-card.is-fullscreen');if(card&&!card.contains(event.target))closeFullscreen();});
       $('#retryLoad').addEventListener('click',async()=>{ $('#retryLoad').disabled=true; MK.refillGhosts(); await start(); $('#retryLoad').disabled=false; });
-      window.addEventListener('resize',()=>Object.values(state.charts).forEach(chart=>chart?.resize?.()));
+      // A new width also changes how the legend wraps and how many month labels fit, so the charts are laid out again.
+      let resizeTimer=0; window.addEventListener('resize',()=>{ Object.values(state.charts).forEach(chart=>chart?.resize?.()); clearTimeout(resizeTimer); resizeTimer=setTimeout(()=>renderAll(),150); });
       const dq=window.matchMedia('(prefers-color-scheme: dark)'),onScheme=()=>{COLORS=palette(T());renderControls();renderAll();};dq.addEventListener?dq.addEventListener('change',onScheme):dq.addListener(onScheme);
       if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>renderAll());
     }
