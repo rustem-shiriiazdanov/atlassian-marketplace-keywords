@@ -73,11 +73,14 @@
     return PROBE.test(t);
   }
   // Numbers typed as text are read too, the same way as on Month by month: "3.5%", "3,5 %", "1 234", "1.234,5" and
-  // "1,234,567". A single comma group ("1,234") is a decimal comma for shares and a thousands separator for counts.
+  // "1,234,567". A single comma group ("1,234") is a decimal comma for shares and a thousands separator for counts;
+  // for counts (thousands = true) "1.234" is 1234 as well.
   const num = (v, thousands = false)=>{
     if(v == null) return null; if(typeof v === 'number') return Number.isFinite(v) ? v : null;
     let t = String(v).trim().replace(/[\s\u00a0\u202f]/g, '').replace(/%$/, '');
     if(/^-?\d{1,3}(,\d{3}){2,}(\.\d+)?$/.test(t) || (thousands && /^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(t))) t = t.replace(/,/g, '');
+    // A count written with dots between the thousands ("1.234", "1.234.567") is a whole number, never a fraction.
+    else if(thousands && /^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
     else if(/^-?\d{1,3}(\.\d{3})+,\d+$/.test(t)) t = t.replace(/\./g, '').replace(',', '.');
     else t = t.replace(',', '.');
     const n = t === '' ? NaN : Number(t); return Number.isFinite(n) ? n : null;
@@ -89,8 +92,10 @@
     const key=(v)=>{ if(typeof v==='number'){ const d=XLSX.SSF.parse_date_code(v); return d.y+'-'+String(d.m).padStart(2,'0'); } const t=String(v==null?'':v).trim(); const m=/^(\\d{4})-(\\d{2})/.exec(t); if(m) return m[1]+'-'+m[2]; const d=new Date(t); return isNaN(d)?'':d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); };
     self.onmessage=(e)=>{ try{ if(!self.XLSX) throw new Error('no xlsx'); const wb=XLSX.read(e.data,{type:'array'}); const out={}; for(const name of ['Raw','Monthly_Summary']){ if(wb.Sheets[name]) out[name]=XLSX.utils.sheet_to_json(wb.Sheets[name],{defval:null}).map(r=>({...r, month:key(r.month)})); } self.postMessage(out); }catch(err){ self.postMessage({error:String(err&&err.message||err)}); } };`;
   function readWorkbook(buf){
-    // A read left over from an attempt before a retry does not count towards the new attempt's progress.
-    const epoch = load.epoch;
+    // A read left over from an attempt before a retry does not count towards the new attempt's progress, even when
+    // its download only finishes after the retry: the attempt is the one that fetched the file.
+    const epoch = fetchEpoch.has(buf) ? fetchEpoch.get(buf) : load.epoch;
+    if(epoch !== load.epoch) return readWorkbookRaw(buf);
     load.reading++; paintLoad();
     const fin = (v)=>{ if(epoch === load.epoch){ load.reading = Math.max(0, load.reading - 1); load.read++; paintLoad(); } return v; };
     return readWorkbookRaw(buf).then(fin, (e)=>{ fin(); throw e; });
@@ -109,6 +114,8 @@
   }
   // --- Loading: a progress line at the top of the page, and chart-shaped placeholders that say what is happening ---
   const load = { files: new Map(), reading: 0, read: 0, done: false, failed: false, timer: 0, epoch: 0 };
+  // Which loading attempt fetched each downloaded file (see readWorkbook).
+  const fetchEpoch = new WeakMap();
   const MB = (b)=> (b / 1048576).toFixed(1);
   function loadState(){
     let got = 0, total = 0, known = true;
@@ -159,13 +166,14 @@
         const total = +res.headers.get('content-length') || 0, f = { loaded: 0, total };
         // A download from before a retry keeps going but no longer drives the progress line.
         if(epoch === load.epoch) load.files.set(key, f); paintLoad();
-        if(!res.body || !res.body.getReader){ const buf = await res.arrayBuffer(); f.loaded = f.total = buf.byteLength; f.complete = true; paintLoad(); return buf; }
+        if(!res.body || !res.body.getReader){ const buf = await res.arrayBuffer(); f.loaded = f.total = buf.byteLength; f.complete = true; paintLoad(); fetchEpoch.set(buf, epoch); return buf; }
         const reader = res.body.getReader(), parts = [];
         for(;;){ const { done, value } = await reader.read(); if(done) break; parts.push(value); f.loaded += value.length; paintLoad(); }
         // Compressed responses report the compressed size; the bar ends where the bytes end.
         f.total = f.loaded; f.complete = true;
         const out = new Uint8Array(f.loaded); let at = 0; for(const c of parts){ out.set(c, at); at += c.length; }
         paintLoad();
+        fetchEpoch.set(out.buffer, epoch);
         return out.buffer;
       }catch(e){}
     }
@@ -285,6 +293,8 @@
     const junk = { popular: rawData.popular.filter(r=>r.junk), zero: rawData.zero.filter(r=>r.junk) };
     const D = build(rawData.popular.filter(keep), rawData.zero.filter(keep), rawData.summary);
     D.hideJunk = hide; D.junk = junk;
+    // Headlines and the top-query sentences are always about meaningful queries, whatever the switch says.
+    D.clean = hide ? D : build(rawData.popular.filter(r=> !r.junk), rawData.zero.filter(r=> !r.junk), []);
     // Rows per month as Atlassian published them, whatever the switch says.
     D.reportRows = new Map(); for(const r of rawData.popular) D.reportRows.set(r.month, (D.reportRows.get(r.month) || 0) + 1);
     return D;
@@ -313,23 +323,51 @@
     const popularPartial = smallReports(byMonth);
     // Zero-result report: a month with almost nothing in it is a partial export (Dec 2021, Nov 2023), shown with a note;
     // a month far below the full reports before it is kept but marked as unusually low (Oct and Dec 2023).
-    const vals = totals.map(t=>t.value).filter(v=>v>0).sort((a,b)=>a-b); const med = vals[Math.floor(vals.length/2)] || 0;
-    const zeroPartial = new Set(totals.filter(t=> t.value < med*0.15).map(t=>t.month));
-    const kept = totals.filter(t=> !zeroPartial.has(t.month));
-    // Only the full reports before a month count (up to six from the previous twelve months, at least three), so a
-    // month is judged the same way when it is the newest report and later on. A sudden drop is flagged, a steady decline
-    // is not: below half the usual level of those months and well below even the lowest of them.
-    const zeroLow = new Set();
-    kept.forEach((x, i)=>{
-      const before = kept.slice(0, i).filter(y=> !zeroLow.has(y.month) && monthsBetween(y.month, x.month) <= 12).slice(-6).map(y=> y.value).sort((p,q)=> p-q);
-      if(before.length < 3) return;
-      const m = before[Math.floor(before.length/2)];
-      if(x.value < m*0.5 && x.value < before[0]*0.6) zeroLow.add(x.month);
-    });
+    const zMonths = totals.map(t=> t.month), zVals = new Map(totals.map(t=> [t.month, t.value]));
+    const zeroPartial = zeroPartialMonths(zMonths, zVals);
+    const zeroLow = zeroLowMonths(zMonths, zVals, zeroPartial);
     const months = Array.from(byMonth.keys()).sort();
     // Every month is an issue, partial reports included; they are marked, not hidden.
     const issues = months.slice();
     return { popular, zero, zeroTotals: totals, byMonth, zeroByMonth, months, issues, popularPartial, zeroPartial, zeroLow };
+  }
+  // --- Odd months in the zero-result report. Both rules are pure and look only at the months before the one judged
+  // (apart from the first few months of the data, see below), so a month is judged the same way when it is the newest
+  // report and when later reports arrive: an issue's text never changes afterwards.
+  //   months: month keys ("2024-01"), sorted ascending; totals: a Map or a plain object month → total (a number).
+  const totalOf = (totals, m)=>{ const v = totals instanceof Map ? totals.get(m) : totals ? totals[m] : undefined; return Number.isFinite(v) ? v : null; };
+  const median = (xs)=>{ const s = xs.slice().sort((a,b)=> a-b); return s.length ? s[Math.floor(s.length/2)] : 0; };
+  // Partial export: a total below 15% of the usual level, the median of the (up to) twelve reports before it with a
+  // total above zero. A month with fewer than three reports before it is compared with the first six reports of the
+  // data instead (Dec 2021, the very first month, is partial). Returns a Set of month keys.
+  function zeroPartialMonths(months, totals){
+    const list = (months || []).filter(m=> totalOf(totals, m) != null);
+    const first = median(list.slice(0, 6).map(m=> totalOf(totals, m)).filter(v=> v > 0));
+    const out = new Set();
+    list.forEach((m, i)=>{
+      const before = list.slice(Math.max(0, i - 12), i).map(x=> totalOf(totals, x)).filter(v=> v > 0);
+      const usual = before.length >= 3 ? median(before) : first;
+      if(totalOf(totals, m) < usual * 0.15) out.add(m);
+    });
+    return out;
+  }
+  // Unusually low: a sudden drop in a full report. Compared with the full, not unusually low reports before it (up to
+  // six from the previous twelve months, at least three), a month is flagged when it is below half their usual level
+  // and well below even the lowest of them (under 60% of it); a steady decline is never flagged. A lasting new level
+  // is flagged for two months at most: once the two full reports before a month are both flagged, the drop is taken
+  // as the new normal and that month is judged as usual, which lets the new level into the comparison.
+  //   partialSet: a Set of the partial months, which are left out (see zeroPartialMonths). Returns a Set of month keys.
+  function zeroLowMonths(months, totals, partialSet){
+    const kept = (months || []).filter(m=> totalOf(totals, m) != null && !(partialSet && partialSet.has(m)));
+    const low = new Set();
+    kept.forEach((m, i)=>{
+      const x = totalOf(totals, m);
+      if(i >= 2 && low.has(kept[i-1]) && low.has(kept[i-2])) return;
+      const before = kept.slice(0, i).filter(y=> !low.has(y) && monthsBetween(y, m) <= 12).slice(-6).map(y=> totalOf(totals, y)).sort((p,q)=> p-q);
+      if(before.length < 3) return;
+      if(x < median(before)*0.5 && x < before[0]*0.6) low.add(m);
+    });
+    return low;
   }
   // A report with far fewer rows than usual is a partial export (the popular report for Dec 2021). Shown, with a note.
   function smallReports(map){
@@ -425,7 +463,7 @@
   window.MK = { XLSX_URLS, ECHARTS_URLS, loadScriptSeq, ensureECharts, ensureXLSX, readWorkbook, checkReport, fixText, fetchFirst, loadDone, loadFailed, focusMain, fillGhosts, refillGhosts, ghostHTML, loadCardHTML, prepPopular, prepZero, zeroTotalsFrom, loadData, currentData, build, hideJunk, setHideJunk, bindJunkToggles,
     toMonthKey, monthLabel, monthLong, monthShort, monthName, monthAbbr, addMonths, monthsBetween,
     escapeHtml, fmtInt, fmtPct, cleanKeyword, isJunkQuery, num, REPORT_BREAK, ZERO_NOTE,
-    attachLookup, lookupIndex, tokens, HEAT_BINS, heatBin, isSpike, inkOn };
+    attachLookup, lookupIndex, tokens, HEAT_BINS, heatBin, isSpike, inkOn, zeroPartialMonths, zeroLowMonths };
 
   // On every page: the hide switches and the loading placeholders.
   const ready = ()=>{ bindJunkToggles(); fillGhosts(); };

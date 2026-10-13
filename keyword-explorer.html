@@ -399,7 +399,7 @@
           <input id="keywordInput" type="text" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="suggestions" aria-expanded="false" placeholder="Search queries, then press Enter…" />
           <button id="clearSelection" class="link-btn" type="button">Clear all</button>
         </div>
-        <div id="suggestions" class="suggestions" role="listbox" aria-label="Query suggestions"></div>
+        <div id="suggestPop" class="suggestions"><div id="suggestions" role="listbox" aria-label="Query suggestions"></div><div id="sugFoot" class="sug-foot" hidden></div></div>
         <div id="selAnnounce" class="visually-hidden" role="status" aria-live="polite"></div>
       </div>
       <div id="matchInfo" class="match-info" hidden></div>
@@ -523,49 +523,63 @@
     const FONT = "'Public Sans', 'Helvetica Neue', Arial, sans-serif";
     function T(){
       const s=getComputedStyle(document.documentElement),v=(n)=>s.getPropertyValue(n).trim();
-      return {ink:v('--ink'),ink2:v('--ink-2'),muted:v('--muted'),line:v('--line'),grid:v('--grid'),surface:v('--surface'),blue:v('--blue'),blueSoft:v('--blue-soft'),coral:v('--coral'),group:v('--group'),tipBg:v('--tip-bg'),tipInk:v('--tip-ink'),series:v('--series').split(',').map(x=>x.trim()).filter(Boolean)};
+      return {ink:v('--ink'),ink2:v('--ink-2'),muted:v('--muted'),line:v('--line'),grid:v('--grid'),surface:v('--surface'),paper:v('--paper'),blue:v('--blue'),blueSoft:v('--blue-soft'),coral:v('--coral'),group:v('--group'),tipBg:v('--tip-bg'),tipInk:v('--tip-ink'),series:v('--series').split(',').map(x=>x.trim()).filter(Boolean)};
     }
-    // 24 colours: the eight series colours, then tints and shades of them, so a dozen picked queries never share one.
+    // The eight series colours first, then darker and lighter versions of each. Every colour keeps at least 3:1 contrast
+    // with the chart background (page and card, light and dark): a version that would be too faint is pushed towards the ink.
     function palette(t){
       const hex=(c)=>{ const x=String(c).replace('#',''); const f=x.length===3?x.split('').map(y=>y+y).join(''):x; return [0,2,4].map(i=>parseInt(f.slice(i,i+2),16)); };
       const mix=(a,b,k)=>{ const A=hex(a),B=hex(b); if(A.some(isNaN)||B.some(isNaN)) return a; return '#'+A.map((v,i)=>Math.round(v*(1-k)+B[i]*k).toString(16).padStart(2,'0')).join(''); };
-      const out=[],hues=[],seen=new Set(); for(const [to,k] of [[null,0],[t.surface,.5],[t.ink,.3],[t.surface,.75],[t.surface,.25],[t.ink,.55]]){ t.series.forEach((c,h)=>{ const v=(to?mix(c,to,k):c).toLowerCase(); if(!seen.has(v)){seen.add(v);out.push(v);hues.push(h);} }); if(out.length>=24) break; } out.hues=hues; out.base=t.series.length; return out;
+      const lum=(c)=>{ const v=hex(c).map(x=>x/255).map(x=>x<=0.03928?x/12.92:Math.pow((x+0.055)/1.055,2.4)); return 0.2126*v[0]+0.7152*v[1]+0.0722*v[2]; };
+      const ratio=(a,b)=>{ const [x,y]=[lum(a),lum(b)].sort((p,q)=>q-p); return (x+0.05)/(y+0.05); };
+      const bgs=[t.surface,t.paper].filter(c=>c&&!hex(c).some(isNaN));
+      const ok=(c)=>hex(c).some(isNaN)||bgs.every(b=>ratio(c,b)>=3.05);
+      const fix=(c)=>{ let v=c; for(let k=.05;!ok(v)&&k<=1.001;k+=.05) v=mix(c,t.ink,k); return v.toLowerCase(); };
+      const far=(a,b)=>{ const A=hex(a),B=hex(b); return Math.hypot(A[0]-B[0],A[1]-B[1],A[2]-B[2])>=28; };
+      const out=[],hues=[]; for(const [to,k] of [[null,0],[t.ink,.35],[t.surface,.3],[t.ink,.6]]){ t.series.forEach((c,h)=>{ const v=fix(to?mix(c,to,k):c); if(out.every(o=>far(o,v))){out.push(v);hues.push(h);} }); } out.hues=hues; out.base=t.series.length; return out;
     }
     let COLORS = palette(T());
-    // Same rule as Month by month: each query prefers a fixed colour by its total share across all reports (the 24 most
-    // searched own one), and picked queries never share a colour — a clash goes to the next free one, bigger query first.
+    function ensureColorRank(){ if(!state.colorRank){ const tot=new Map(); for(const r of (state.popularAll.length?state.popularAll:state.popular)){ const k=normalize(r.keyword); tot.set(k,(tot.get(k)||0)+number(r.percentage)); } state.colorRank=new Map([...tot.entries()].sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1)).map(([k],i)=>[k,i])); } return state.colorRank; }
+    // Colours of picked queries. Each query has a home colour: the eight most searched queries (total share over all reports)
+    // own the eight series colours, every other query shares one by its place in that list. Picks are coloured in the order they
+    // were picked, and a query on screen keeps its colour while it stays picked: a new pick never recolours one already shown.
+    // A new pick takes its home colour if no pick has that hue yet, else the next unused series colour; only past eight picks
+    // does it take a darker or lighter version (of its own hue first). The same link (same order) always gives the same colours.
+    const colorMemo=new Map();
     function colorOf(keyword){
-      if(!state.colorRank){ const tot=new Map(); for(const r of (state.popularAll||state.popular)){ const k=normalize(r.keyword); tot.set(k,(tot.get(k)||0)+number(r.percentage)); } state.colorRank=new Map([...tot.entries()].sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1)).map(([k],i)=>[k,i])); }
+      ensureColorRank();
       const hash=(k)=>{let h=0;for(const ch of k)h=(h*31+ch.codePointAt(0))>>>0;return h;};
-      const rank=(k)=> state.colorRank.has(k)?state.colorRank.get(k):1e6+hash(k)%1e6;
-      const sel=(state.matchMode==='exact'?state.selections.map(canonicalKeyword).filter(Boolean):[]).map(normalize).sort((a,b)=>rank(a)-rank(b));
-      // A picked query keeps its own colour unless a bigger picked query already has that hue (a tint of the same series
-      // colour reads as the same line); then it takes the next unused series colour, and only past eight picks a tint.
-      // hue: which of the series colours a palette entry is (or a tint or shade of); the first entries are the series colours themselves.
-      const N=COLORS.length, base=Math.min(COLORS.base||8,N), hue=(i)=>COLORS.hues?COLORS.hues[i]:i%base, used=new Set(), usedHue=new Set(), out=new Map();
-      for(const k of sel){ const r=state.colorRank.get(k); const p=(r!=null&&r<N?r:hash(k))%N; let i=p;
-        if(used.has(i)||usedHue.has(hue(i))){ i=-1;
-          for(let s=1;s<=base&&i<0;s++){ const j=(hue(p)+s)%base; if(!used.has(j)&&!usedHue.has(j)) i=j; }
-          for(let s=1;s<=N&&i<0;s++){ const j=(p+s)%N; if(!used.has(j)) i=j; }
-          if(i<0) i=p; }
-        used.add(i); usedHue.add(hue(i)); out.set(k,COLORS[i]); }
-      const k=normalize(keyword); return out.get(k) || COLORS[(state.colorRank.get(k)<COLORS.length?state.colorRank.get(k):hash(k))%COLORS.length];
+      const N=COLORS.length, base=Math.min(COLORS.base||8,N), hue=(i)=>COLORS.hues?COLORS.hues[i]:i%base;
+      const home=(k)=>{ const r=state.colorRank.get(k); return (r!=null?r:hash(k))%base; };
+      const sel=[...new Set((state.matchMode==='exact'?state.selections.map(canonicalKeyword).filter(Boolean):[]).map(normalize))];
+      const used=new Set(), usedHue=new Set(), out=new Map(), take=(k,i)=>{ used.add(i); usedHue.add(hue(i)); out.set(k,i); };
+      // Picks already shown keep their colour.
+      for(const k of sel){ const m=colorMemo.get(k); if(m!=null&&m<N&&!used.has(m)) take(k,m); }
+      for(const k of sel){ if(out.has(k)) continue; const h=home(k); let i=-1;
+        for(let s=0;s<base&&i<0;s++){ const j=(h+s)%base; if(!usedHue.has(j)&&!used.has(j)) i=j; }
+        for(let j=0;j<N&&i<0;j++) if(hue(j)===h&&!used.has(j)) i=j;
+        for(let j=0;j<N&&i<0;j++) if(!used.has(j)) i=j;
+        take(k,i<0?h:i); }
+      for(const [k,i] of out) colorMemo.set(k,i);
+      const k=normalize(keyword); return COLORS[out.has(k)?out.get(k):home(k)];
     }
     const $ = (selector)=>document.querySelector(selector);
     const state = {
       popular:[], zero:[], popularAll:[], zeroAll:[], months:[], allKeywords:[], selections:[],
       matchMode:'exact', containsLogic:'any', compareMode:'separate', smooth:false,
-      from:0, to:0, charts:{}, urlHadSelection:false, dataReady:false
+      from:0, to:0, charts:{}, legendOff:{}, urlHadSelection:false, dataReady:false
     };
 
     function setStatus(text, ready=false){ const el=$('#status'); el.textContent=text; el.classList.toggle('ready',ready); }
     function toast(message){ const el=$('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toast.timer); toast.timer=setTimeout(()=>el.classList.remove('show'),2200); }
     // Same folding as every other page (case, odd spaces, < and >), so links from This month and Archive always match.
-    function normalize(value){ return MK.cleanKeyword(value); }
+    // Cleaning (Unicode folding) is slow next to a lookup, and the same 30,000 queries are cleaned on every redraw: remembered.
+    const normCache=new Map();
+    function normalize(value){ const s=String(value ?? ''); let r=normCache.get(s); if(r===undefined){ r=MK.cleanKeyword(s); if(normCache.size>200000) normCache.clear(); normCache.set(s,r); } return r; }
     function keywordText(value){ return String(value ?? '').trim(); }
     function number(value){ const n=Number(value); return Number.isFinite(n)?n:0; }
     function formatShare(value){ return `${number(value).toFixed(2)}%`; }
-    function formatCount(value){ return Math.round(number(value)).toLocaleString('en-US'); }
+    function formatCount(value){ return value==null?'—':Math.round(number(value)).toLocaleString('en-US'); }
     function formatRank(value){ return Number.isFinite(value)&&value>=1&&value<=500?`#${Math.round(value)}`:'Outside 500'; }
     function escapeHtml(value){ return String(value).replace(/[&<>"']/g,(ch)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
     function toMonthKey(value){
@@ -598,7 +612,7 @@
     const WORKER_SRC=`const URLS=${JSON.stringify(XLSX_URLS)}; for(const u of URLS){ try{ importScripts(u); if(self.XLSX) break; }catch(e){} }
       self.onmessage=(e)=>{ try{ if(!self.XLSX) throw new Error('no xlsx'); const wb=XLSX.read(e.data,{type:'array'}); const sh=wb.Sheets.Raw; if(!sh) throw new Error('The workbook has no Raw sheet'); const rows=XLSX.utils.sheet_to_json(sh,{defval:null}).map(r=>{ if(typeof r.month==='number'){ const d=XLSX.SSF.parse_date_code(r.month); r.month=d.y+'-'+String(d.m).padStart(2,'0'); } return r; }); self.postMessage({rows}); }catch(err){ self.postMessage({error:String(err&&err.message||err)}); } };`;
     function workbookRowsOnPage(buffer){ return ensureXLSX().then(()=>{ const workbook=XLSX.read(buffer,{type:'array'}); const sheet=workbook.Sheets.Raw; if(!sheet) throw new Error('The workbook has no Raw sheet'); return XLSX.utils.sheet_to_json(sheet,{defval:null}); }); }
-    function workbookRows(buffer){ return new Promise((resolve,reject)=>{ let w=null; try{ w=new Worker(URL.createObjectURL(new Blob([WORKER_SRC],{type:'text/javascript'}))); }catch(e){} if(!w){ workbookRowsOnPage(buffer).then(resolve,reject); return; } const copy=buffer.slice(0); w.onmessage=(e)=>{ w.terminate(); if(e.data&&e.data.rows) resolve(e.data.rows); else if(e.data&&/Raw sheet/.test(e.data.error||'')) reject(new Error(e.data.error)); else workbookRowsOnPage(buffer).then(resolve,reject); }; w.onerror=()=>{ w.terminate(); workbookRowsOnPage(buffer).then(resolve,reject); }; w.postMessage(copy,[copy]); }); }
+    function workbookRows(buffer){ return new Promise((resolve,reject)=>{ let w=null,url=null; try{ url=URL.createObjectURL(new Blob([WORKER_SRC],{type:'text/javascript'})); w=new Worker(url); }catch(e){} const end=()=>{ if(w) w.terminate(); if(url){ URL.revokeObjectURL(url); url=null; } }; if(!w){ end(); workbookRowsOnPage(buffer).then(resolve,reject); return; } const copy=buffer.slice(0); w.onmessage=(e)=>{ end(); if(e.data&&e.data.rows) resolve(e.data.rows); else if(e.data&&/Raw sheet/.test(e.data.error||'')) reject(new Error(e.data.error)); else workbookRowsOnPage(buffer).then(resolve,reject); }; w.onerror=()=>{ end(); workbookRowsOnPage(buffer).then(resolve,reject); }; w.postMessage(copy,[copy]); }); }
     // Same meaningless-query rule as every other page, so they all count the same rows.
     // Meaningless queries (bot noise, test strings, pasted links, injection attempts) are judged on the raw text; see assets/common.js.
     function isJunkQuery(k){ return MK.isJunkQuery(k); }
@@ -609,7 +623,10 @@
     // Every row is kept and meaningless ones are flagged; the rows shown follow the "Hide meaningless queries" setting.
     function applyJunk(){ const hide=MK.hideJunk(); state.popular=hide?state.popularAll.filter(r=>!r.junk):state.popularAll; state.zero=hide?state.zeroAll.filter(r=>!r.junk):state.zeroAll; }
     // Keep the chosen period when the rows change.
-    window.addEventListener('mk:junk',()=>{ if(state.dataReady){ state.urlFrom=state.months[state.from]; state.urlTo=state.months[state.to]; } applyJunk(); if(state.popular.length) finalizeData(); });
+    window.addEventListener('mk:junk',()=>{ keepPeriod(); applyJunk(); if(state.popular.length) finalizeData(); });
+    // Before the months are rebuilt: a preset (6M, 12M…) stays a preset and follows the newest report; a custom period keeps its months.
+    function keepPeriod(){ if(!state.dataReady||!state.months.length) return; if(state.customRange){ state.urlFrom=state.months[state.from]; state.urlTo=state.months[state.to]; } else { state.urlFrom=state.urlTo=null; } }
+    const PERIODS=['6','12','24','all'];
     function hydrateUrl(){
       const params=new URLSearchParams(location.search); const queries=params.getAll('q').map(keywordText).filter(Boolean);
       // An address with q= but no query is a deliberately empty view (after Clear all).
@@ -618,15 +635,18 @@
       if(['any','all'].includes(params.get('logic'))) state.containsLogic=params.get('logic');
       if(['separate','group'].includes(params.get('compare'))) state.compareMode=params.get('compare');
       state.smooth=params.get('smooth')==='1';
-      state.urlFrom=params.get('from'); state.urlTo=params.get('to');
+      // period= is a preset (it follows the newest report); from= and to= are a fixed custom period (older links have only these).
+      if(PERIODS.includes(params.get('period'))){ state.preset=params.get('period'); state.customRange=false; state.urlFrom=state.urlTo=null; }
+      else { state.urlFrom=params.get('from'); state.urlTo=params.get('to'); if(state.urlFrom||state.urlTo) state.customRange=true; }
     }
     function updateUrl(){
       const params=new URLSearchParams(); state.selections.forEach(item=>params.append('q',item)); if(!state.selections.length&&(state.dataReady||state.urlHadSelection)) params.append('q','');
       params.set('mode',state.matchMode); if(state.matchMode==='contains') params.set('logic',state.containsLogic);
       params.set('compare',state.compareMode);
-      // Until the reports are in, the period from the address is kept as it was.
-      const from=state.dataReady?state.months[state.from]:state.urlFrom, to=state.dataReady?state.months[state.to]:state.urlTo;
-      if(from) params.set('from',from); if(to) params.set('to',to);
+      // A preset is written as period=, a custom period as from= and to=. Until the reports are in, the address is kept as it was.
+      if(!state.customRange&&state.preset&&(state.dataReady||!state.urlFrom&&!state.urlTo)) params.set('period',state.preset);
+      else { const from=state.dataReady?state.months[state.from]:state.urlFrom, to=state.dataReady?state.months[state.to]:state.urlTo;
+        if(from) params.set('from',from); if(to) params.set('to',to); }
       if(state.smooth) params.set('smooth','1');
       const query=params.toString(); history.replaceState(null,'',`${location.pathname}${query?'?'+query:''}`);
     }
@@ -636,19 +656,23 @@
       state.canon=new Map(); for(const k of state.allKeywords) state.canon.set(normalize(k),k);
       state.popularSet=new Set(state.popByKey.keys()); state.zeroSet=new Set(state.zeroByKey.keys());
       state.allNorm=state.allKeywords.map(normalize);
+      // For the suggestions, worked out once per data set: meaningless or not, and how much it is searched (allKeywords is already A–Z).
+      ensureColorRank(); state.allJunk=state.allKeywords.map(k=>MK.isJunkQuery(k)); state.allPop=state.allNorm.map(n=>state.colorRank.get(n)??1e9);
+      state.dataVersion=(state.dataVersion||0)+1;
     }
     function finalizeData(){
-      // A reload or an uploaded file keeps the period the reader had chosen.
-      if(state.dataReady&&state.months.length){ state.urlFrom=state.months[state.from]; state.urlTo=state.months[state.to]; }
+      // A reload or an uploaded file keeps the period the reader had chosen (a preset moves on to the newest report).
+      keepPeriod();
       $('#examples').textContent='';
       // Months come from the popular-searches report, so a file of your own sets the period even next to the repository's zero-result report.
       // One month per calendar month from the first report to the last: a month Atlassian published no report for
       // stays on the axis as a gap (never joined to its neighbours, averaged in or compared against).
-      { const have=Array.from(new Set((state.popular.length?state.popular:state.zero).map(row=>row.month))).filter(Boolean).sort();
+      { const have=Array.from(new Set((state.popular.length?state.popular:state.zero).map(row=>row.month))).filter(m=>/^\d{4}-(0[1-9]|1[0-2])$/.test(m||'')).sort();
         const all=[]; if(have.length){ for(let m=have[0];m<=have.at(-1)&&all.length<1200;m=nextMonth(m)) all.push(m); }
         state.months=all; const hs=new Set(have); state.missing=new Set(all.filter(m=>!hs.has(m)));
         const zm=Array.from(new Set(state.zero.map(r=>r.month))).sort(), zs=new Set(zm);
-        state.zeroMissing=new Set(zm.length?all.filter(m=>m>zm[0]&&m<zm.at(-1)&&!zs.has(m)):[]); }
+        // Any month the zero-result report does not cover (a gap, before it starts, after it ends, or no report loaded) has no count.
+        state.zeroMissing=new Set(all.filter(m=>!zs.has(m))); }
       state.zeroMismatch=state.popular.length&&state.zero.length&&!state.zero.some(r=>state.months.includes(r.month));
       // Partial reports (fewer rows than usual) are kept and shown as Atlassian publishes them.
       { const c=new Map(); state.popular.forEach(r=>c.set(r.month,(c.get(r.month)||0)+1)); const v=[...c.values()].sort((a,b)=>a-b); const med=v[Math.floor(v.length/2)]||0;
@@ -673,7 +697,7 @@
         state.popular.forEach(r=>{ if(big.has(normalize(r.keyword))&&idx.has(r.month)) by[idx.get(r.month)]+=r.percentage; });
         // Each month is compared with the last full report before it; months without a report are skipped.
         state.reportBreak=null; let prevI=-1; for(let i=0;i<by.length;i++){ const m=state.months[i]; if(state.missing.has(m)) continue; if(state.partialMonths.has(m)){ prevI=-1; continue; } if(prevI>=0&&by[prevI]>0&&by[i]<by[prevI]*0.4){ state.reportBreak=m; break; } prevI=i; } }
-      indexRows(); state.colorRank=null; populateDateControls(); state.dataReady=true; renderControls(); renderAll(); setStatus(state.zeroMismatch?`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}. The zero-result report covers other months, so empty searches show as 0.`:`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}`,true);
+      state.colorRank=null; indexRows(); populateDateControls(); state.dataReady=true; renderControls(); renderAll(); setStatus(state.zeroMismatch?`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}. The zero-result report covers other months, so there are no empty-search counts for them.`:`Reports from ${monthLong(state.months[0])} to ${monthLong(state.months.at(-1))}`,true);
     }
     function populateDateControls(){
       const from=$('#fromMonth'),to=$('#toMonth'); from.textContent='';to.textContent='';
@@ -681,8 +705,10 @@
       let fromUrl=state.months.indexOf(state.urlFrom),toUrl=state.months.indexOf(state.urlTo);
       // A link with the two ends the wrong way round shows the period between them.
       if(fromUrl>=0&&toUrl>=0&&fromUrl>toUrl) [fromUrl,toUrl]=[toUrl,fromUrl];
-      if(fromUrl<0&&toUrl<0&&!state.customRange) state.preset=state.preset||'12';
-      state.to=toUrl>=0?toUrl:Math.max(0,state.months.length-1); state.from=fromUrl>=0?fromUrl:Math.max(0,state.to-11); if(state.from>state.to) state.from=state.to;
+      const last=Math.max(0,state.months.length-1);
+      if(fromUrl<0&&toUrl<0&&!state.customRange){ state.preset=PERIODS.includes(state.preset)?state.preset:'12'; state.to=last; state.from=state.preset==='all'?0:Math.max(0,last-Number(state.preset)+1); }
+      else { state.to=toUrl>=0?toUrl:last; state.from=fromUrl>=0?fromUrl:Math.max(0,state.to-11); }
+      if(state.from>state.to) state.from=state.to;
       from.value=String(state.from);to.value=String(state.to); syncPresetButtons();
     }
     function showLoadError(error){
@@ -693,29 +719,37 @@
     async function loadDefaults(){
       setStatus('Loading default Marketplace reports…');
       // Each report has a load counter: whichever was asked for last (this reload or an opened file) wins, whatever finishes first.
-      const my={popular:++loadSeq.popular,zero:++loadSeq.zero};
+      const my={popular:++loadSeq.popular,zero:++loadSeq.zero}; $('#popularFileStatus').dataset.err=''; $('#zeroFileStatus').dataset.err='';
       const [popularResult,zeroResult]=await Promise.allSettled([fetchFirst(DEFAULT_SOURCE).then(parsePopular),fetchFirst(DEFAULT_ZERO).then(parseZero)]);
       const usePop=my.popular===loadSeq.popular, useZero=my.zero===loadSeq.zero; if(!usePop&&!useZero) return;
       const popFailed=usePop&&popularResult.status!=='fulfilled', zeroFailed=useZero&&zeroResult.status!=='fulfilled';
       if(usePop&&!popFailed){ state.popularAll=popularResult.value; $('#popularFileStatus').classList.remove('bad'); }
       if(useZero){ if(!zeroFailed){ state.zeroAll=zeroResult.value; $('#zeroFileStatus').classList.remove('bad'); } else { state.zeroAll=[]; $('#zeroFileStatus').textContent='Not loaded'; $('#zeroFileStatus').classList.add('bad'); } }
       applyJunk();
-      if(usePop&&!popFailed) $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`;
-      if(useZero&&!zeroFailed) $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`;
+      // A file rejected while this load was running keeps its message (the tile says the repository data is shown).
+      const keepErr=(el)=>{ if(!el.dataset.err) return false; el.textContent=el.dataset.err.replace(/(\. The page still shows the previous data)?\.?$/, '. The page shows the repository report.'); el.classList.add('bad'); return true; };
+      if(usePop&&!popFailed&&!keepErr($('#popularFileStatus'))) $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`;
+      if(useZero&&!zeroFailed&&!keepErr($('#zeroFileStatus'))) $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`;
       if(!state.popular.length){ MK.loadFailed(); throw new Error(zeroResult.status==='fulfilled'?'The popular-searches report could not be loaded':'Neither report could be loaded'); } finalizeData(); MK.loadDone();
-      const notes=[]; if(popFailed) notes.push('The popular-searches report could not be reloaded, so the page still shows the previous one.'); if(zeroFailed) notes.push('The zero-result report could not be loaded, so empty searches show as 0.');
+      const notes=[]; if(popFailed) notes.push('The popular-searches report could not be reloaded, so the page still shows the previous one.'); if(zeroFailed) notes.push('The zero-result report could not be loaded, so there are no empty-search counts.');
       if(notes.length) setStatus(notes.join(' ')+' Reload repository data to try again.');
     }
-    const loadSeq={popular:0,zero:0};
-    async function loadUploaded(file,type){ const my=++loadSeq[type]; const current=()=>my===loadSeq[type]; const buffer=await file.arrayBuffer(); const tile=type==='popular'?$('#popularFileStatus'):$('#zeroFileStatus');
+    // loadSeq moves when a report is actually replaced (or a reload starts); upSeq orders opened files among themselves.
+    // A file that is rejected never moves loadSeq, so a repository load still in flight is kept.
+    const loadSeq={popular:0,zero:0}, upSeq={popular:0,zero:0};
+    async function loadUploaded(file,type){ const my=++upSeq[type], base=loadSeq[type]; const current=()=>my===upSeq[type]&&base===loadSeq[type]; const buffer=await file.arrayBuffer(); const tile=type==='popular'?$('#popularFileStatus'):$('#zeroFileStatus');
       // A file that fails the check leaves the page on the data it had and says what is wrong.
-      const fail=(m)=>{ if(!current()) return; tile.textContent=`${file.name}: ${m}${state.dataReady?'. The page still shows the previous data.':'.'}`; tile.classList.add('bad'); };
+      const fail=(m)=>{ if(!current()) return; tile.textContent=`${file.name}: ${m}${state.dataReady?'. The page still shows the previous data.':'.'}`; tile.classList.add('bad'); if(!state.dataReady) tile.dataset.err=tile.textContent; };
       let rows; try{ rows=await workbookRows(buffer); MK.checkReport({Raw:rows},type==='popular'?'popularRank':'zero'); }catch(error){ const m=String(error&&error.message||error); fail(/^The workbook has no Raw sheet/.test(m)?'there is no sheet named “Raw” (every Marketplace report export has one)':/^(no xlsx|Error)/i.test(m)||!m?'this file could not be read as a spreadsheet':m); return; }
       // The workbook is read once: the rows that passed the check are the rows used.
       const parsed=type==='popular'?prepPopularRows(rows):prepZeroRows(rows);
       if(!current()) return;
       if(!parsed.length){ fail('no row has a month the page can read (use a date or YYYY-MM in the “month” column)'); return; }
-      tile.classList.remove('bad');
+      // A mistyped year (2205 for 2025) would stretch the month axis over centuries: such a file is not used.
+      { const d=new Date(), latest=nextMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+        const odd=[...new Set(parsed.map(r=>r.month))].filter(m=>!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)||m<'2000-01'||m>latest).sort();
+        if(odd.length){ fail(`the “month” column has ${odd.length===1?'a month':'months'} that can’t be right (${odd.slice(0,3).join(', ')}${odd.length>3?'…':''})`); return; } }
+      loadSeq[type]++; tile.dataset.err=''; tile.classList.remove('bad');
       if(type==='popular'){state.popularAll=parsed;applyJunk();tile.textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zeroAll=parsed;applyJunk();tile.textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
     function canonicalKeyword(input){ return state.canon?state.canon.get(normalize(input)):state.allKeywords.find(item=>normalize(item)===normalize(input)); }
     // A query picked from the list (or an example) is added whole: many real queries contain commas.
@@ -740,7 +774,10 @@
       if(state.matchMode==='exact') return state.selections.map(canonicalKeyword).filter(Boolean);
       // Words that clean up to nothing (only < > or invisible characters) match nothing, in either logic.
       const needles=state.selections.map(normalize).filter(Boolean); if(!needles.length) return [];
-      return state.allKeywords.filter(keyword=>{ const hay=normalize(keyword); return state.containsLogic==='all'?needles.every(term=>hay.includes(term)):needles.some(term=>hay.includes(term)); });
+      // One redraw asks several times; the answer is kept until the words, the logic or the data change.
+      const key=`${state.dataVersion}|${state.containsLogic}|${needles.join('\u0001')}`; if(selectedMatches.key===key) return selectedMatches.value.slice();
+      const all=state.containsLogic==='all', out=[]; (state.allNorm||[]).forEach((hay,i)=>{ if(all?needles.every(term=>hay.includes(term)):needles.some(term=>hay.includes(term))) out.push(state.allKeywords[i]); });
+      selectedMatches.key=key; selectedMatches.value=out; return out.slice();
     }
     function seriesDefinitions(){
       const matches=selectedMatches(); if(!matches.length) return [];
@@ -771,7 +808,7 @@
       const shown=rawShare.map((v,i)=>listed(i)?v:null), peakVal=Math.max(...shown.filter(v=>v!=null),0), peak=shown.some(v=>v!=null&&v>0)?peakVal:null;
       let peakIndex=-1; if(peak!=null) for(let i=shown.length-1;i>=0;i--) if(shown[i]!=null&&Math.abs(shown[i]-peak)<1e-9){ peakIndex=i; break; }
       const zeroGap=(i)=>!!state.zeroMissing?.has(months[i]);
-      return {definition,share,zero,latest,delta:previous==null||latest==null?null:Math.abs(latest-previous)<0.005?0:latest-previous,peak,peakMonth:peak!=null&&peakIndex>=0?monthShort(months[peakIndex]):'—',currentRank:rank.length?rank.at(-1):null,bestRank:ranked.length?Math.min(...ranked):null,zeroTotal:zero.reduce((sum,value,i)=>sum+(zeroGap(i)?0:value),0),lastMissing:n>0&&missing(months[n-1]),allMissing:n>0&&months.every(missing)};
+      return {definition,share,zero,latest,delta:previous==null||latest==null?null:Math.abs(latest-previous)<0.005?0:latest-previous,peak,peakMonth:peak!=null&&peakIndex>=0?monthShort(months[peakIndex]):'—',currentRank:rank.length?rank.at(-1):null,bestRank:ranked.length?Math.min(...ranked):null,zeroTotal:n>0&&months.every((m,i)=>zeroGap(i))?null:zero.reduce((sum,value,i)=>sum+(zeroGap(i)?0:value),0),lastMissing:n>0&&missing(months[n-1]),allMissing:n>0&&months.every(missing)};
     }
     function renderControls(){
       $('#matchMode').value=state.matchMode;$('#containsLogic').value=state.containsLogic;$('#compareMode').value=state.compareMode;$('#smoothSeries').checked=state.smooth;
@@ -800,22 +837,30 @@
       const popularSet=state.popularSet,zeroSet=state.zeroSet;
       // Best match first (the query itself, then queries that start with it, then a word that starts with it), then the more
       // searched query; meaningless queries go last so Enter never picks one by accident.
-      colorOf(''); const pop=(k)=>state.colorRank.get(normalize(k))??1e9;
-      const score=(k)=>{ const n=normalize(k); return (MK.isJunkQuery(k)?10:0)+(n===term?0:n.startsWith(term)?1:(' '+n).includes(' '+term)?2:3); };
-      const found=state.allKeywords.filter((keyword,i)=>state.allNorm[i].includes(term)).sort((a,b)=>score(a)-score(b)||pop(a)-pop(b)||a.localeCompare(b)); const results=found.slice(0,60);
+      // Each query is scored once (no cleaning or pattern checks while sorting); ties go A–Z, the order allKeywords is in.
+      const nrm=state.allNorm, junk=state.allJunk, popr=state.allPop, hits=[];
+      for(let i=0;i<nrm.length;i++){ const n=nrm[i]; if(!n.includes(term)) continue; hits.push({i,s:(junk[i]?10:0)+(n===term?0:n.startsWith(term)?1:(' '+n).includes(' '+term)?2:3),p:popr[i]}); }
+      hits.sort((a,b)=>a.s-b.s||a.p-b.p||a.i-b.i);
+      const found=hits, results=hits.slice(0,60).map(h=>state.allKeywords[h.i]);
       results.forEach(keyword=>{ const button=document.createElement('button');button.type='button';button.className='suggestion';button.setAttribute('role','option');button.tabIndex=-1; const text=document.createElement('span');{
         // The match is found in the text as shown (any case); text that cleaning changes (< >, odd spaces) is shown without bold.
         const k=keyword,lower=k.toLowerCase(),at=lower.length===k.length?lower.indexOf(term):-1;text.innerHTML=at>=0?escapeHtml(k.slice(0,at))+'<b>'+escapeHtml(k.slice(at,at+term.length))+'</b>'+escapeHtml(k.slice(at+term.length)):escapeHtml(k);} const badges=document.createElement('span');badges.className='badges'; const key=normalize(keyword); if(popularSet.has(key)){const badge=document.createElement('span');badge.className='badge popular';badge.textContent='Top 500';badges.appendChild(badge);} if(zeroSet.has(key)){const badge=document.createElement('span');badge.className='badge zero';badge.textContent='Found no apps';badges.appendChild(badge);} button.append(text,badges);button.addEventListener('click',()=>state.matchMode==='exact'?addSelection(keyword,true):addSelection($('#keywordInput').value));box.appendChild(button); });
-      if(!results.length&&state.matchMode==='contains'){const button=document.createElement('button');button.type='button';button.className='suggestion';button.textContent=`Add “${$('#keywordInput').value.trim()}” as a contains filter`;button.addEventListener('click',()=>addSelection($('#keywordInput').value));box.appendChild(button);}
-      if(results.length){const foot=document.createElement('div');foot.className='sug-foot';foot.textContent=found.length>results.length?`Showing ${results.length} of ${found.length.toLocaleString('en-US')} matches. Keep typing to narrow down.`:`${found.length} ${found.length===1?'match':'matches'}`;box.appendChild(foot);}
-      box.classList.toggle('open',box.childElementCount>0);box.querySelector('.suggestion')?.classList.add('active');
+      if(!results.length&&state.matchMode==='contains'){const button=document.createElement('button');button.type='button';button.className='suggestion';button.setAttribute('role','option');button.tabIndex=-1;button.textContent=`Add “${$('#keywordInput').value.trim()}” as a contains filter`;button.addEventListener('click',()=>addSelection($('#keywordInput').value));box.appendChild(button);}
+      // The count sits under the list, outside the listbox (it is not an option).
+      const foot=$('#sugFoot'); foot.hidden=!results.length; foot.textContent=!results.length?'':found.length>results.length?`Showing ${results.length} of ${found.length.toLocaleString('en-US')} matches. Keep typing to narrow down.`:`${found.length} ${found.length===1?'match':'matches'}`;
+      $('#suggestPop').classList.toggle('open',box.childElementCount>0);box.querySelector('.suggestion')?.classList.add('active');
       box.querySelectorAll('.suggestion').forEach((x,j)=>{x.id='sug-'+j;x.setAttribute('aria-selected',String(j===0));}); $('#keywordInput').setAttribute('aria-expanded',String(box.childElementCount>0)); if(box.querySelector('.suggestion')) $('#keywordInput').setAttribute('aria-activedescendant','sug-0'); else $('#keywordInput').removeAttribute('aria-activedescendant');
     }
     // Closing empties the list, so nothing hidden can be picked with Enter or the arrow keys afterwards.
-    function closeSuggestions(){ const box=$('#suggestions'); box.classList.remove('open'); box.textContent=''; $('#keywordInput').setAttribute('aria-expanded','false'); $('#keywordInput').removeAttribute('aria-activedescendant'); }
-    function ensureChart(id){ const el=document.getElementById(id); el.querySelector('.chart-placeholder')?.remove(); if(!state.charts[id]||state.charts[id].isDisposed?.()){state.charts[id]=echarts.init(el);state.charts[id].group='keywordExplorer';} return state.charts[id]; }
+    function closeSuggestions(){ const box=$('#suggestions'); $('#suggestPop').classList.remove('open'); box.textContent=''; $('#sugFoot').hidden=true; $('#sugFoot').textContent=''; $('#keywordInput').setAttribute('aria-expanded','false'); $('#keywordInput').removeAttribute('aria-activedescendant'); }
+    function ensureChart(id){ const el=document.getElementById(id); el.querySelector('.chart-placeholder')?.remove(); if(!state.charts[id]||state.charts[id].isDisposed?.()){state.charts[id]=echarts.init(el);state.charts[id].group='keywordExplorer';
+        // Lines switched off in the key stay off through redraws (resize, full screen, a new period or average).
+        const keep=(e)=>{ state.legendOff[id]=new Set(Object.entries(e.selected||{}).filter(([,on])=>!on).map(([name])=>name)); };
+        ['legendselectchanged','legendselected','legendunselected','legendselectall','legendinverseselect'].forEach(ev=>state.charts[id].on(ev,keep)); } return state.charts[id]; }
     // Same picture, same size: the chart is left alone. The draw-in animation plays once; later updates appear at once.
-    function drawChart(id,option){ const c=ensureChart(id); const sig=c.getWidth()+'x'+c.getHeight()+'|'+JSON.stringify(option); if(c.__sig===sig) return; if(c.__sig) option.animation=false; c.__sig=sig; c.setOption(option,true); }
+    function drawChart(id,option){ const c=ensureChart(id); const sig=c.getWidth()+'x'+c.getHeight()+'|'+JSON.stringify(option); if(c.__sig===sig) return; if(c.__sig) option.animation=false; c.__sig=sig;
+      const off=state.legendOff[id]; if(off&&off.size&&option.legend){ const selected={}; for(const name of option.legend.data||[]) if(off.has(name)) selected[name]=false; option.legend.selected=selected; }
+      c.setOption(option,true); }
     function disposeChart(id,message){ if(state.charts[id]){state.charts[id].dispose();state.charts[id]=null;} const el=document.getElementById(id);el.textContent='';if(!message)return;const placeholder=document.createElement('div');placeholder.className='chart-placeholder';placeholder.textContent=message;el.appendChild(placeholder); }
     function commonOption(months,id,series){
       const t=T(), el=document.getElementById(id), W=el?.clientWidth||800;
@@ -855,14 +900,16 @@
     function partialNote(months,set,what){ const ms=months.filter(m=>set&&set.has(m)).map(monthShort); return ms.length?` The ${ms.join(' and ')} ${what}${ms.length===1?' is':'s are'} partial, shown as published.`:''; }
     function missingNote(months,set,what){ const ms=months.filter(m=>set&&set.has(m)).map(monthShort); return ms.length?` There is no ${what} for ${ms.length>3?`${ms.length} months (${ms[0]} to ${ms.at(-1)})`:ms.join(' and ')}: a gap.`:''; }
     // Picked queries never in the top 500 in this period (for example ones only in the zero-result report): a sentence, not an empty grid.
-    function notRankedMessage(definitions){
+    function notRankedMessage(definitions,months){
+      // A period with no popular-search report at all has nothing to rank, whatever was picked.
+      if(months&&months.length&&months.every(m=>state.missing?.has(m))) return `There is no popular-search report for ${months.length===1?monthLong(months[0]):`${monthShort(months[0])} – ${monthShort(months.at(-1))}`}, so there is no share or rank to draw. Choose another period.`;
       if(definitions.length===1){ const k=definitions[0].keywords[0]; return state.popularSet?.has(normalize(k))?`“${k}” was not in the top 500 in this period, so there is no share or rank to draw. Try a longer period.`:`“${k}” is only in the zero-result report: it was never in the top 500, so there is no share or rank to draw.`; }
       return 'None of the picked queries was in the top 500 in this period, so there is no share or rank to draw.';
     }
     function renderShareChart(definitions,months){
       if(!definitions.length){disposeChart('shareChart','');return;}
       const series=definitions.map(def=>{const values=seriesValues(def,state.popular,'percentage',months);return lineSeries(def,values,definitions.length,months);});
-      if(definitions.every(d=>!d.group)&&series.every(s=>s.data.every(v=>v==null))){ disposeChart('shareChart',notRankedMessage(definitions)); return; }
+      if(series.every(s=>s.data.every(v=>v==null))){ disposeChart('shareChart',notRankedMessage(definitions,months)); return; }
       const option=commonOption(months,'shareChart',series);
       const ymax=Math.max(0,...series.flatMap(x=>x.data.filter(v=>v!=null))), ax=niceAxis(ymax*1.05,4);
       option.yAxis={type:'value',min:0,max:ax.max,interval:ax.interval,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>value===0?'0%':`${value.toFixed(ax.decimals)}%`},splitLine:{lineStyle:{color:T().grid}}};
@@ -882,13 +929,14 @@
       if(state.matchMode!=='exact'){card.classList.add('collapsed');disposeChart('rankChart','The report ranks single queries, so a group of matched queries has no rank.');const b=document.createElement('button');b.type='button';b.className='link-btn';b.textContent='Switch to exact queries';b.addEventListener('click',()=>{$('#matchMode').value='exact';$('#matchMode').dispatchEvent(new Event('change'));});$('#rankChart .chart-placeholder').append(' ',b);return;}
       if(!definitions.length){card.classList.add('collapsed');disposeChart('rankChart','');return;}
       card.classList.remove('collapsed');
-      $('#rankCard .description').textContent=(state.compareMode==='group'?'Per query, as rank can’t be combined. Log scale; gaps mean outside the top 500.':'Monthly rank on a log scale; gaps mean the query was outside the top 500.')+(state.smooth?' Not averaged.':'');
+      $('#rankCard .description').textContent=(state.compareMode==='group'&&definitions.length>1?'Per query, as rank can’t be combined. Log scale; gaps mean outside the top 500.':'Monthly rank on a log scale; gaps mean the query was outside the top 500.')+(state.smooth?' Not averaged.':'');
       $('#rankCard .description').textContent+=partialNote(months,state.partialMonths,'popular-search report')+missingNote(months,state.missing,'popular-search report');
       const series=definitions.map(def=>({def,ranks:ranksFor(def.keywords[0],months)}));
       const seen=series.flatMap(x=>x.ranks).filter(Number.isFinite);
-      if(!seen.length){ disposeChart('rankChart',notRankedMessage(definitions)); return; }
-      // Fit the log scale to the ranks on show: from the power of two at or above the best rank to the one at or below the worst.
-      let lo=seen.length?Math.pow(2,Math.floor(Math.log2(Math.min(...seen)))):1, hi=seen.length?Math.min(512,Math.pow(2,Math.ceil(Math.log2(Math.max(...seen))))):16;
+      if(!seen.length){ disposeChart('rankChart',notRankedMessage(definitions,months)); return; }
+      // Fit the log scale to the ranks on show: from the power of two at or above the best rank to the one at or below the worst
+      // (never past #500, the last rank the report has).
+      let lo=seen.length?Math.pow(2,Math.floor(Math.log2(Math.min(...seen)))):1, hi=seen.length?Math.min(500,Math.pow(2,Math.ceil(Math.log2(Math.max(...seen))))):16;
       if(hi<=lo) hi=lo*2; if(hi/lo<4) lo=Math.max(1,lo/2);
       const option=commonOption(months,'rankChart',series.map(x=>({name:x.def.label})));
       option.yAxis={type:'log',logBase:2,inverse:true,min:lo,max:hi,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>`#${Math.round(value)}`},axisTick:{show:false},splitLine:{lineStyle:{color:T().grid}}};
@@ -903,6 +951,7 @@
       $('#zeroCard .description').textContent=(plural?'How many times the matching queries found no apps: a count of searches, not a rate.':'How many times the query found no apps: a count of searches, not a rate.')+avgNote;
       $('#zeroCard .description').textContent+=partialNote(months,state.partialZero,'zero-result report')+missingNote(months,state.zeroMissing,'zero-result report');
       const series=definitions.map(def=>{const values=seriesValues(def,state.zero,'count',months);return lineSeries(def,values,definitions.length,months);});
+      if(series.every(s=>s.data.every(v=>v==null))){ disposeChart('zeroChart',`There is no zero-result report for ${months.length===1?monthLong(months[0]):`${monthShort(months[0])} – ${monthShort(months.at(-1))}`}, so there are no empty searches to draw.`); return; }
       const option=commonOption(months,'zeroChart',series);
       option.yAxis={type:'value',min:0,minInterval:1,splitNumber:4,axisLabel:{color:T().muted,fontSize:12,margin:10,formatter:value=>Number(value).toLocaleString('en-US')},splitLine:{lineStyle:{color:T().grid}}};
       option.tooltip.formatter=params=>{const rows=params.filter(p=>p.seriesName!=='_break').map(param=>`${param.marker}${escapeHtml(param.seriesName)}: <b>${param.value==null?'no report':formatCount(param.value)}</b>`).join('<br>');return `<b>${escapeHtml(monthLong(params[0]?.axisValue||''))}</b><br>${rows}`;};
@@ -956,6 +1005,9 @@
       const hidden=MK.hideJunk()&&state.selections.some(q=>MK.isJunkQuery(q));
       const msg=state.matchMode==='contains'?'No query in the reports contains these words.':hidden?'These queries count as meaningless and are hidden. Untick “Hide meaningless queries” to see them.':'None of the picked queries appear in the reports.';
       ['shareChart','rankChart','zeroChart'].forEach(id=>disposeChart(id,msg)); renderKpis([],months);
+      // The figures say why they are empty (queries are picked; none of them is in the reports).
+      const why=state.matchMode==='contains'?'No query contains these words':hidden?'Hidden as meaningless':'Not in the reports';
+      ['#kpiShareNote','#kpiRankNote','#kpiPeakNote'].forEach(s=>{ $(s).textContent=why; });
       const body=$('#summaryBody'); body.textContent=''; const row=document.createElement('tr'),cell=document.createElement('td'); cell.colSpan=8; cell.className='empty-state'; cell.textContent=msg; row.appendChild(cell); body.appendChild(row);
     }
     function renderAll(){ if(!state.dataReady)return; renderEmpty(); if(state.from>state.to)state.from=state.to; if(state.selections.length&&!selectedMatches().length){ renderNoMatch(visibleMonths()); updateUrl(); return; } const months=visibleMonths(),definitions=seriesDefinitions(),rankDefs=rankDefinitions();renderKpis(definitions,months);renderShareChart(definitions,months);renderRankChart(rankDefs,months);renderZeroChart(definitions,months);renderTable(months);echarts.connect('keywordExplorer');updateUrl(); }
@@ -968,7 +1020,7 @@
     function csvEscape(value){let text=String(value??'');if(typeof value==='string'&&/^[=+\-@\t\r]/.test(text))text="'"+text;return /[",\n\r]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;}
     // The CSV has the same rows as the table (a group and each of its queries); a month with no report is left blank.
     function exportCsv(){
-      const months=visibleMonths(),definitions=tableDefinitions();if(!definitions.length){toast('Select keywords before exporting.');return;}const rows=[['month','series','search_share_percentage','marketplace_top_500_rank','zero_result_count']];
+      const months=visibleMonths(),definitions=tableDefinitions();if(!definitions.length){toast(state.selections.length?'None of the picked queries is in the reports, so there is nothing to export.':'Pick queries before exporting.');return;}const rows=[['month','series','search_share_percentage','marketplace_top_500_rank','zero_result_count']];
       for(const def of definitions){const label=def.group&&state.matchMode==='exact'?`${def.label}: ${def.keywords.join(' + ')}`:def.label;const shares=aggregate(state.popular,'percentage',def,months),zeros=aggregate(state.zero,'count',def,months),ranks=def.keywords.length===1?ranksFor(def.keywords[0],months):months.map(()=>null);const single=def.keywords.length===1&&!def.group;months.forEach((month,index)=>{const gap=noReport('percentage',month),zgap=noReport('count',month);rows.push([month,label,gap||(single&&!ranks[index]&&!shares[index])?'':Number(Number(shares[index]||0).toFixed(4)),gap||!single?'':(ranks[index]||'Outside top 500'),zgap?'':zeros[index]]);});}
       // A byte-order mark so Excel reads the file as UTF-8 (queries in other scripts, dashes, emoji).
       const csv='\uFEFF'+rows.map(row=>row.map(csvEscape).join(',')).join('\r\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='keyword-explorer.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('CSV export started.');
@@ -978,15 +1030,17 @@
     const ICON_COLLAPSE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="14" y1="10" x2="21" y2="3"/></svg>';
     // Full screen is a modal dialog: its own name, focus moves in and stays in, Escape or the button closes it and focus returns.
     function setFullscreen(card,on){ card.classList.toggle('is-fullscreen',on); document.body.style.overflow=on?'hidden':''; if(on){card.setAttribute('role','dialog');card.setAttribute('aria-modal','true');}else{card.removeAttribute('role');card.removeAttribute('aria-modal');} const b=card.querySelector('[data-chart-action="fullscreen"]'); if(b){b.innerHTML=on?ICON_COLLAPSE:ICON_EXPAND;b.setAttribute('aria-label',on?'Exit full screen':'Open chart full screen');b.title=on?'Exit full screen':'Full screen';}
-      if(on){ setFullscreen.opener=document.activeElement; b?.focus(); } else if(setFullscreen.opener&&document.contains(setFullscreen.opener)&&!document.querySelector('.chart-card.is-fullscreen')){ const o=setFullscreen.opener; setFullscreen.opener=null; setTimeout(()=>o.focus(),0); } const chart=card.querySelector('.chart'); setTimeout(()=>state.charts[chart.id]?.resize(),50); }
+      if(on){ setFullscreen.opener=document.activeElement; b?.focus(); } else if(setFullscreen.opener&&document.contains(setFullscreen.opener)&&!document.querySelector('.chart-card.is-fullscreen')){ const o=setFullscreen.opener; setFullscreen.opener=null; setTimeout(()=>o.focus(),0); } const chart=card.querySelector('.chart');
+      // A new size changes how the key wraps and how many month labels fit, so the chart is laid out again (as on resize).
+      setTimeout(()=>{ state.charts[chart.id]?.resize(); renderAll(); },50); }
     function closeFullscreen(){ document.querySelectorAll('.chart-card.is-fullscreen').forEach(card=>setFullscreen(card,false)); }
     function toggleFullscreen(id){ const card=document.getElementById(id).closest('.chart-card'); const on=!card.classList.contains('is-fullscreen'); closeFullscreen(); if(on) setFullscreen(card,true); }
     async function copyShareLink(){updateUrl();try{await navigator.clipboard.writeText(location.href);toast('Link to this view copied');}catch(error){toast('Copy the URL from the address bar.');}}
     function bindEvents(){
-      $('#keywordInput').addEventListener('input',renderSuggestions);$('#keywordInput').addEventListener('keydown',event=>{const open=$('#suggestions').classList.contains('open');if((event.key==='ArrowDown'||event.key==='ArrowUp')&&!open&&event.currentTarget.value.trim()){event.preventDefault();renderSuggestions();return;}if(event.key==='ArrowDown'||event.key==='ArrowUp'){const items=open?[...document.querySelectorAll('#suggestions .suggestion')]:[];if(items.length){event.preventDefault();let i=items.findIndex(x=>x.classList.contains('active'));items[i]?.classList.remove('active');i=(i+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items[i].classList.add('active');items.forEach((x,j)=>{x.id='sug-'+j;x.setAttribute('aria-selected',String(j===i));});$('#keywordInput').setAttribute('aria-activedescendant','sug-'+i);items[i].scrollIntoView({block:'nearest'});}}if(event.key==='Enter'){event.preventDefault();const first=open?($('#suggestions .suggestion.active')||$('#suggestions .suggestion')):null;if(state.matchMode==='exact'&&first)first.click();else if(event.currentTarget.value.trim())addSelection(event.currentTarget.value);}if(event.key==='Escape')closeSuggestions();});
+      $('#keywordInput').addEventListener('input',renderSuggestions);$('#keywordInput').addEventListener('keydown',event=>{const open=$('#suggestPop').classList.contains('open');if((event.key==='ArrowDown'||event.key==='ArrowUp')&&!open&&event.currentTarget.value.trim()){event.preventDefault();renderSuggestions();return;}if(event.key==='ArrowDown'||event.key==='ArrowUp'){const items=open?[...document.querySelectorAll('#suggestions .suggestion')]:[];if(items.length){event.preventDefault();let i=items.findIndex(x=>x.classList.contains('active'));items[i]?.classList.remove('active');i=(i+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items[i].classList.add('active');items.forEach((x,j)=>{x.id='sug-'+j;x.setAttribute('aria-selected',String(j===i));});$('#keywordInput').setAttribute('aria-activedescendant','sug-'+i);items[i].scrollIntoView({block:'nearest'});}}if(event.key==='Enter'){event.preventDefault();const first=open?($('#suggestions .suggestion.active')||$('#suggestions .suggestion')):null;if(state.matchMode==='exact'&&first)first.click();else if(event.currentTarget.value.trim())addSelection(event.currentTarget.value);}if(event.key==='Escape')closeSuggestions();});
       document.addEventListener('click',event=>{if(!event.target.closest('.picker'))closeSuggestions();});
       // A click on an option keeps focus in the field; when focus leaves the field (Tab, elsewhere) the list closes.
-      $('#suggestions').addEventListener('mousedown',event=>event.preventDefault());
+      $('#suggestPop').addEventListener('mousedown',event=>event.preventDefault());
       $('#keywordInput').addEventListener('blur',()=>closeSuggestions());
       $('#keywordInput').addEventListener('focus',event=>{if(event.currentTarget.value.trim())renderSuggestions();});
       // Containing words always draws one combined line; the Show as choice is kept for when Exact query comes back.
@@ -1013,7 +1067,8 @@
       document.addEventListener('mousedown',event=>{const card=document.querySelector('.chart-card.is-fullscreen');if(card&&!card.contains(event.target))closeFullscreen();});
       $('#retryLoad').addEventListener('click',async()=>{ $('#retryLoad').disabled=true; MK.refillGhosts(); await start(); $('#retryLoad').disabled=false; });
       // A new width also changes how the legend wraps and how many month labels fit, so the charts are laid out again.
-      let resizeTimer=0; window.addEventListener('resize',()=>{ Object.values(state.charts).forEach(chart=>chart?.resize?.()); clearTimeout(resizeTimer); resizeTimer=setTimeout(()=>renderAll(),150); });
+      // Only the height changing (a phone's address bar showing or hiding while scrolling) needs no new layout.
+      let resizeTimer=0, lastWidth=innerWidth; window.addEventListener('resize',()=>{ Object.values(state.charts).forEach(chart=>chart?.resize?.()); if(innerWidth===lastWidth) return; lastWidth=innerWidth; clearTimeout(resizeTimer); resizeTimer=setTimeout(()=>renderAll(),150); });
       const dq=window.matchMedia('(prefers-color-scheme: dark)'),onScheme=()=>{COLORS=palette(T());renderControls();renderAll();};dq.addEventListener?dq.addEventListener('change',onScheme):dq.addListener(onScheme);
       if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>renderAll());
     }
