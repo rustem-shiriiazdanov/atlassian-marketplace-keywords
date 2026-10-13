@@ -30,6 +30,9 @@
     .card .tag{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
     .card .lbl{font-size:12px;color:var(--muted)}
     .card .q{font-size:15px;font-weight:600;overflow-wrap:anywhere}
+    /* A tie for #1 reads as one line of text: “scriptrunner and xray” */
+    .card .pair{font-size:15px;overflow-wrap:anywhere}
+    .card .pair .tie{color:var(--ink2)}
     .card .share{font-size:13px;color:var(--ink2)}
     .card .spike{color:var(--accent)}
     .card .zero{margin-top:10px;font-size:13px;color:var(--ink2)}
@@ -98,7 +101,7 @@
         const zero = z == null ? `<div class="zero na">No zero-result report for this month</div>` : `<div class="zero"><strong class="num">${fmtInt(z)}</strong> reported searches found no apps${D.zeroPartial.has(m) ? ' <span class="na">(partial report)</span>' : D.zeroLow.has(m) ? ' <span class="na">(unusually low)</span>' : ''}</div><div class="track" aria-hidden="true"><span class="bar" style="width:${Math.min(100, z/zMax*100).toFixed(1)}%"></span></div>`;
         return `<article class="card${m === latest ? ' current' : ''}"><div class="mhead"><h3><a href="${href}">${monthName(m)}</a></h3>${m === latest ? '<span class="tag">Current</span>' : ''}</div>
           <span class="lbl">#1 query${(()=>{ const r = D.byMonth.get(m) || []; return r[1] && r[0].percentage.toFixed(2) === r[1].percentage.toFixed(2) ? ' (a tie)' : ''; })()}</span>
-          ${a ? `${(()=>{ const b = (D.byMonth.get(m) || [])[1]; const link = (r)=> `<a class="q" href="./keyword-explorer.html?q=${encodeURIComponent(r.keyword)}">${escapeHtml(r.keyword)}</a>`; return b && b.percentage.toFixed(2) === a.percentage.toFixed(2) ? `${link(a)} <span class="tie">and</span> ${link(b)}` : link(a); })()}<span class="share num">${fmtPct(a.percentage)} of searches${(()=>{ const b = (D.byMonth.get(m) || [])[1]; return b && b.percentage.toFixed(2) === a.percentage.toFixed(2) ? ' each' : ''; })()}${spike(m) ? ' · <span class="spike">unusual spike</span>' : ''}${D.popularPartial.has(m) ? ' · <span class="na">partial report</span>' : ''}</span>` : '<span class="q na">No report</span>'}
+          ${a ? `${(()=>{ const b = (D.byMonth.get(m) || [])[1]; const link = (r)=> `<a class="q" href="./keyword-explorer.html?q=${encodeURIComponent(r.keyword)}">${escapeHtml(r.keyword)}</a>`; return b && b.percentage.toFixed(2) === a.percentage.toFixed(2) ? `<span class="pair">${link(a)} <span class="tie">and</span> ${link(b)}</span>` : link(a); })()}<span class="share num">${fmtPct(a.percentage)} of searches${(()=>{ const b = (D.byMonth.get(m) || [])[1]; return b && b.percentage.toFixed(2) === a.percentage.toFixed(2) ? ' each' : ''; })()}${spike(m) ? ' · <span class="spike">unusual spike</span>' : ''}${D.popularPartial.has(m) ? ' · <span class="na">partial report</span>' : ''}</span>` : '<span class="q na">No report</span>'}
           ${zero}</article>`;
       }).join('')}</div></section>`;
     }).join('');

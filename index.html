@@ -18,7 +18,7 @@
   .issue-line a{color:var(--muted);font-weight:500;letter-spacing:.04em}
   .issue h1{grid-area:h;overflow-wrap:anywhere;margin:0 0 28px;max-width:18em;font-family:var(--serif);font-weight:500;font-size:clamp(40px,5.6vw,76px);line-height:1.03;letter-spacing:-.02em;text-wrap:balance}
   .dek{grid-area:d;overflow-wrap:anywhere;margin:0;font-size:20px;line-height:1.55;color:var(--ink2);text-wrap:pretty}
-  .source{grid-area:s;margin:0;padding-left:24px;border-left:1px solid var(--rule);font-size:13px;line-height:1.5;color:var(--muted)}
+  .source{grid-area:s;margin:0;overflow-wrap:anywhere;padding-left:24px;border-left:1px solid var(--rule);font-size:13px;line-height:1.5;color:var(--muted)}
   .issue-tools{grid-area:t;display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:16px 0 0 24px;border-left:1px solid var(--rule)}
   .issue-tools .check{font-size:13px;color:var(--muted)}
   .issue-nav{display:flex;gap:16px;font-size:14px;font-weight:600}
@@ -170,7 +170,7 @@
         <div class="legend" aria-label="Colour key: empty searches per month"><span class="lg-title">Empty searches per month</span><span class="lg-item"><i style="background:var(--heat0)"></i>0 / not listed</span><span class="lg-item"><i style="background:var(--heat1)"></i>1–4</span><span class="lg-item"><i style="background:var(--heat2)"></i>5–9</span><span class="lg-item"><i style="background:var(--heat3)"></i>10–19</span><span class="lg-item"><i style="background:var(--heat4)"></i>20–49</span><span class="lg-item"><i style="background:var(--heat5)"></i>50+</span></div>
       </div>
     </div>
-    <div class="heat-wrap"><div class="heat-ghost" data-ghost="heat" data-label="Queries that found nothing"></div><table class="heat" id="heat"><caption class="sr-only">Empty searches per month for the queries that most often found no apps</caption></table></div>
+    <div class="heat-wrap" tabindex="0" role="region" aria-label="Table of empty searches per month, scrolls sideways"><div class="heat-ghost" data-ghost="heat" data-label="Queries that found nothing"></div><table class="heat" id="heat"><caption class="sr-only">Empty searches per month for the queries that most often found no apps</caption></table></div>
   </section>
 
   <section class="foot-cols" aria-label="About this site">
@@ -197,6 +197,8 @@
   const andList = (xs)=> xs.length <= 1 ? (xs[0] || '') : xs.length <= 3 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : `${xs.slice(0, 2).join(', ')} and ${xs.length - 2} others`;
   // The empty searches that share the highest count (more than one when there is a tie).
   const zeroLeaders = (f)=>{ const z0 = f.zRows[0]; return z0 ? f.zRows.filter(r=> r.count === z0.count) : []; };
+  // More queries than this sharing the highest count are counted instead of named, and get no figure of their own.
+  const MANY_TIED = 5;
   // "January" in the same year as the issue, "December 2025" otherwise.
   const when = (m, ref)=> m.slice(0,4) === ref.slice(0,4) ? monthName(m) : monthLong(m);
   const ordinal = (n)=> n + (['th','st','nd','rd'][(n%100-20)%10] || ['th','st','nd','rd'][n%100] || 'th');
@@ -233,16 +235,18 @@
     const hist = D.zeroTotals.filter(t=> t.month < m && zeroUsable(t.month));
     if(hist.length < 12) return null;
     const S = 'Searches that found no apps';
+    // The month the summary compares a low or high with is a full report, never an unusually low one.
+    const full = hist.filter(t=> !D.zeroLow.has(t.month));
     const lowerBefore = [...hist].reverse().find(t=> t.value <= f.z);
     const higherBefore = [...hist].reverse().find(t=> t.value >= f.z);
     // A rise from an unusually low month is not a story of its own.
     const change = f.zPrev && !D.zeroLow.has(f.zPrevMonth) ? (f.z - f.zPrev) / f.zPrev : null;
-    if(!lowerBefore) return { kind:'low', rank:3, text:`${S} hit a record low`, ref: maxSince(hist, m, 12) };
-    if(!higherBefore) return { kind:'high', rank:3, text:`${S} hit a record high`, ref: minSince(hist, m, 12) };
+    if(!lowerBefore) return { kind:'low', rank:3, text:`${S} hit a record low`, ref: maxSince(full, m, 12) };
+    if(!higherBefore) return { kind:'high', rank:3, text:`${S} hit a record high`, ref: minSince(full, m, 12) };
     const gapLow = monthsBetween(lowerBefore.month, m), gapHigh = monthsBetween(higherBefore.month, m);
     const years = (g)=> g >= 24 && g % 12 < 2 ? (['','','two','three','four','five'][Math.floor(g/12)] || String(Math.floor(g/12))) : null;
-    if(gapLow >= 12) return { kind:'low', rank:5, text: years(gapLow) ? `${S} hit a ${years(gapLow)}-year low` : `${S} fall to their lowest since ${monthLong(lowerBefore.month)}`, ref: maxSince(hist, m, 12) };
-    if(gapHigh >= 12) return { kind:'high', rank:5, text: years(gapHigh) ? `${S} hit a ${years(gapHigh)}-year high` : `${S} climb to their highest since ${monthLong(higherBefore.month)}`, ref: minSince(hist, m, 12) };
+    if(gapLow >= 12) return { kind:'low', rank:5, text: years(gapLow) ? `${S} hit a ${years(gapLow)}-year low` : `${S} fall to their lowest since ${monthLong(lowerBefore.month)}`, ref: maxSince(full, m, 12) };
+    if(gapHigh >= 12) return { kind:'high', rank:5, text: years(gapHigh) ? `${S} hit a ${years(gapHigh)}-year high` : `${S} climb to their highest since ${monthLong(higherBefore.month)}`, ref: minSince(full, m, 12) };
     if(change != null && Math.abs(change) >= 0.1) return { kind: change < 0 ? 'fall' : 'rise', rank:7, text: `${S} ${change < 0 ? 'fall' : 'rise'} ${Math.round(Math.abs(change)*100)}% from ${monthName(f.zPrevMonth)}` };
     return { kind:'flat', rank:99, text: null };
   }
@@ -300,11 +304,14 @@
       else if(f.zPrev) s += `, ${vs(f.zPrev, f.zPrevMonth)}${lowNote(f.zPrevMonth)}`;
       else if(far) s += `, ${vs(far.value, far.month)}`;
       if(D.zeroLow.has(f.m)) s += `, far below the full reports before it`;
+      // With every query found once there is no most frequent one; with many tied, they are counted, not named.
       const lead = zeroLeaders(f), z0 = lead[0];
-      const most = !z0 ? '' : lead.length > 1
-        ? ` The most frequent empty searches were ${andList(lead.map(r=> q(r.keyword)))}, ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'} each`
-        : ` The most frequent empty search was ${q(z0.keyword)}, ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}`;
-      empty.push(s + '.' + (z0 ? `${most}${f.zRows.length && f.zRows.filter(r=> r.count === 1).length / f.zRows.length >= 0.5 ? '; most others came up only once' : ''}.` : ''));
+      const most = !z0 ? '' : z0.count === 1 ? ' Every query in the report came up only once'
+        : lead.length > MANY_TIED ? ` ${fmtInt(lead.length)} queries tied for the most empty searches, ${fmtInt(z0.count)} times each`
+        : lead.length > 1
+        ? ` The most frequent empty searches were ${andList(lead.map(r=> q(r.keyword)))}, ${fmtInt(z0.count)} times each`
+        : ` The most frequent empty search was ${q(z0.keyword)}, ${fmtInt(z0.count)} times`;
+      empty.push(s + '.' + (z0 ? `${most}${z0.count > 1 && f.zRows.filter(r=> r.count === 1).length / f.zRows.length >= 0.5 ? '; most others came up only once' : ''}.` : ''));
     }
     const zeroFirst = pickStory(f)?.about === 'zero';
     return out.concat(zeroFirst ? empty : top, zeroFirst ? top : empty).join(' ');
@@ -344,7 +351,8 @@
     else cells.push(`<div class="kpi"><span class="big accent num">—</span><span class="what">searches found no apps <span class="muted">· the zero-result report for this month is not available</span></span></div>`);
     // A partial report has too few searches to name a most frequent one (the summary leaves it out too).
     const lead = zeroLeaders(f), others = lead.slice(1).map(r=> `<strong>${escapeHtml(r.keyword)}</strong>`);
-    if(z0 && !D.zeroPartial.has(f.m)) cells.push(`<div class="kpi"><span class="big word">${escapeHtml(z0.keyword)}</span><span class="what">${others.length ? `shared the most empty searches with ${others.length <= 2 ? andList(others) : `${others[0]} and ${others.length - 1} others`}` : 'was the most frequent empty search'} <span class="muted">· ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}${others.length ? ' each' : ''}</span></span></div>`);
+    // Nor is there one when every query came up once, or when many share the top (the summary counts them).
+    if(z0 && !D.zeroPartial.has(f.m) && z0.count > 1 && lead.length <= MANY_TIED) cells.push(`<div class="kpi"><span class="big word">${escapeHtml(z0.keyword)}</span><span class="what">${others.length ? `shared the most empty searches with ${others.length <= 2 ? andList(others) : `${others[0]} and ${others.length - 1} others`}` : 'was the most frequent empty search'} <span class="muted">· ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}${others.length ? ' each' : ''}</span></span></div>`);
     k.innerHTML = cells.join('');
     k.style.gridTemplateColumns = window.matchMedia('(max-width:900px)').matches ? '' : `repeat(${cells.length},minmax(0,1fr))`;
   }
@@ -369,10 +377,12 @@
     $('#also').innerHTML = escapeHtml(base) + (more.length ? `Also new: ${more.slice(0,3).map(r=> `${qLink(r.keyword)} #${r.rk}`).join(', ')}${more.length > 3 ? `, and <a href="${all}">${more.length - 3} more</a>` : ''}.` : '');
   }
 
-  function renderHeat(f){
+  function renderHeat(f, keepScroll){
     document.querySelector('.heat-ghost')?.remove();
     // On narrow screens the table scrolls sideways; it opens on the newest months, next to the Total column.
-    requestAnimationFrame(()=>{ const w = document.querySelector('.heat-wrap'); if(w) w.scrollLeft = w.scrollWidth; });
+    // Redrawn for a colour change, it stays where the reader left it.
+    const w = document.querySelector('.heat-wrap'), at = w ? w.scrollLeft : 0;
+    requestAnimationFrame(()=>{ if(w) w.scrollLeft = keepScroll ? at : w.scrollWidth; });
     // The last 12 months up to this issue; partial reports get a * and missing reports hatched cells.
     const months = []; for(let i = 11; i >= 0; i--){ const x = addMonths(f.m, -i); if(x >= D.issues[0]) months.push(x); }
     const tot = new Map();
@@ -412,10 +422,14 @@
     const win = all.slice(-n);
     const months = win.map(x=>x.month);
     const vals = win.map(x=> x.value);
+    // "Highest" and "lowest" need at least three full months to compare; partial reports are left out. Unusually low
+    // months still count (they are on the chart), but one is never called the lowest month, only marked hollow.
     const usable = win.filter(x=> x.value != null && zeroUsable(x.month));
-    // "Highest" and "lowest" need at least three full months to compare; partial reports are left out of both.
-    const peak = usable.length >= 3 ? usable.reduce((a,x)=> !a || x.value > a.value ? x : a, null) : null;
-    const low = usable.length >= 3 ? usable.reduce((a,x)=> !a || x.value < a.value ? x : a, null) : null;
+    const hi = usable.length >= 3 ? Math.max(...usable.map(x=> x.value)) : null, lo = usable.length >= 3 ? Math.min(...usable.map(x=> x.value)) : null;
+    // With a tie the newest of the equal months carries the callout, which says it is a tie.
+    const peaks = usable.filter(x=> x.value === hi), lows = usable.filter(x=> x.value === lo);
+    const peak = hi !== lo && peaks.at(-1) || null, low = hi !== lo && lows.at(-1) || null;
+    const rankNote = (x)=> x === low && !D.zeroLow.has(x.month) ? `, ${lows.length > 1 ? 'tied for ' : ''}the lowest month ${span}` : x === peak ? `, ${peaks.length > 1 ? 'tied for ' : ''}the highest month ${span}` : '';
     if(!win.some(x=> x.value != null)){ chart.clear(); $('#zeroNote').textContent = 'No zero-result report for these months.'; return; }
     const cur = win.at(-1).month === issue && win.at(-1).value != null ? win.at(-1) : null;
     const span = 'shown';
@@ -427,10 +441,10 @@
       label:{ show:true, formatter:text, position: below ? 'bottom' : 'top', align:pos, distance:12, color:t.ink2, fontSize:12, lineHeight:16, fontFamily:'Public Sans', width:150, overflow:'break', textBorderColor:t.paper, textBorderWidth:4, rich:{ b:{ fontWeight:700, color:t.ink, fontSize:12, textBorderColor:t.paper, textBorderWidth:4 } } } });
     const points = [];
     // Hollow dots are kept for partial and unusually low months, so the highest month is a filled dot.
-    if(peak && (!cur || peak.month !== cur.month)) points.push(mark(peak, `{b|${fmtInt(peak.value)}} in ${monthLong(peak.month)}, the highest month ${span}`, true, edge(peak)));
+    if(peak && peak !== cur) points.push(mark(peak, `{b|${fmtInt(peak.value)}} in ${monthLong(peak.month)}${rankNote(peak)}`, true, edge(peak)));
     // The issue's own month is a filled dot, or a hollow one when its report is partial or unusually low (as the note says).
     const odd = cur && (D.zeroPartial.has(cur.month) || D.zeroLow.has(cur.month));
-    if(cur && cur.value != null) points.push(mark(cur, `{b|${fmtInt(cur.value)}} in ${monthName(cur.month)}${low && low.month === cur.month ? `, the lowest month ${span}` : peak && peak.month === cur.month ? `, the highest month ${span}` : ''}`, !odd, edge(cur), low && low.month === cur.month));
+    if(cur && cur.value != null) points.push(mark(cur, `{b|${fmtInt(cur.value)}} in ${monthName(cur.month)}${rankNote(cur)}`, !odd, edge(cur), cur === low));
     const lowDots = win.filter(x=> (D.zeroLow.has(x.month) || D.zeroPartial.has(x.month)) && (!cur || x.month !== cur.month)).map(x=>({ coord:[x.month, x.value], symbol:'circle', symbolSize:8, itemStyle:{ color:t.paper, borderColor:t.accent, borderWidth:2 }, label:{ show:false } }));
     const yearOnly = months.length > 30;
     const fit = Math.max(2, Math.floor((el.clientWidth - 64) / 72)); const step = [1,2,3,4,6,12].find(k=> Math.ceil(months.length / k) <= fit) || 12;
@@ -443,7 +457,7 @@
         axisLabel:{ color:t.muted, fontSize:12, hideOverlap:true, interval:(i)=> yearOnly ? months[i].endsWith('-01') : i % step === 0,
           formatter:(v)=> yearOnly ? v.slice(0,4) : `${monthAbbr(v)} ’${v.slice(2,4)}`, alignMinLabel:'left', alignMaxLabel:'right' } },
       yAxis:{ type:'value', min:0, splitNumber:4, axisLabel:{ color:t.muted, fontSize:12, formatter:(v)=> fmtInt(v) }, splitLine:{ lineStyle:{ color:t.rule2 } } },
-      series:[{ type:'line', data:vals, connectNulls:false, symbol:'none', lineStyle:{ color:t.accent, width:2 }, areaStyle:{ color:t.accentSoft, opacity:.9 },
+      series:[{ type:'line', data:vals.map((v,i)=> v != null && vals[i-1] == null && vals[i+1] == null ? { value:v, symbol:'circle', symbolSize:6, itemStyle:{ color:t.accent } } : v), connectNulls:false, symbol:'none', lineStyle:{ color:t.accent, width:2 }, areaStyle:{ color:t.accentSoft, opacity:.9 },
         markPoint:{ data:[...lowDots, ...points], animation:false, silent:true } }]
     }, true);
     const notes = [MK.ZERO_NOTE, 'A count of searches, not a rate.'];
@@ -460,7 +474,7 @@
   // Tick spacing depends on the width, so the chart is redrawn (not just resized) when the window settles.
   let resizeTimer = 0;
   window.addEventListener('resize', ()=>{ clearTimeout(resizeTimer); resizeTimer = setTimeout(()=>{ if(!D) return; if(chart) chart.resize(); renderKpis(facts(issue)); renderZeroChart(); }, 120); });
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', ()=>{ if(D){ renderHeat(facts(issue)); renderZeroChart(); } });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', ()=>{ if(D){ renderHeat(facts(issue), true); renderZeroChart(); } });
   let index = null, badMonth = null; MK.attachLookup($('#lookup'), ()=> index);
   // The reader hid or showed meaningless queries: rebuild from the same reports and redraw the issue.
   window.addEventListener('mk:junk', ()=>{ if(!D) return; D = MK.currentData(); index = MK.lookupIndex(D); if(!D.issues.includes(issue)) issue = D.issues.at(-1); renderIssue(); });
@@ -470,7 +484,8 @@
     MK.loadData().then((data)=>{
       D = data; index = MK.lookupIndex(D);
       // ?month= accepts the usual spellings of a month ("2024-1", "2024-01-01") and is rewritten as 2024-01.
-      const raw = (params.get('month') || '').trim(), want = raw ? (/^\d{4}-\d{1,2}$/.test(raw) ? raw.slice(0,5) + raw.slice(5).padStart(2,'0') : MK.toMonthKey(raw)) : '';
+      // A bare year is not a month (and would be read as January or December depending on the time zone).
+      const raw = (params.get('month') || '').trim(), want = !raw || /^\d{1,4}$/.test(raw) ? '' : /^\d{4}-\d{1,2}$/.test(raw) ? raw.slice(0,5) + raw.slice(5).padStart(2,'0') : MK.toMonthKey(raw);
       issue = want && D.issues.includes(want) ? want : D.issues.at(-1);
       const url = new URLSearchParams(location.search), address = ()=> location.pathname + (url.toString() ? '?' + url : '') + location.hash;
       // A ?month= that is not an issue: say so, and show the latest issue under its own address (other parameters stay).
