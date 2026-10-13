@@ -196,7 +196,10 @@
   // "pipedrive and zephyr", "a, b and c", or "a, b and 3 others".
   const andList = (xs)=> xs.length <= 1 ? (xs[0] || '') : xs.length <= 3 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : `${xs.slice(0, 2).join(', ')} and ${xs.length - 2} others`;
   // The empty searches that share the highest count (more than one when there is a tie).
-  const zeroLeaders = (f)=>{ const z0 = f.zRows[0]; return z0 ? f.zRows.filter(r=> r.count === z0.count) : []; };
+  // The most frequent empty searches, among meaningful queries (like the top query in the headline).
+  const cleanZero = (f)=> (D.clean || D).zeroByMonth.get(f.m) || [];
+  const zeroLeaders = (f)=>{ const zr = cleanZero(f), z0 = zr[0]; return z0 ? zr.filter(r=> r.count === z0.count) : []; };
+  const junkOnZeroTop = (f)=> !!(f.zRows[0] && f.zRows[0].junk && !D.hideJunk);
   // More queries than this sharing the highest count are counted instead of named, and get no figure of their own.
   const MANY_TIED = 5;
   // "January" in the same year as the issue, "December 2025" otherwise.
@@ -232,17 +235,19 @@
   // Empty searches: how this month compares with the reports before it.
   function zeroStory(f){
     const m = f.m; if(f.z == null || !zeroUsable(m) || D.zeroLow.has(m)) return null;
-    const hist = D.zeroTotals.filter(t=> t.month < m && zeroUsable(t.month));
-    if(hist.length < 12) return null;
+    // Records and "lowest since" are measured against full reports only: an unusually low month is a glitch in the
+    // export, not a level to compare with.
+    const full = zeroFull(m);
+    if(full.length < 12) return null;
     const S = 'Searches that found no apps';
-    // The month the summary compares a low or high with is a full report, never an unusually low one.
-    const full = hist.filter(t=> !D.zeroLow.has(t.month));
-    const lowerBefore = [...hist].reverse().find(t=> t.value <= f.z);
-    const higherBefore = [...hist].reverse().find(t=> t.value >= f.z);
+    const lowerBefore = [...full].reverse().find(t=> t.value <= f.z);
+    const higherBefore = [...full].reverse().find(t=> t.value >= f.z);
     // A rise from an unusually low month is not a story of its own.
     const change = f.zPrev && !D.zeroLow.has(f.zPrevMonth) ? (f.z - f.zPrev) / f.zPrev : null;
-    if(!lowerBefore) return { kind:'low', rank:3, text:`${S} hit a record low`, ref: maxSince(full, m, 12) };
-    if(!higherBefore) return { kind:'high', rank:3, text:`${S} hit a record high`, ref: minSince(full, m, 12) };
+    // A record beats a new #1 (only an unusual spike comes first); a run of records is counted.
+    const again = (kind)=>{ const n = recordRun(m, kind); return n >= 3 ? ` for the ${ordinal(n)} month in a row` : n === 2 ? ' again' : ''; };
+    if(!lowerBefore) return { kind:'low', rank:1.5, text:`${S} hit a record low${again('low')}`, ref: maxSince(full, m, 12) };
+    if(!higherBefore) return { kind:'high', rank:1.5, text:`${S} hit a record high${again('high')}`, ref: minSince(full, m, 12) };
     const gapLow = monthsBetween(lowerBefore.month, m), gapHigh = monthsBetween(higherBefore.month, m);
     const years = (g)=> g >= 24 && g % 12 < 2 ? (['','','two','three','four','five'][Math.floor(g/12)] || String(Math.floor(g/12))) : null;
     if(gapLow >= 12) return { kind:'low', rank:5, text: years(gapLow) ? `${S} hit a ${years(gapLow)}-year low` : `${S} fall to their lowest since ${monthLong(lowerBefore.month)}`, ref: maxSince(full, m, 12) };
@@ -250,21 +255,36 @@
     if(change != null && Math.abs(change) >= 0.1) return { kind: change < 0 ? 'fall' : 'rise', rank:7, text: `${S} ${change < 0 ? 'fall' : 'rise'} ${Math.round(Math.abs(change)*100)}% from ${monthName(f.zPrevMonth)}` };
     return { kind:'flat', rank:99, text: null };
   }
+  // Full zero-result reports before m: not partial, not unusually low.
+  function zeroFull(m){ return D.zeroTotals.filter(t=> t.month < m && zeroUsable(t.month) && !D.zeroLow.has(t.month)); }
+  // Is m a record low (or high) among the full reports before it, with at least a year of them?
+  function zeroRecord(m, kind){
+    const v = zeroTotal(m); if(v == null || !zeroUsable(m) || D.zeroLow.has(m)) return false;
+    const full = zeroFull(m); if(full.length < 12) return false;
+    return kind === 'low' ? full.every(t=> t.value > v) : full.every(t=> t.value < v);
+  }
+  // Records in consecutive months, ending with m.
+  function recordRun(m, kind){ let n = 0; for(let x = m; zeroRecord(x, kind); x = addMonths(x, -1)) n++; return n; }
   function maxSince(hist, m, n){ const w = hist.filter(t=> monthsBetween(t.month, m) <= n); return w.reduce((a,t)=> !a || t.value > a.value ? t : a, null); }
   function minSince(hist, m, n){ const w = hist.filter(t=> monthsBetween(t.month, m) <= n); return w.reduce((a,t)=> !a || t.value < a.value ? t : a, null); }
   // Months in a row: a month with no report ends the run.
-  function leaderStreak(m){ let n = 0, k = (D.byMonth.get(m)||[])[0]?.keyword; for(let i = D.issues.indexOf(m); i >= 0; i--){ if((D.byMonth.get(D.issues[i])||[])[0]?.keyword !== k) break; n++; if(i > 0 && monthsBetween(D.issues[i-1], D.issues[i]) !== 1) break; } return n; }
+  function leaderStreak(m, C = D){ let n = 0, k = (C.byMonth.get(m)||[])[0]?.keyword; for(let i = C.issues.indexOf(m); i >= 0; i--){ if((C.byMonth.get(C.issues[i])||[])[0]?.keyword !== k) break; n++; if(i > 0 && monthsBetween(C.issues[i-1], C.issues[i]) !== 1) break; } return n; }
+  // The top query among meaningful ones (the list itself shows whatever the switch says).
+  const clean = ()=> D.clean || D;
+  const cleanRows = (m)=> m ? clean().byMonth.get(m) || [] : [];
+  // True when the visible #1 is a meaningless query, so the sentences about the top say they leave those out.
+  const junkOnTop = (f)=> !!(f.rows[0] && f.rows[0].junk && !D.hideJunk);
   // The top query: a spike, a new #1, a tie, a long run at the top, or no change.
   function topStory(f){
-    const [a, b] = f.rows; if(!a) return null;
+    const C = clean(), [a, b] = cleanRows(f.m); if(!a) return null;
     const tie = b && a.percentage.toFixed(2) === b.percentage.toFixed(2);
-    const prevLead = f.prevRows[0];
+    const prevLead = cleanRows(f.prevIssue)[0];
     // A #1 far above the usual leaders of the surrounding year is called out as a spike.
-    if(MK.isSpike(D, f.m)) return { rank:1, text: `An unusual spike puts ${q(a.keyword)} at #1 with ${fmtPct(a.percentage)} of all searches` };
+    if(MK.isSpike(C, f.m)) return { rank:1, text: `An unusual spike puts ${q(a.keyword)} at #1 with ${fmtPct(a.percentage)} of all searches` };
     if(!prevLead) return { rank:8, text: `First report: ${q(a.keyword)} is the top query` };
     if(tie) return { rank:4, text: `A tie for the top query: ${q(a.keyword)} and ${q(b.keyword)}, ${fmtPct(a.percentage)} of searches each` };
     if(prevLead.keyword !== a.keyword) return { rank:2, text: `New top query: ${q(a.keyword)} overtakes ${q(prevLead.keyword)}` };
-    const s = leaderStreak(f.m);
+    const s = leaderStreak(f.m, C);
     if(s >= 3) return { rank:6, text: `Still the top query: ${q(a.keyword)}, ${aOrAn(s)} ${ordinal(s)} month in a row` };
     return { rank:8, text: `No change at the top: ${q(a.keyword)} is #1 again` };
   }
@@ -286,11 +306,13 @@
     if(pp && zp) out.push(`Both of Atlassian’s ${monthLong(f.m)} reports are partial: the popular-search report lists ${nq} queries instead of the usual 500, so its shares are not comparable with other months, and the zero-result report counts only ${ns} that found no apps.`);
     else if(pp) out.push(`Atlassian’s ${monthLong(f.m)} report is partial: it lists ${nq} queries instead of the usual 500, so its shares are not comparable with other months.`);
     else if(zp) out.push(`The zero-result report for ${monthName(f.m)} is partial: it counts only ${ns} that found no apps.`);
-    const [a, b, c] = f.rows;
+    const [a, b, c] = cleanRows(f.m);
     const same = (x, y)=> x && y && x.percentage.toFixed(2) === y.percentage.toFixed(2);
-    if(same(a, b)) top.push(`Two queries share the top: ${q(a.keyword)} and ${q(b.keyword)}, ${fmtPct(a.percentage)} of all searches each${c ? (same(a, c) ? `, level with ${q(c.keyword)}` : `, just ahead of ${q(c.keyword)} at ${fmtPct(c.percentage)}`) : ''}.`);
-    else if(a && b) top.push(`The top query, ${q(a.keyword)}, took ${fmtPct(a.percentage)} of all searches, ahead of ${q(b.keyword)} at ${fmtPct(b.percentage)}.`);
-    else if(a) top.push(`The top query, ${q(a.keyword)}, took ${fmtPct(a.percentage)} of all searches.`);
+    // When a meaningless query leads the list, the sentence says it is about the real ones.
+    const lp = junkOnTop(f) ? 'Leaving out meaningless queries, ' : '', cap = (t)=> lp ? t : t[0].toUpperCase() + t.slice(1);
+    if(same(a, b)) top.push(lp + cap(`two queries share the top: ${q(a.keyword)} and ${q(b.keyword)}, ${fmtPct(a.percentage)} of all searches each${c ? (same(a, c) ? `, level with ${q(c.keyword)}` : `, just ahead of ${q(c.keyword)} at ${fmtPct(c.percentage)}`) : ''}.`));
+    else if(a && b) top.push(lp + cap(`the top query, ${q(a.keyword)}, took ${fmtPct(a.percentage)} of all searches, ahead of ${q(b.keyword)} at ${fmtPct(b.percentage)}.`));
+    else if(a) top.push(lp + cap(`the top query, ${q(a.keyword)}, took ${fmtPct(a.percentage)} of all searches.`));
     if(f.z != null && !D.zeroPartial.has(f.m)){
       // Atlassian's zero-result report lists the 500 queries that most often found no apps; the total adds those up.
       let s = `In ${monthName(f.m)}, ${zs && zs.kind === 'low' ? 'just ' : ''}${fmtInt(f.z)} searches found no apps, as Atlassian reports them`;
@@ -306,12 +328,13 @@
       if(D.zeroLow.has(f.m)) s += `, far below the full reports before it`;
       // With every query found once there is no most frequent one; with many tied, they are counted, not named.
       const lead = zeroLeaders(f), z0 = lead[0];
+      const zl = junkOnZeroTop(f) ? 'Leaving out meaningless queries, t' : 'T';
       const most = !z0 ? '' : z0.count === 1 ? ' Every query in the report came up only once'
         : lead.length > MANY_TIED ? ` ${fmtInt(lead.length)} queries tied for the most empty searches, ${fmtInt(z0.count)} times each`
         : lead.length > 1
-        ? ` The most frequent empty searches were ${andList(lead.map(r=> q(r.keyword)))}, ${fmtInt(z0.count)} times each`
-        : ` The most frequent empty search was ${q(z0.keyword)}, ${fmtInt(z0.count)} times`;
-      empty.push(s + '.' + (z0 ? `${most}${z0.count > 1 && f.zRows.filter(r=> r.count === 1).length / f.zRows.length >= 0.5 ? '; most others came up only once' : ''}.` : ''));
+        ? ` ${zl}he most frequent empty searches were ${andList(lead.map(r=> q(r.keyword)))}, ${fmtInt(z0.count)} times each`
+        : ` ${zl}he most frequent empty search was ${q(z0.keyword)}, ${fmtInt(z0.count)} times`;
+      empty.push(s + '.' + (z0 ? `${most}${z0.count > 1 && cleanZero(f).filter(r=> r.count === 1).length / cleanZero(f).length >= 0.5 ? '; most others came up only once' : ''}.` : ''));
     }
     const zeroFirst = pickStory(f)?.about === 'zero';
     return out.concat(zeroFirst ? empty : top, zeroFirst ? top : empty).join(' ');
@@ -338,9 +361,9 @@
   }
 
   function renderKpis(f){
-    const k = $('#kpis'); const [a, b] = f.rows; const z0 = f.zRows[0]; const c = f.gains[0];
+    const k = $('#kpis'); const [a, b] = cleanRows(f.m); const z0 = cleanZero(f)[0]; const c = f.gains[0];
     const cells = [];
-    if(a){ const tie = b && a.percentage.toFixed(2) === b.percentage.toFixed(2); cells.push(`<div class="kpi"><span class="big num">${fmtPct(a.percentage)}</span><span class="what">of all searches went to <strong>${escapeHtml(a.keyword)}</strong>, ${tie ? `level with <strong>${escapeHtml(b.keyword)}</strong>` : 'the #1 query'}</span></div>`); }
+    if(a){ const tie = b && a.percentage.toFixed(2) === b.percentage.toFixed(2); cells.push(`<div class="kpi"><span class="big num">${fmtPct(a.percentage)}</span><span class="what">of all searches went to <strong>${escapeHtml(a.keyword)}</strong>, ${tie ? `level with <strong>${escapeHtml(b.keyword)}</strong>` : 'the #1 query'}${junkOnTop(f) ? ' <span class="muted">· leaving out meaningless queries</span>' : ''}</span></div>`); }
     if(c) cells.push(`<div class="kpi"><span class="big num">+${c.gain}</span><span class="what">${c.gain === 1 ? 'place' : 'places'} climbed by <strong>${escapeHtml(c.keyword)}</strong>, to #${c.rk}</span></div>`);
     else if(f.entries[0]) cells.push(`<div class="kpi"><span class="big num">#${f.entries[0].rk}</span><span class="what">where <strong>${escapeHtml(f.entries[0].keyword)}</strong> entered the top 100</span></div>`);
     if(f.z != null && !D.zeroPartial.has(f.m)){
@@ -352,7 +375,7 @@
     // A partial report has too few searches to name a most frequent one (the summary leaves it out too).
     const lead = zeroLeaders(f), others = lead.slice(1).map(r=> `<strong>${escapeHtml(r.keyword)}</strong>`);
     // Nor is there one when every query came up once, or when many share the top (the summary counts them).
-    if(z0 && !D.zeroPartial.has(f.m) && z0.count > 1 && lead.length <= MANY_TIED) cells.push(`<div class="kpi"><span class="big word">${escapeHtml(z0.keyword)}</span><span class="what">${others.length ? `shared the most empty searches with ${others.length <= 2 ? andList(others) : `${others[0]} and ${others.length - 1} others`}` : 'was the most frequent empty search'} <span class="muted">· ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}${others.length ? ' each' : ''}</span></span></div>`);
+    if(z0 && !D.zeroPartial.has(f.m) && z0.count > 1 && lead.length <= MANY_TIED) cells.push(`<div class="kpi"><span class="big word">${escapeHtml(z0.keyword)}</span><span class="what">${others.length ? `shared the most empty searches with ${others.length <= 2 ? andList(others) : `${others[0]} and ${others.length - 1} others`}` : 'was the most frequent empty search'} <span class="muted">· ${fmtInt(z0.count)} ${z0.count === 1 ? 'time' : 'times'}${others.length ? ' each' : ''}${junkOnZeroTop(f) ? ' · leaving out meaningless queries' : ''}</span></span></div>`);
     k.innerHTML = cells.join('');
     k.style.gridTemplateColumns = window.matchMedia('(max-width:900px)').matches ? '' : `repeat(${cells.length},minmax(0,1fr))`;
   }
