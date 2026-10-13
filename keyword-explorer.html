@@ -637,7 +637,7 @@
       state.smooth=params.get('smooth')==='1';
       // period= is a preset (it follows the newest report); from= and to= are a fixed custom period (older links have only these).
       if(PERIODS.includes(params.get('period'))){ state.preset=params.get('period'); state.customRange=false; state.urlFrom=state.urlTo=null; }
-      else { state.urlFrom=params.get('from'); state.urlTo=params.get('to'); }
+      else { state.urlFrom=params.get('from'); state.urlTo=params.get('to'); if(state.urlFrom||state.urlTo) state.customRange=true; }
     }
     function updateUrl(){
       const params=new URLSearchParams(); state.selections.forEach(item=>params.append('q',item)); if(!state.selections.length&&(state.dataReady||state.urlHadSelection)) params.append('q','');
@@ -719,23 +719,27 @@
     async function loadDefaults(){
       setStatus('Loading default Marketplace reports…');
       // Each report has a load counter: whichever was asked for last (this reload or an opened file) wins, whatever finishes first.
-      const my={popular:++loadSeq.popular,zero:++loadSeq.zero};
+      const my={popular:++loadSeq.popular,zero:++loadSeq.zero}; $('#popularFileStatus').dataset.err=''; $('#zeroFileStatus').dataset.err='';
       const [popularResult,zeroResult]=await Promise.allSettled([fetchFirst(DEFAULT_SOURCE).then(parsePopular),fetchFirst(DEFAULT_ZERO).then(parseZero)]);
       const usePop=my.popular===loadSeq.popular, useZero=my.zero===loadSeq.zero; if(!usePop&&!useZero) return;
       const popFailed=usePop&&popularResult.status!=='fulfilled', zeroFailed=useZero&&zeroResult.status!=='fulfilled';
       if(usePop&&!popFailed){ state.popularAll=popularResult.value; $('#popularFileStatus').classList.remove('bad'); }
       if(useZero){ if(!zeroFailed){ state.zeroAll=zeroResult.value; $('#zeroFileStatus').classList.remove('bad'); } else { state.zeroAll=[]; $('#zeroFileStatus').textContent='Not loaded'; $('#zeroFileStatus').classList.add('bad'); } }
       applyJunk();
-      if(usePop&&!popFailed) $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`;
-      if(useZero&&!zeroFailed) $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`;
+      // A file rejected while this load was running keeps its message (the tile says the repository data is shown).
+      const keepErr=(el)=>{ if(!el.dataset.err) return false; el.textContent=el.dataset.err.replace(/(\. The page still shows the previous data)?\.?$/, '. The page shows the repository report.'); el.classList.add('bad'); return true; };
+      if(usePop&&!popFailed&&!keepErr($('#popularFileStatus'))) $('#popularFileStatus').textContent=`${state.popular.length.toLocaleString('en-US')} rows loaded`;
+      if(useZero&&!zeroFailed&&!keepErr($('#zeroFileStatus'))) $('#zeroFileStatus').textContent=`${state.zero.length.toLocaleString('en-US')} rows loaded`;
       if(!state.popular.length){ MK.loadFailed(); throw new Error(zeroResult.status==='fulfilled'?'The popular-searches report could not be loaded':'Neither report could be loaded'); } finalizeData(); MK.loadDone();
       const notes=[]; if(popFailed) notes.push('The popular-searches report could not be reloaded, so the page still shows the previous one.'); if(zeroFailed) notes.push('The zero-result report could not be loaded, so there are no empty-search counts.');
       if(notes.length) setStatus(notes.join(' ')+' Reload repository data to try again.');
     }
-    const loadSeq={popular:0,zero:0};
-    async function loadUploaded(file,type){ const my=++loadSeq[type]; const current=()=>my===loadSeq[type]; const buffer=await file.arrayBuffer(); const tile=type==='popular'?$('#popularFileStatus'):$('#zeroFileStatus');
+    // loadSeq moves when a report is actually replaced (or a reload starts); upSeq orders opened files among themselves.
+    // A file that is rejected never moves loadSeq, so a repository load still in flight is kept.
+    const loadSeq={popular:0,zero:0}, upSeq={popular:0,zero:0};
+    async function loadUploaded(file,type){ const my=++upSeq[type], base=loadSeq[type]; const current=()=>my===upSeq[type]&&base===loadSeq[type]; const buffer=await file.arrayBuffer(); const tile=type==='popular'?$('#popularFileStatus'):$('#zeroFileStatus');
       // A file that fails the check leaves the page on the data it had and says what is wrong.
-      const fail=(m)=>{ if(!current()) return; tile.textContent=`${file.name}: ${m}${state.dataReady?'. The page still shows the previous data.':'.'}`; tile.classList.add('bad'); };
+      const fail=(m)=>{ if(!current()) return; tile.textContent=`${file.name}: ${m}${state.dataReady?'. The page still shows the previous data.':'.'}`; tile.classList.add('bad'); if(!state.dataReady) tile.dataset.err=tile.textContent; };
       let rows; try{ rows=await workbookRows(buffer); MK.checkReport({Raw:rows},type==='popular'?'popularRank':'zero'); }catch(error){ const m=String(error&&error.message||error); fail(/^The workbook has no Raw sheet/.test(m)?'there is no sheet named “Raw” (every Marketplace report export has one)':/^(no xlsx|Error)/i.test(m)||!m?'this file could not be read as a spreadsheet':m); return; }
       // The workbook is read once: the rows that passed the check are the rows used.
       const parsed=type==='popular'?prepPopularRows(rows):prepZeroRows(rows);
@@ -745,7 +749,7 @@
       { const d=new Date(), latest=nextMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
         const odd=[...new Set(parsed.map(r=>r.month))].filter(m=>!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)||m<'2000-01'||m>latest).sort();
         if(odd.length){ fail(`the “month” column has ${odd.length===1?'a month':'months'} that can’t be right (${odd.slice(0,3).join(', ')}${odd.length>3?'…':''})`); return; } }
-      tile.classList.remove('bad');
+      loadSeq[type]++; tile.dataset.err=''; tile.classList.remove('bad');
       if(type==='popular'){state.popularAll=parsed;applyJunk();tile.textContent=`${file.name} · ${state.popular.length.toLocaleString('en-US')} rows`;}else{state.zeroAll=parsed;applyJunk();tile.textContent=`${file.name} · ${state.zero.length.toLocaleString('en-US')} rows`;} finalizeData(); }
     function canonicalKeyword(input){ return state.canon?state.canon.get(normalize(input)):state.allKeywords.find(item=>normalize(item)===normalize(input)); }
     // A query picked from the list (or an example) is added whole: many real queries contain commas.
